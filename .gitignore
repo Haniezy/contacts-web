@@ -1,0 +1,15 @@
+node_modules/
+.next/
+next-env.d.ts
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
+.agents/
+.codex/
