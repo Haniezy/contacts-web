@@ -1,7 +1,11 @@
-import express from 'express';
+import express, { type ErrorRequestHandler } from 'express';
 import { checkDatabase } from './database/client.js';
+import { authRouter, type AuthOptions } from './auth/routes.js';
 
-export function createApp(databaseCheck = checkDatabase) {
+export function createApp(
+  databaseCheck = checkDatabase,
+  authOptions: AuthOptions = {},
+) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -27,9 +31,28 @@ export function createApp(databaseCheck = checkDatabase) {
     }
   });
 
+  app.use('/api/auth', authRouter(authOptions));
+
   app.use((_request, response) => {
     response.status(404).json({ error: 'Not found' });
   });
+
+  const errors: ErrorRequestHandler = (error, _request, response, next) => {
+    if (response.headersSent) {
+      next(error);
+      return;
+    }
+    if (error?.type === 'entity.parse.failed') {
+      response.status(400).json({ error: 'INVALID_JSON' });
+      return;
+    }
+    if (error?.type === 'entity.too.large') {
+      response.status(413).json({ error: 'BODY_TOO_LARGE' });
+      return;
+    }
+    response.status(503).json({ error: 'SERVICE_UNAVAILABLE' });
+  };
+  app.use(errors);
 
   return app;
 }
