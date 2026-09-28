@@ -33,6 +33,12 @@ test('unknown endpoints return 404 instead of a healthy response', async () => {
   assert.deepEqual(await response.json(), { error: 'Not found' });
 });
 
+test('protected route returns 401 without a cookie, without needing database access', async () => {
+  const response = await fetch(`${baseUrl}/api/auth/me`);
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: 'UNAUTHENTICATED' });
+});
+
 for (const available of [true, false]) {
   test(`readiness returns ${available ? 200 : 503} based on the database`, async () => {
     const readinessApp = createApp(async () => {
