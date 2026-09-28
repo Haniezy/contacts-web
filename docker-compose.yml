@@ -23,3 +23,13 @@ services:
     ports:
       - '127.0.0.1:${FRONTEND_PORT:-3000}:3000'
     restart: unless-stopped
+
+  migrate:
+    profiles: ['tools']
+    build:
+      context: ./backend
+      target: migrations
+    init: true
+    environment:
+      DIRECT_URL: ${DIRECT_URL:-}
+      DATABASE_URL: ${DATABASE_URL:-}

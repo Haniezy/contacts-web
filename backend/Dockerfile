@@ -1,19 +1,31 @@
-FROM node:24-bookworm-slim AS dependencies
+FROM node:24-bookworm-slim AS base
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+FROM base AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 FROM dependencies AS build
 COPY tsconfig.json ./
+COPY prisma.config.ts ./
+COPY prisma ./prisma
 COPY src ./src
 RUN npm run build
 
-FROM node:24-bookworm-slim AS production-dependencies
+FROM build AS migrations
+ENV NODE_ENV=production
+USER node
+CMD ["node_modules/.bin/prisma", "migrate", "deploy"]
+
+FROM base AS production-dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
-FROM node:24-bookworm-slim AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
