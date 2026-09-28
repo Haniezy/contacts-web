@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL:-}
+    ports:
+      - '127.0.0.1:${BACKEND_PORT:-4000}:4000'
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: '1'
+    ports:
+      - '127.0.0.1:${FRONTEND_PORT:-3000}:3000'
+    restart: unless-stopped
