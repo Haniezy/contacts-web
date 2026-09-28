@@ -151,7 +151,10 @@ test('auth HTTP lifecycle against PostgreSQL', async (t) => {
           login.headers.get('access-control-allow-credentials'),
           'true',
         );
-        cookie = login.headers.get('set-cookie')!.split(';')[0];
+        cookie = login.headers
+          .getSetCookie()
+          .find((value) => value.startsWith('contacts_session='))!
+          .split(';')[0];
         assert.equal((await getMe()).status, 200);
       },
     );
@@ -209,9 +212,19 @@ test('auth HTTP lifecycle against PostgreSQL', async (t) => {
           data: { twoFactorEnabled: true },
         });
         const login = await post('login', { email, password });
-        assert.equal(login.status, 403);
-        assert.deepEqual(await login.json(), { error: 'TWO_FACTOR_REQUIRED' });
-        assert.equal(login.headers.get('set-cookie'), null);
+        assert.equal(login.status, 202);
+        assert.deepEqual(await login.json(), { twoFactorRequired: true });
+        assert.ok(
+          login.headers
+            .getSetCookie()
+            .some((value) => value.startsWith('contacts_2fa_challenge=')),
+        );
+        assert.ok(
+          login.headers
+            .getSetCookie()
+            .filter((value) => value.startsWith('contacts_session='))
+            .every((value) => value.startsWith('contacts_session=;')),
+        );
         assert.equal((await getMe()).status, 401);
         await database.user.update({
           where: { id: userId },
