@@ -19,3 +19,16 @@ const page = await fetch(frontendUrl, { signal: AbortSignal.timeout(5000) });
 assert.equal(page.status, 200, 'Frontend home page HTTP status');
 assert.match(await page.text(), /دفترچه تلفن/);
 console.log(`PASS frontend home page: ${frontendUrl}`);
+
+if (process.env.DATABASE_URL) {
+  const readiness = await fetch(`${backendUrl}/ready`, {
+    signal: AbortSignal.timeout(15000),
+  });
+  assert.equal(readiness.status, 200, 'Backend database readiness HTTP status');
+  assert.deepEqual(await readiness.json(), {
+    status: 'ok',
+    service: 'backend',
+    database: 'connected',
+  });
+  console.log(`PASS backend database readiness: ${backendUrl}/ready`);
+}

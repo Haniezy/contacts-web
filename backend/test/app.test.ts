@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test';
 import { once } from 'node:events';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { app } from '../src/app.js';
+import { app, createApp } from '../src/app.js';
 
 let server: Server;
 let baseUrl: string;
@@ -32,3 +32,29 @@ test('unknown endpoints return 404 instead of a healthy response', async () => {
   assert.equal(response.status, 404);
   assert.deepEqual(await response.json(), { error: 'Not found' });
 });
+
+for (const available of [true, false]) {
+  test(`readiness returns ${available ? 200 : 503} based on the database`, async () => {
+    const readinessApp = createApp(async () => {
+      if (!available) throw new Error('private database connection details');
+    });
+    const readinessServer = readinessApp.listen(0, '127.0.0.1');
+    await once(readinessServer, 'listening');
+    try {
+      const { port } = readinessServer.address() as AddressInfo;
+      const response = await fetch(`http://127.0.0.1:${port}/ready`);
+      assert.equal(response.status, available ? 200 : 503);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.deepEqual(
+        await response.json(),
+        available
+          ? { status: 'ok', service: 'backend', database: 'connected' }
+          : { status: 'unavailable', service: 'backend' },
+      );
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        readinessServer.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+}

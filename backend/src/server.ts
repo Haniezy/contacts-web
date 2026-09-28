@@ -1,4 +1,5 @@
 import { app } from './app.js';
+import { disconnectDatabase } from './database/client.js';
 
 const port = Number(process.env.PORT ?? 4000);
 
@@ -20,9 +21,14 @@ function shutdown(signal: string) {
   const timeout = setTimeout(() => process.exit(1), 8000);
   timeout.unref();
 
-  server.close((error) => {
-    clearTimeout(timeout);
-    process.exit(error ? 1 : 0);
+  server.close(async (error) => {
+    try {
+      await disconnectDatabase();
+      clearTimeout(timeout);
+      process.exit(error ? 1 : 0);
+    } catch {
+      process.exit(1);
+    }
   });
 }
 
