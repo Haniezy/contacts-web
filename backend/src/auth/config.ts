@@ -5,6 +5,7 @@ export interface AuthConfig {
   secret: Uint8Array;
   origin: string;
   secureCookie: boolean;
+  twoFactorKey?: Uint8Array;
 }
 
 const environment = z.object({
@@ -12,6 +13,13 @@ const environment = z.object({
   APP_ORIGIN: z.url().default('http://localhost:3000'),
   AUTH_COOKIE_SECURE: z.enum(['true', 'false']).optional(),
   NODE_ENV: z.string().optional(),
+  TWO_FACTOR_ENCRYPTION_KEY: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z
+      .string()
+      .regex(/^[a-fA-F0-9]{64}$/)
+      .optional(),
+  ),
 });
 
 export function getAuthConfig(): AuthConfig {
@@ -24,6 +32,9 @@ export function getAuthConfig(): AuthConfig {
     throw new Error('APP_ORIGIN must use HTTP or HTTPS');
   }
   return {
+    twoFactorKey: parsed.data.TWO_FACTOR_ENCRYPTION_KEY
+      ? Buffer.from(parsed.data.TWO_FACTOR_ENCRYPTION_KEY, 'hex')
+      : undefined,
     secret: new TextEncoder().encode(JWT_SECRET),
     origin: origin.origin,
     secureCookie: AUTH_COOKIE_SECURE

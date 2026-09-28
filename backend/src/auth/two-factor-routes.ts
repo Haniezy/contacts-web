@@ -1,0 +1,147 @@
+import { Router } from 'express';
+import { parseCookie } from 'cookie';
+import { rateLimit } from 'express-rate-limit';
+import { z } from 'zod';
+import { getDatabase } from '../database/client.js';
+import { getAuthConfig } from './config.js';
+import type { AuthOptions } from './routes.js';
+import { requireAuth, type AuthPrincipal } from './middleware.js';
+import { cookieOptions, setSessionCookie } from './tokens.js';
+import {
+  confirmTwoFactor,
+  completeTwoFactor,
+  setupTwoFactor,
+} from './two-factor-service.js';
+
+export const challengeCookieName = 'contacts_2fa_challenge';
+export const challengeCookieOptions = (
+  config: ReturnType<typeof getAuthConfig>,
+) => ({ ...cookieOptions(config), path: '/api/auth/2fa' });
+const codeBody = z.object({ code: z.string().regex(/^\d{6}$/) }).strict();
+const recoveryBody = z
+  .object({
+    recoveryCode: z
+      .string()
+      .trim()
+      .regex(/^(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{8}){3})$/),
+  })
+  .strict();
+
+export function twoFactorRouter(options: AuthOptions) {
+  const database = options.database ?? getDatabase;
+  const config = options.config ?? getAuthConfig;
+  const now = options.now ?? (() => new Date());
+  const router = Router();
+  const authenticated = requireAuth(database, config);
+  router.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: options.twoFactorLimit ?? 20,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+      message: { error: 'TOO_MANY_REQUESTS' },
+    }),
+  );
+
+  router.get('/status', authenticated, async (_request, response) => {
+    const user = await database().user.findUniqueOrThrow({
+      where: { id: (response.locals.auth as AuthPrincipal).user.id },
+      select: { twoFactorEnabled: true, recoveryCodeHashes: true },
+    });
+    response.json({
+      enabled: user.twoFactorEnabled,
+      recoveryCodesRemaining: user.recoveryCodeHashes.length,
+    });
+  });
+  router.post('/setup', authenticated, async (request, response) => {
+    const parsed = z
+      .object({ password: z.string().min(1).max(128) })
+      .strict()
+      .safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: 'INVALID_INPUT' });
+      return;
+    }
+    const result = await setupTwoFactor(
+      database(),
+      response.locals.auth as AuthPrincipal,
+      parsed.data.password,
+      config(),
+      now(),
+    );
+    if (!result.ok) {
+      response.status(result.status).json({ error: result.error });
+      return;
+    }
+    response.json({
+      secret: result.secret,
+      otpauthUri: result.otpauthUri,
+      qrCodeDataUrl: result.qrCodeDataUrl,
+      expiresAt: result.expiresAt,
+    });
+  });
+  router.post('/confirm', authenticated, async (request, response) => {
+    const parsed = codeBody.safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: 'INVALID_INPUT' });
+      return;
+    }
+    const settings = config();
+    const result = await confirmTwoFactor(
+      database(),
+      response.locals.auth as AuthPrincipal,
+      parsed.data.code,
+      settings,
+      now(),
+    );
+    if (!result.ok) {
+      response.status(result.status).json({ error: result.error });
+      return;
+    }
+    await setSessionCookie(
+      response,
+      result.user.id,
+      result.session.id,
+      settings,
+      result.expiresAt,
+    );
+    response.clearCookie(challengeCookieName, challengeCookieOptions(settings));
+    response.json({ enabled: true, recoveryCodes: result.recoveryCodes });
+  });
+  router.post('/verify', async (request, response) => {
+    const parsed = z.union([codeBody, recoveryBody]).safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: 'INVALID_INPUT' });
+      return;
+    }
+    const token = parseCookie(request.headers.cookie ?? '')[
+      challengeCookieName
+    ];
+    if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
+      response.status(401).json({ error: 'INVALID_CHALLENGE' });
+      return;
+    }
+    const settings = config();
+    const result = await completeTwoFactor(
+      database(),
+      token,
+      parsed.data,
+      settings,
+      now(),
+    );
+    if (!result.ok) {
+      response.status(result.status).json({ error: result.error });
+      return;
+    }
+    await setSessionCookie(
+      response,
+      result.user.id,
+      result.session.id,
+      settings,
+      result.expiresAt,
+    );
+    response.clearCookie(challengeCookieName, challengeCookieOptions(settings));
+    response.json({ user: result.user });
+  });
+  return router;
+}

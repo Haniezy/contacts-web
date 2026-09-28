@@ -34,6 +34,7 @@ export function requireAuth(
       select: {
         userId: true,
         expiresAt: true,
+        twoFactorVerified: true,
         user: { select: { id: true, email: true, twoFactorEnabled: true } },
       },
     });
@@ -41,7 +42,7 @@ export function requireAuth(
       !session ||
       session.userId !== claims.sub ||
       session.expiresAt <= new Date() ||
-      session.user.twoFactorEnabled
+      (session.user.twoFactorEnabled && !session.twoFactorVerified)
     ) {
       return unauthorized();
     }

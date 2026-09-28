@@ -7,6 +7,12 @@ import { getDatabase } from '../database/client.js';
 import { getAuthConfig } from './config.js';
 import { requireAuth, type AuthPrincipal } from './middleware.js';
 import { hashPassword, verifyPassword } from './password.js';
+import { issueLogin } from './two-factor-service.js';
+import {
+  challengeCookieName,
+  challengeCookieOptions,
+  twoFactorRouter,
+} from './two-factor-routes.js';
 import {
   cookieName,
   cookieOptions,
@@ -18,6 +24,8 @@ export interface AuthOptions {
   database?: typeof getDatabase;
   config?: typeof getAuthConfig;
   loginLimit?: number;
+  twoFactorLimit?: number;
+  now?: () => Date;
 }
 
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254));
@@ -142,18 +150,37 @@ export function authRouter(options: AuthOptions = {}) {
       response.status(401).json({ error: 'INVALID_CREDENTIALS' });
       return;
     }
-    if (user.twoFactorEnabled) {
-      response.status(403).json({ error: 'TWO_FACTOR_REQUIRED' });
+    const result = await issueLogin(
+      database(),
+      user.id,
+      user.passwordHash,
+      options.now?.() ?? new Date(),
+    );
+    if (!result.ok) {
+      response.status(result.status).json({ error: result.error });
       return;
     }
-    const expiresAt = new Date(Date.now() + sessionSeconds * 1000);
-    const session = await database().authSession.create({
-      data: { userId: user.id, expiresAt },
-      select: { id: true },
-    });
-    await setSessionCookie(response, user.id, session.id, settings, expiresAt);
-    response.json({ user: { id: user.id, email: user.email } });
+    if (result.kind === 'challenge') {
+      response.clearCookie(cookieName, cookieOptions(settings));
+      response.cookie(challengeCookieName, result.token, {
+        ...challengeCookieOptions(settings),
+        expires: result.expiresAt,
+      });
+      response.status(202).json({ twoFactorRequired: true });
+      return;
+    }
+    response.clearCookie(challengeCookieName, challengeCookieOptions(settings));
+    await setSessionCookie(
+      response,
+      result.user.id,
+      result.session.id,
+      settings,
+      result.expiresAt,
+    );
+    response.json({ user: result.user });
   });
+
+  router.use('/2fa', twoFactorRouter(options));
 
   router.get('/me', authenticated, (_request, response) => {
     response.json({ user: (response.locals.auth as AuthPrincipal).user });
