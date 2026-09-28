@@ -1,0 +1,21 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Tahoma, Arial, sans-serif;
+  color: #182335;
+  background: #f7f8fa;
+  line-height: 1.8;
+}
+
+main {
+  width: min(100%, 48rem);
+  margin-inline: auto;
+  padding: clamp(1.25rem, 5vw, 3rem);
+}
+
+h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
