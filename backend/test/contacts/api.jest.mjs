@@ -89,8 +89,7 @@ beforeEach(async () => {
   url
     .mockReset()
     .mockImplementation(
-      async (key) =>
-        `https://photos.s3.eu-central-1.amazonaws.com/${key}?X-Amz-Signature=test`,
+      async (key) => `https://api.cloudinary.com/${key}?signature=test`,
     );
   remove.mockReset().mockResolvedValue(undefined);
 });
@@ -397,9 +396,7 @@ test('concurrent merge requests cannot consume the same source twice', async () 
 test('upload re-encodes real image, strips internal asset ID, replaces and clears photo', async () => {
   const c = await add();
   const first = (await photo(c.id).expect(200)).body.contact;
-  expect(first.photoUrl).toMatch(
-    /^https:\/\/photos.s3.eu-central-1.amazonaws.com\//,
-  );
+  expect(first.photoUrl).toMatch(/^https:\/\/api.cloudinary.com\//);
   expect(first).not.toHaveProperty('photoKey');
   const [buffer, userId] = upload.mock.calls[0];
   expect(userId).toBe(users[0].id);
@@ -607,7 +604,7 @@ test('private photo URLs are generated only for the owner in detail, list and du
     await api('get', '/duplicates').expect(200)
   ).body.groups[0].contacts.find((v) => v.id === c.id);
   for (const item of [detail, list, duplicate]) {
-    expect(item.photoUrl).toContain('X-Amz-Signature=');
+    expect(item.photoUrl).toContain('signature=');
     expect(item).not.toHaveProperty('photoKey');
   }
 });
