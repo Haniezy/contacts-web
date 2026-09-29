@@ -1,11 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { v2 as cloudinary } from 'cloudinary';
 import sharp from 'sharp';
 
 export interface PhotoStore {
@@ -47,61 +41,73 @@ export async function preparePhoto(buffer: Buffer) {
 
 export const photoUrlSeconds = 300;
 
-export function createS3PhotoStore(
-  client: S3Client,
-  bucket: string,
+interface CloudinarySettings {
+  cloud_name: string;
+  api_key: string;
+  api_secret: string;
+}
+
+export function createCloudinaryPhotoStore(
+  settings: CloudinarySettings,
 ): PhotoStore {
+  const options = {
+    ...settings,
+    secure: true,
+    resource_type: 'image' as const,
+    type: 'authenticated',
+    timeout: 30000,
+  };
+  const validateKey = (key: string) => {
+    if (!/^contacts\/[a-f0-9-]{36}\/cloudinary\/[a-f0-9-]{36}$/.test(key))
+      throw new ContactError(503, 'UNSUPPORTED_PHOTO_REFERENCE');
+  };
   return {
-    async upload(buffer, userId) {
-      const key = `contacts/${userId}/${randomUUID()}.webp`;
-      try {
-        await client.send(
-          new PutObjectCommand({
-            Bucket: bucket,
-            Key: key,
-            Body: buffer,
-            ContentType: 'image/webp',
-            CacheControl: 'private, max-age=60',
-            ServerSideEncryption: 'AES256',
-            IfNoneMatch: '*',
-          }),
-          { abortSignal: AbortSignal.timeout(30000) },
-        );
-        return { key };
-      } catch {
-        throw new ContactError(502, 'PHOTO_UPLOAD_FAILED');
-      }
-    },
-    async remove(key) {
-      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }), {
-        abortSignal: AbortSignal.timeout(30000),
+    upload(buffer, userId) {
+      const key = `contacts/${userId}/cloudinary/${randomUUID()}`;
+      return new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            { ...options, public_id: key, overwrite: false, format: 'webp' },
+            (error, result) => {
+              if (error || result?.public_id !== key) {
+                reject(new ContactError(502, 'PHOTO_UPLOAD_FAILED'));
+                return;
+              }
+              resolve({ key });
+            },
+          )
+          .end(buffer);
       });
     },
+    async remove(key) {
+      validateKey(key);
+      const result = await cloudinary.uploader.destroy(key, {
+        ...options,
+        invalidate: true,
+      });
+      if (!['ok', 'not found'].includes(result.result))
+        throw new Error('Photo cleanup failed');
+    },
     async url(key) {
-      try {
-        return await getSignedUrl(
-          client,
-          new GetObjectCommand({ Bucket: bucket, Key: key }),
-          { expiresIn: photoUrlSeconds },
-        );
-      } catch {
-        throw new ContactError(503, 'PHOTO_STORAGE_UNAVAILABLE');
-      }
+      validateKey(key);
+      return cloudinary.utils.private_download_url(key, 'webp', {
+        ...options,
+        expires_at: Math.floor(Date.now() / 1000) + photoUrlSeconds,
+        attachment: false,
+      });
     },
   };
 }
 
-let store: PhotoStore | undefined;
-export function s3Photos(): PhotoStore {
-  const region = process.env.AWS_REGION;
-  const bucket = process.env.S3_BUCKET;
-  if (!region || !bucket)
+export function cloudinaryPhotos(): PhotoStore {
+  const {
+    CLOUDINARY_CLOUD_NAME: cloud_name,
+    CLOUDINARY_API_KEY: api_key,
+    CLOUDINARY_API_SECRET: api_secret,
+  } = process.env;
+  if (!cloud_name || !api_key || !api_secret)
     throw new ContactError(503, 'PHOTO_STORAGE_NOT_CONFIGURED');
-  store ??= createS3PhotoStore(
-    new S3Client({ region, maxAttempts: 2 }),
-    bucket,
-  );
-  return store;
+  return createCloudinaryPhotoStore({ cloud_name, api_key, api_secret });
 }
 
 // Call only after owner-scoped queries; never persist or expose internal keys.

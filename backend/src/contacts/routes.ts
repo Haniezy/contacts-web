@@ -18,7 +18,7 @@ import {
 } from './validation.js';
 import { listContacts, duplicateContacts } from './queries.js';
 import {
-  s3Photos,
+  cloudinaryPhotos,
   presentContact,
   cleanupPhotos,
   preparePhoto,
@@ -37,7 +37,7 @@ export function contactsRouter(
 ) {
   const db = auth.database ?? getDatabase;
   const config = auth.config ?? getAuthConfig;
-  const photos = options.photos ?? s3Photos;
+  const photos = options.photos ?? cloudinaryPhotos;
   const router = Router();
   const owner = (locals: Record<string, unknown>) =>
     (locals.auth as AuthPrincipal).user.id;
