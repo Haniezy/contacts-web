@@ -29,11 +29,12 @@ const config = {
 const users = [],
   cookies = [];
 const upload = jest.fn(),
-  remove = jest.fn();
+  remove = jest.fn(),
+  url = jest.fn();
 const app = createApp(
   async () => {},
   { database: () => db, config: () => config },
-  { photos: () => ({ upload, remove }), uploadLimit: 100 },
+  { photos: () => ({ upload, remove, url }), uploadLimit: 100 },
 );
 let png;
 const api = (method, path = '', user = 0) =>
@@ -80,12 +81,17 @@ beforeEach(async () => {
     where: { userId: { in: users.map((u) => u.id) } },
   });
   upload.mockReset().mockImplementation(async (_image, userId) => {
-    const publicId = `contacts/${userId}/${randomUUID()}`;
+    const key = `contacts/${userId}/${randomUUID()}`;
     return {
-      publicId,
-      url: `https://res.cloudinary.com/test/image/upload/${publicId}.webp`,
+      key,
     };
   });
+  url
+    .mockReset()
+    .mockImplementation(
+      async (key) =>
+        `https://photos.s3.eu-central-1.amazonaws.com/${key}?X-Amz-Signature=test`,
+    );
   remove.mockReset().mockResolvedValue(undefined);
 });
 afterAll(async () => {
@@ -144,7 +150,7 @@ test('create/read/update/delete with optional fields and Persian digits', async 
     photoUrl: null,
   });
   expect(c).not.toHaveProperty('userId');
-  expect(c).not.toHaveProperty('photoPublicId');
+  expect(c).not.toHaveProperty('photoKey');
   expect((await api('get', `/${c.id}`).expect(200)).body.contact).toEqual(c);
   const updated = (
     await api('patch', `/${c.id}`)
@@ -185,7 +191,7 @@ test('mass assignment cannot transfer ownership, IDs or arbitrary photo URLs', a
     { userId: users[1].id },
     { id: randomUUID() },
     { photoUrl: 'https://example.test/a.png' },
-    { photoPublicId: 'other/asset' },
+    { photoKey: 'other/asset' },
   ])
     await api('post')
       .send({ name: 'A', phone: '1234567', ...extra })
@@ -391,14 +397,16 @@ test('concurrent merge requests cannot consume the same source twice', async () 
 test('upload re-encodes real image, strips internal asset ID, replaces and clears photo', async () => {
   const c = await add();
   const first = (await photo(c.id).expect(200)).body.contact;
-  expect(first.photoUrl).toMatch(/^https:\/\/res.cloudinary.com\//);
-  expect(first).not.toHaveProperty('photoPublicId');
+  expect(first.photoUrl).toMatch(
+    /^https:\/\/photos.s3.eu-central-1.amazonaws.com\//,
+  );
+  expect(first).not.toHaveProperty('photoKey');
   const [buffer, userId] = upload.mock.calls[0];
   expect(userId).toBe(users[0].id);
   expect((await sharp(buffer).metadata()).format).toBe('webp');
   const stored = await db.contact.findUnique({ where: { id: c.id } });
   await photo(c.id).expect(200);
-  expect(remove).toHaveBeenCalledWith(stored.photoPublicId);
+  expect(remove).toHaveBeenCalledWith(stored.photoKey);
   expect(
     (await api('delete', `/${c.id}/photo`).expect(200)).body.contact.photoUrl,
   ).toBeNull();
@@ -413,12 +421,12 @@ test('merge moves source photo to target without deleting the retained asset', a
   await api('post', '/merge')
     .send({ targetId: a.id, sourceIds: [b.id] })
     .expect(200);
-  expect(
-    (await db.contact.findUnique({ where: { id: a.id } })).photoPublicId,
-  ).toBe(old.photoPublicId);
+  expect((await db.contact.findUnique({ where: { id: a.id } })).photoKey).toBe(
+    old.photoKey,
+  );
   expect(remove).not.toHaveBeenCalled();
   await api('delete', `/${a.id}`).expect(204);
-  expect(remove).toHaveBeenCalledWith(old.photoPublicId);
+  expect(remove).toHaveBeenCalledWith(old.photoKey);
 });
 
 test('upload rejects spoofed MIME, SVG, missing image, extra fields and oversized files', async () => {
@@ -457,13 +465,13 @@ test('provider failure leaves old contact intact and database failure cleans new
   upload.mockRejectedValueOnce(new ContactError(502, 'PHOTO_UPLOAD_FAILED'));
   await photo(c.id).expect(502);
   expect((await api('get', `/${c.id}`)).body.contact.photoUrl).toBeNull();
-  const publicId = 'contacts/test-orphan';
+  const key = `contacts/${users[0].id}/test-orphan.webp`;
   upload.mockImplementationOnce(async () => {
     await db.contact.delete({ where: { id: c.id } });
-    return { url: 'https://example.test/photo.webp', publicId };
+    return { url: 'https://example.test/photo.webp', key };
   });
   await photo(c.id).expect(404);
-  expect(remove).toHaveBeenCalledWith(publicId);
+  expect(remove).toHaveBeenCalledWith(key);
 });
 
 test('missing provider credentials returns explicit 503', async () => {
@@ -527,7 +535,7 @@ test('upload rate limit is enforced before storing image', async () => {
   const limited = createApp(
     async () => {},
     { database: () => db, config: () => config },
-    { photos: () => ({ upload, remove }), uploadLimit: 1 },
+    { photos: () => ({ upload, remove, url }), uploadLimit: 1 },
   );
   const send = () =>
     request(limited)
@@ -562,12 +570,12 @@ test('concurrent photo replacements retain one asset and clean only superseded a
   expect(results.map((r) => r.status)).toEqual([200, 200]);
   const kept = await db.contact.findUnique({ where: { id: c.id } });
   const uploaded = await Promise.all(upload.mock.results.map((r) => r.value));
-  expect(uploaded.map((v) => v.publicId)).toContain(kept.photoPublicId);
+  expect(uploaded.map((v) => v.key)).toContain(kept.photoKey);
   expect(remove).toHaveBeenCalledTimes(1);
   expect(remove).toHaveBeenCalledWith(
-    uploaded.find((v) => v.publicId !== kept.photoPublicId).publicId,
+    uploaded.find((v) => v.key !== kept.photoKey).key,
   );
-  expect(remove).not.toHaveBeenCalledWith(kept.photoPublicId);
+  expect(remove).not.toHaveBeenCalledWith(kept.photoKey);
 });
 
 test('case-insensitive UUID aliases cannot merge a contact into itself', async () => {
@@ -577,4 +585,29 @@ test('case-insensitive UUID aliases cannot merge a contact into itself', async (
     .expect(400);
   await api('get', `/${c.id}`).expect(200);
   await api('get', '?q=%00').expect(400);
+});
+
+test('private photo URLs are generated only for the owner in detail, list and duplicates', async () => {
+  const c = await add();
+  await add();
+  await photo(c.id).expect(200);
+  const stored = await db.contact.findUnique({ where: { id: c.id } });
+  expect(stored.photoUrl).toBeNull();
+  expect(stored.photoKey).toMatch(/^contacts\//);
+  url.mockClear();
+  await api('get', `/${c.id}`, 1).expect(404);
+  await api('get', '', 1).expect(200);
+  await api('get', '/duplicates', 1).expect(200);
+  expect(url).not.toHaveBeenCalled();
+  const detail = (await api('get', `/${c.id}`).expect(200)).body.contact;
+  const list = (await api('get').expect(200)).body.contacts.find(
+    (v) => v.id === c.id,
+  );
+  const duplicate = (
+    await api('get', '/duplicates').expect(200)
+  ).body.groups[0].contacts.find((v) => v.id === c.id);
+  for (const item of [detail, list, duplicate]) {
+    expect(item.photoUrl).toContain('X-Amz-Signature=');
+    expect(item).not.toHaveProperty('photoKey');
+  }
 });
