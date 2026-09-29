@@ -53,17 +53,17 @@ model LoginChallenge {
 }
 
 model Contact {
-  id            String    @id @default(uuid()) @db.Uuid
-  userId        String    @db.Uuid
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String    @db.VarChar(200)
-  phone         String    @db.VarChar(32)
-  photoUrl      String?   @db.Text
-  photoPublicId String?   @db.Text
-  birthday      DateTime? @db.Date
-  reminder      String?   @db.Text
-  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String    @db.VarChar(200)
+  phone     String    @db.VarChar(32)
+  photoUrl  String?   @db.Text
+  photoKey  String?   @db.Text
+  birthday  DateTime? @db.Date
+  reminder  String?   @db.Text
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
 
   // Both indexes also support userId-only lookups via their leading column.
   @@index([userId, name])

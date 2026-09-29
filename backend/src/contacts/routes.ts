@@ -18,7 +18,8 @@ import {
 } from './validation.js';
 import { listContacts, duplicateContacts } from './queries.js';
 import {
-  cloudinaryPhotos,
+  s3Photos,
+  presentContact,
   cleanupPhotos,
   preparePhoto,
   ContactError,
@@ -36,7 +37,7 @@ export function contactsRouter(
 ) {
   const db = auth.database ?? getDatabase;
   const config = auth.config ?? getAuthConfig;
-  const photos = options.photos ?? cloudinaryPhotos;
+  const photos = options.photos ?? s3Photos;
   const router = Router();
   const owner = (locals: Record<string, unknown>) =>
     (locals.auth as AuthPrincipal).user.id;
@@ -129,7 +130,14 @@ export function contactsRouter(
       res.status(400).json({ error: 'INVALID_QUERY' });
       return;
     }
-    res.json(await listContacts(db(), owner(res.locals), query.data));
+    const userId = owner(res.locals);
+    const result = await listContacts(db(), userId, query.data);
+    res.json({
+      ...result,
+      contacts: await Promise.all(
+        result.contacts.map((c) => presentContact(c, userId, photos)),
+      ),
+    });
   });
   router.get('/duplicates', async (req, res) => {
     const query = duplicateQuery.safeParse(req.query);
@@ -137,7 +145,19 @@ export function contactsRouter(
       res.status(400).json({ error: 'INVALID_QUERY' });
       return;
     }
-    res.json(await duplicateContacts(db(), owner(res.locals), query.data));
+    const userId = owner(res.locals);
+    const result = await duplicateContacts(db(), userId, query.data);
+    res.json({
+      ...result,
+      groups: await Promise.all(
+        result.groups.map(async (g) => ({
+          ...g,
+          contacts: await Promise.all(
+            g.contacts.map((c) => presentContact(c, userId, photos)),
+          ),
+        })),
+      ),
+    });
   });
   router.post('/merge', async (req, res) => {
     const parsed = mergeBody.safeParse(req.body);
@@ -155,7 +175,7 @@ export function contactsRouter(
       });
       if (sources.length !== sourceIds.length)
         throw new ContactError(404, 'CONTACT_NOT_FOUND');
-      const photo = [target, ...sources].find((c) => c.photoUrl);
+      const photo = [target, ...sources].find((c) => c.photoKey || c.photoUrl);
       const reminder =
         overrides.reminder !== undefined
           ? overrides.reminder
@@ -176,7 +196,7 @@ export function contactsRouter(
           ...bodyData(overrides),
           reminder,
           photoUrl: photo?.photoUrl ?? null,
-          photoPublicId: photo?.photoPublicId ?? null,
+          photoKey: photo?.photoKey ?? null,
         },
         select: contactSelect,
       });
@@ -184,12 +204,15 @@ export function contactsRouter(
       return {
         contact,
         removed: sources
-          .map((c) => c.photoPublicId)
-          .filter((id) => id !== photo?.photoPublicId),
+          .map((c) => c.photoKey)
+          .filter((id) => id !== photo?.photoKey),
       };
     });
     await cleanupPhotos(photos, result.removed);
-    res.json({ contact: result.contact, mergedCount: sourceIds.length + 1 });
+    res.json({
+      contact: await presentContact(result.contact, userId, photos),
+      mergedCount: sourceIds.length + 1,
+    });
   });
   router.post('/', async (req, res) => {
     const body = createBody.safeParse(req.body);
@@ -204,7 +227,9 @@ export function contactsRouter(
         select: contactSelect,
       }),
     );
-    res.status(201).json({ contact });
+    res
+      .status(201)
+      .json({ contact: await presentContact(contact, userId, photos) });
   });
   router.get('/:id', validId, async (req, res) => {
     const contact = await db().contact.findFirst({
@@ -212,7 +237,9 @@ export function contactsRouter(
       select: contactSelect,
     });
     if (!contact) throw new ContactError(404, 'CONTACT_NOT_FOUND');
-    res.json({ contact });
+    res.json({
+      contact: await presentContact(contact, owner(res.locals), photos),
+    });
   });
   router.patch('/:id', validId, async (req, res) => {
     const body = patchBody.safeParse(req.body);
@@ -230,7 +257,9 @@ export function contactsRouter(
         select: contactSelect,
       });
     });
-    res.json({ contact });
+    res.json({
+      contact: await presentContact(contact, owner(res.locals), photos),
+    });
   });
   router.delete('/:id', validId, async (req, res) => {
     const userId = owner(res.locals),
@@ -240,7 +269,7 @@ export function contactsRouter(
       await tx.contact.delete({ where: { id, userId } });
       return contact;
     });
-    await cleanupPhotos(photos, [contact.photoPublicId]);
+    await cleanupPhotos(photos, [contact.photoKey]);
     res.status(204).end();
   });
   const upload = multer({
@@ -293,17 +322,19 @@ export function contactsRouter(
           const old = await owned(tx, id, userId);
           const contact = await tx.contact.update({
             where: { id, userId },
-            data: { photoUrl: stored.url, photoPublicId: stored.publicId },
+            data: { photoUrl: null, photoKey: stored.key },
             select: contactSelect,
           });
-          return { contact, old: old.photoPublicId };
+          return { contact, old: old.photoKey };
         });
       } catch (error) {
-        await cleanupPhotos(photos, [stored.publicId]);
+        await cleanupPhotos(photos, [stored.key]);
         throw error;
       }
       await cleanupPhotos(photos, [result.old]);
-      res.json({ contact: result.contact });
+      res.json({
+        contact: await presentContact(result.contact, userId, photos),
+      });
     },
   );
   router.delete('/:id/photo', validId, async (req, res) => {
@@ -313,13 +344,13 @@ export function contactsRouter(
       const old = await owned(tx, id, userId);
       const contact = await tx.contact.update({
         where: { id, userId },
-        data: { photoUrl: null, photoPublicId: null },
+        data: { photoUrl: null, photoKey: null },
         select: contactSelect,
       });
-      return { contact, old: old.photoPublicId };
+      return { contact, old: old.photoKey };
     });
     await cleanupPhotos(photos, [result.old]);
-    res.json({ contact: result.contact });
+    res.json({ contact: await presentContact(result.contact, userId, photos) });
   });
   return router;
 }

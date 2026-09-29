@@ -26,10 +26,11 @@
     "test:contacts": "npm run build && node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs --runInBand"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1142.0",
+    "@aws-sdk/s3-request-presigner": "3.1142.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "argon2": "0.45.1",
-    "cloudinary": "2.11.0",
     "cookie": "2.0.1",
     "cors": "2.8.6",
     "dotenv": "18.0.4",

@@ -1,13 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import { v2 as cloudinary } from 'cloudinary';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import sharp from 'sharp';
 
 export interface PhotoStore {
-  upload(
-    buffer: Buffer,
-    userId: string,
-  ): Promise<{ url: string; publicId: string }>;
-  remove(publicId: string): Promise<void>;
+  upload(buffer: Buffer, userId: string): Promise<{ key: string }>;
+  remove(key: string): Promise<void>;
+  url(key: string): Promise<string>;
 }
 export class ContactError extends Error {
   constructor(
@@ -41,50 +45,75 @@ export async function preparePhoto(buffer: Buffer) {
   }
 }
 
-export function cloudinaryPhotos(): PhotoStore {
-  const {
-    CLOUDINARY_CLOUD_NAME: cloud_name,
-    CLOUDINARY_API_KEY: api_key,
-    CLOUDINARY_API_SECRET: api_secret,
-  } = process.env;
-  if (!cloud_name || !api_key || !api_secret)
-    throw new ContactError(503, 'PHOTO_STORAGE_NOT_CONFIGURED');
-  const options = {
-    cloud_name,
-    api_key,
-    api_secret,
-    secure: true,
-    timeout: 30000,
-  };
+export const photoUrlSeconds = 300;
+
+export function createS3PhotoStore(
+  client: S3Client,
+  bucket: string,
+): PhotoStore {
   return {
-    upload: (buffer, userId) =>
-      new Promise((resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream(
-            {
-              ...options,
-              resource_type: 'image',
-              public_id: `contacts/${userId}/${randomUUID()}`,
-              overwrite: false,
-              format: 'webp',
-            },
-            (error, result) => {
-              if (error || !result?.secure_url || !result.public_id) {
-                reject(new ContactError(502, 'PHOTO_UPLOAD_FAILED'));
-                return;
-              }
-              resolve({ url: result.secure_url, publicId: result.public_id });
-            },
-          )
-          .end(buffer);
-      }),
-    async remove(publicId) {
-      await cloudinary.uploader.destroy(publicId, {
-        ...options,
-        resource_type: 'image',
-        invalidate: true,
+    async upload(buffer, userId) {
+      const key = `contacts/${userId}/${randomUUID()}.webp`;
+      try {
+        await client.send(
+          new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Body: buffer,
+            ContentType: 'image/webp',
+            CacheControl: 'private, max-age=60',
+            ServerSideEncryption: 'AES256',
+            IfNoneMatch: '*',
+          }),
+          { abortSignal: AbortSignal.timeout(30000) },
+        );
+        return { key };
+      } catch {
+        throw new ContactError(502, 'PHOTO_UPLOAD_FAILED');
+      }
+    },
+    async remove(key) {
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }), {
+        abortSignal: AbortSignal.timeout(30000),
       });
     },
+    async url(key) {
+      try {
+        return await getSignedUrl(
+          client,
+          new GetObjectCommand({ Bucket: bucket, Key: key }),
+          { expiresIn: photoUrlSeconds },
+        );
+      } catch {
+        throw new ContactError(503, 'PHOTO_STORAGE_UNAVAILABLE');
+      }
+    },
+  };
+}
+
+let store: PhotoStore | undefined;
+export function s3Photos(): PhotoStore {
+  const region = process.env.AWS_REGION;
+  const bucket = process.env.S3_BUCKET;
+  if (!region || !bucket)
+    throw new ContactError(503, 'PHOTO_STORAGE_NOT_CONFIGURED');
+  store ??= createS3PhotoStore(
+    new S3Client({ region, maxAttempts: 2 }),
+    bucket,
+  );
+  return store;
+}
+
+// Call only after owner-scoped queries; never persist or expose internal keys.
+export async function presentContact<
+  T extends { photoKey: string | null; photoUrl: string | null },
+>(contact: T, userId: string, photos: () => PhotoStore) {
+  const { photoKey, ...publicFields } = contact;
+  if (photoKey && !photoKey.startsWith(`contacts/${userId}/`))
+    throw new ContactError(503, 'INVALID_PHOTO_REFERENCE');
+  return {
+    ...publicFields,
+    photoUrl: photoKey ? await photos().url(photoKey) : contact.photoUrl,
   };
 }
 
@@ -94,13 +123,11 @@ export async function cleanupPhotos(
   store: () => PhotoStore,
   ids: (string | null)[],
 ) {
-  for (const publicId of new Set(
-    ids.filter((id): id is string => Boolean(id)),
-  )) {
+  for (const key of new Set(ids.filter((id): id is string => Boolean(id)))) {
     try {
-      await store().remove(publicId);
+      await store().remove(key);
     } catch {
-      console.warn('PHOTO_CLEANUP_REQUIRED', publicId);
+      console.warn('PHOTO_CLEANUP_REQUIRED', key);
     }
   }
 }

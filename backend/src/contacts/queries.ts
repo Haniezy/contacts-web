@@ -13,7 +13,7 @@ import {
 // Parameters are always bound. Only these fixed SQL fragments select expressions.
 const nameKey = Prisma.sql`lower(trim(regexp_replace(translate("name", 'يك', 'یک'), '[[:space:]]+', ' ', 'g')))`;
 const phoneKey = Prisma.sql`regexp_replace(translate("phone", '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'), '[^0-9]', '', 'g')`;
-const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "birthday", "reminder", "createdAt", "updatedAt"`;
+const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "photoKey", "birthday", "reminder", "createdAt", "updatedAt"`;
 type PublicContact = Pick<Contact, keyof typeof contactSelect>;
 
 export async function listContacts(

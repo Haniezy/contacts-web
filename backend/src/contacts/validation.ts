@@ -91,6 +91,7 @@ export const contactSelect = {
   name: true,
   phone: true,
   photoUrl: true,
+  photoKey: true,
   birthday: true,
   reminder: true,
   createdAt: true,
