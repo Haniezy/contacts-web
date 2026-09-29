@@ -24,7 +24,8 @@
     "db:seed": "npm --prefix backend run db:seed",
     "test:db": "npm --prefix backend run test:db",
     "test:auth": "npm --prefix backend run test:auth",
-    "test:2fa": "npm --prefix backend run test:2fa"
+    "test:2fa": "npm --prefix backend run test:2fa",
+    "test:contacts": "npm --prefix backend run test:contacts"
   },
   "devDependencies": {
     "prettier": "3.9.9"
