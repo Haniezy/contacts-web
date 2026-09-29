@@ -197,3 +197,7 @@ Prisma روی نسخه پایدار ۷ قفل شده است. دو وابستگی
 - [نصب و تنظیم Next.js](https://nextjs.org/docs/app/getting-started/installation)
 - [استقرار Next.js و خروجی standalone](https://nextjs.org/docs/app/getting-started/deploying)
 - [چرخه انتشار Node.js](https://github.com/nodejs/Release)
+
+## فرانت: تم و زبان
+
+راهنمای پیاده‌سازی، ساختار و تست‌های مرورگر در [مستندات فاز ۵](docs/frontend.fa.md) آمده است. صفحه موقت موجود کنترل‌های تم و زبان را برای بررسی نمایش می‌دهد؛ طراحی صفحات در فازهای بعد انجام می‌شود.
