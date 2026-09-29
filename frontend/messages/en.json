@@ -1,0 +1,14 @@
+{
+  "Home": {
+    "title": "Contacts",
+    "description": "This temporary page checks that the frontend is running.",
+    "next": "Page designs will be implemented in the next phases."
+  },
+  "Preferences": {
+    "title": "Appearance and language",
+    "theme": "Theme",
+    "darkMode": "Dark mode",
+    "language": "Language",
+    "error": "Could not change language. Please try again."
+  }
+}
