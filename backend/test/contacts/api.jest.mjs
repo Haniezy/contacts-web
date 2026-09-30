@@ -107,6 +107,7 @@ test('every route requires a valid full session', async () => {
     ['get', ''],
     ['post', ''],
     ['get', '/duplicates'],
+    ['post', '/duplicates/ignore'],
     ['post', '/merge'],
     ['get', `/${id}`],
     ['patch', `/${id}`],
@@ -296,6 +297,69 @@ test('duplicate groups normalize phones and names, and remain owner-scoped', asy
     expect(result.groups[0].contacts).toHaveLength(2);
   }
   await api('get', '/duplicates?by=email').expect(400);
+});
+
+test('Iranian numbers with or without a country code are one phone group', async () => {
+  for (const phone of [
+    '+98 912 345 6789',
+    '0098 912 345 6789',
+    '۰۹۱۲ ۳۴۵ ۶۷۸۹',
+    '912 345 6789',
+    '+98 21 1234 5678',
+    '021 1234 5678',
+    '1234567',
+    '01234567',
+  ])
+    await add({ name: `Contact ${phone}`, phone });
+  const body = (await api('get', '/duplicates?by=phone').expect(200)).body;
+  expect(body.groups.map((g) => [g.value, g.count]).sort()).toEqual([
+    ['02112345678', 2],
+    ['09123456789', 4],
+  ]);
+  // Search still matches the digits as typed.
+  const found = (await api('get', '?q=%2B98912').expect(200)).body;
+  expect(found.pagination.total).toBe(2);
+});
+
+test('an ignored phone group stays hidden until a new member joins it', async () => {
+  const a = await add({ name: 'One', phone: '09120000001' });
+  const b = await add({ name: 'Two', phone: '+989120000001' });
+  const c = await add({ name: 'One', phone: '09350000000' });
+  const other = await add({ name: 'Other', phone: '09120000001' }, 1);
+  const groups = async (by = 'phone') =>
+    (await api('get', `/duplicates?by=${by}`).expect(200)).body.groups;
+  expect(await groups()).toHaveLength(1);
+
+  await api('post', '/duplicates/ignore')
+    .send({ contactIds: [a.id] })
+    .expect(400);
+  await api('post', '/duplicates/ignore')
+    .send({ contactIds: [a.id, a.id] })
+    .expect(400);
+  await api('post', '/duplicates/ignore')
+    .send({ contactIds: [a.id, other.id] })
+    .expect(404);
+  await api('post', '/duplicates/ignore')
+    .send({ contactIds: [a.id, c.id] })
+    .expect(409);
+  await api('post', '/duplicates/ignore')
+    .send({ contactIds: [a.id, b.id] })
+    .expect(204);
+  expect(await groups()).toHaveLength(0);
+  // Name groups and other users are unaffected.
+  expect(await groups('name')).toHaveLength(1);
+  await add({ name: 'Another', phone: '09120000001' }, 1);
+  expect(
+    (await api('get', '/duplicates?by=phone', 1).expect(200)).body.groups,
+  ).toHaveLength(1);
+
+  // Deleting a member keeps the rest hidden; a new member shows the group.
+  const d = await add({ name: 'Three', phone: '9120000001' });
+  expect((await groups())[0].count).toBe(3);
+  await api('delete', `/${d.id}`).expect(204);
+  expect(await groups()).toHaveLength(0);
+  await add({ name: 'Four', phone: '0098 912 000 0001' });
+  expect(await groups()).toHaveLength(1);
 });
 
 test('duplicate group and member previews are bounded', async () => {

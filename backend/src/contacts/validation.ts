@@ -86,6 +86,10 @@ export const mergeBody = z
     (v) =>
       new Set([v.targetId, ...v.sourceIds]).size === v.sourceIds.length + 1,
   );
+export const ignoreBody = z
+  .object({ contactIds: z.array(idSchema).min(2).max(20) })
+  .strict()
+  .refine((v) => new Set(v.contactIds).size === v.contactIds.length);
 export const contactSelect = {
   id: true,
   name: true,

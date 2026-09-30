@@ -29,6 +29,7 @@ model User {
   contacts                 Contact[]
   sessions                 AuthSession[]
   loginChallenges          LoginChallenge[]
+  duplicateIgnores         DuplicateIgnore[]
 }
 
 model AuthSession {
@@ -70,4 +71,16 @@ model Contact {
   // Both indexes also support userId-only lookups via their leading column.
   @@index([userId, name])
   @@index([userId, phone])
+}
+
+// A phone duplicate group the user chose to keep apart. The group stays hidden
+// while all of its members are listed here; a new matching contact shows it again.
+model DuplicateIgnore {
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone      String   @db.VarChar(32)
+  contactIds String[] @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([userId, phone])
 }

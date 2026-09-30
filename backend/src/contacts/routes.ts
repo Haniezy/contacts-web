@@ -14,9 +14,14 @@ import {
   listQuery,
   duplicateQuery,
   mergeBody,
+  ignoreBody,
   contactSelect,
 } from './validation.js';
-import { listContacts, duplicateContacts } from './queries.js';
+import {
+  listContacts,
+  duplicateContacts,
+  ignoreDuplicates,
+} from './queries.js';
 import {
   cloudinaryPhotos,
   presentContact,
@@ -158,6 +163,20 @@ export function contactsRouter(
         })),
       ),
     });
+  });
+  router.post('/duplicates/ignore', async (req, res) => {
+    const body = ignoreBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: 'INVALID_INPUT' });
+      return;
+    }
+    const userId = owner(res.locals);
+    const result = await mutate(userId, (tx) =>
+      ignoreDuplicates(tx, userId, body.data.contactIds),
+    );
+    if (result === 'missing') throw new ContactError(404, 'CONTACT_NOT_FOUND');
+    if (result === 'mismatch') throw new ContactError(409, 'NOT_DUPLICATES');
+    res.status(204).end();
   });
   router.post('/merge', async (req, res) => {
     const parsed = mergeBody.safeParse(req.body);
