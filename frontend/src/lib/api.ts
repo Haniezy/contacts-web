@@ -9,7 +9,7 @@ export class ApiError extends Error {
 export async function api<T>(
   path: string,
   body?: unknown,
-  options: { method?: 'DELETE'; signal?: AbortSignal } = {},
+  options: { method?: 'DELETE' | 'PATCH'; signal?: AbortSignal } = {},
 ): Promise<T> {
   let response: Response;
   const timeout = AbortSignal.timeout(15000);
@@ -31,6 +31,27 @@ export async function api<T>(
   }
   const data =
     response.status === 204 ? {} : await response.json().catch(() => ({}));
+  if (!response.ok)
+    throw new ApiError(data.error ?? 'SERVICE_UNAVAILABLE', response.status);
+  return data as T;
+}
+// Multipart upload through the same-origin API; the browser sets the boundary.
+export async function upload<T>(path: string, field: string, file: File) {
+  const body = new FormData();
+  body.append(field, file);
+  let response: Response;
+  try {
+    response = await fetch(`/api/${path}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      body,
+      signal: AbortSignal.timeout(60000),
+    });
+  } catch {
+    throw new ApiError('SERVICE_UNAVAILABLE', 503);
+  }
+  const data = await response.json().catch(() => ({}));
   if (!response.ok)
     throw new ApiError(data.error ?? 'SERVICE_UNAVAILABLE', response.status);
   return data as T;

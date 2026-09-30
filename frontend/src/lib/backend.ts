@@ -20,6 +20,7 @@ export function backendFetch(
   path: string,
   cookie: string,
   init: RequestInit = {},
+  timeout = 12000,
 ) {
   const headers = new Headers(init.headers);
   headers.set('Cookie', authCookies(cookie));
@@ -28,6 +29,6 @@ export function backendFetch(
     headers,
     cache: 'no-store',
     redirect: 'manual',
-    signal: AbortSignal.timeout(12000),
+    signal: AbortSignal.timeout(timeout),
   });
 }

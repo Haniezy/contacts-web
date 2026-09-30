@@ -1,26 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { appOrigin, backendFetch } from '@/lib/backend';
 
-const allowed = new Map([
-  ['auth/signup', 'POST'],
-  ['auth/login', 'POST'],
-  ['auth/logout', 'POST'],
-  ['auth/me', 'GET'],
-  ['auth/2fa/status', 'GET'],
-  ['auth/2fa/setup', 'POST'],
-  ['auth/2fa/confirm', 'POST'],
-  ['auth/2fa/verify', 'POST'],
-  ['contacts', 'GET'],
-  ['contacts/duplicates', 'GET'],
-]);
-const contactId =
-  /^contacts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+type Body = 'json' | 'multipart';
+// Only these backend routes are reachable from the browser.
+const routes: [RegExp, Record<string, Body | null>][] = [
+  [/^auth\/(signup|login|logout)$/, { POST: 'json' }],
+  [/^auth\/me$/, { GET: null }],
+  [/^auth\/2fa\/status$/, { GET: null }],
+  [/^auth\/2fa\/(setup|confirm|verify)$/, { POST: 'json' }],
+  [/^contacts$/, { GET: null, POST: 'json' }],
+  [/^contacts\/duplicates$/, { GET: null }],
+  [
+    new RegExp(`^contacts/${uuid}$`, 'i'),
+    { GET: null, PATCH: 'json', DELETE: null },
+  ],
+  [
+    new RegExp(`^contacts/${uuid}/photo$`, 'i'),
+    { POST: 'multipart', DELETE: null },
+  ],
+];
+const limits = { json: 8192, multipart: 5 * 1024 * 1024 + 64 * 1024 };
 
-function permitted(path: string, method: string) {
-  return (
-    allowed.get(path) === method ||
-    (method === 'DELETE' && contactId.test(path))
-  );
+function route(path: string, method: string) {
+  const methods = routes.find(([pattern]) => pattern.test(path))?.[1];
+  return methods && Object.hasOwn(methods, method)
+    ? { body: methods[method] }
+    : null;
 }
 
 async function handle(
@@ -28,8 +34,8 @@ async function handle(
   context: { params: Promise<{ path: string[] }> },
 ) {
   const path = (await context.params).path.join('/');
-  if (!permitted(path, request.method))
-    return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  const match = route(path, request.method);
+  if (!match) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   const mutation = request.method !== 'GET';
   if (
     mutation &&
@@ -38,18 +44,16 @@ async function handle(
   ) {
     return NextResponse.json({ error: 'ORIGIN_NOT_ALLOWED' }, { status: 403 });
   }
-  const hasBody = mutation && request.method !== 'DELETE';
-  if (
-    hasBody &&
-    request.headers.get('content-type')?.split(';')[0].trim() !==
-      'application/json'
-  ) {
+  const kind = match.body;
+  const type = request.headers.get('content-type') ?? '';
+  if (kind === 'json' && type.split(';')[0].trim() !== 'application/json')
     return NextResponse.json({ error: 'JSON_REQUIRED' }, { status: 415 });
-  }
+  if (kind === 'multipart' && !type.startsWith('multipart/form-data'))
+    return NextResponse.json({ error: 'MULTIPART_REQUIRED' }, { status: 415 });
   try {
     // Bound streamed request size too, not just the untrusted Content-Length header.
-    let body: string | undefined;
-    if (hasBody && request.body) {
+    let body: ArrayBuffer | undefined;
+    if (kind && request.body) {
       const reader = request.body.getReader();
       const chunks: Uint8Array[] = [];
       let size = 0;
@@ -57,7 +61,7 @@ async function handle(
         const { done, value } = await reader.read();
         if (done) break;
         size += value.byteLength;
-        if (size > 8192) {
+        if (size > limits[kind]) {
           await reader.cancel();
           return NextResponse.json(
             { error: 'BODY_TOO_LARGE' },
@@ -66,7 +70,11 @@ async function handle(
         }
         chunks.push(value);
       }
-      body = Buffer.concat(chunks).toString('utf8');
+      const bytes = Buffer.concat(chunks);
+      body = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
     }
     const upstream = await backendFetch(
       path + request.nextUrl.search,
@@ -74,12 +82,14 @@ async function handle(
       {
         method: request.method,
         body,
-        headers: hasBody
-          ? { 'Content-Type': 'application/json', Origin: appOrigin }
+        headers: kind
+          ? { 'Content-Type': type, Origin: appOrigin }
           : mutation
             ? { Origin: appOrigin }
             : {},
       },
+      // Photo uploads are processed and stored before the backend answers.
+      kind === 'multipart' ? 45000 : undefined,
     );
     const response = new NextResponse(
       upstream.status === 204 ? null : await upstream.text(),
@@ -117,4 +127,5 @@ async function handle(
 }
 export const GET = handle;
 export const POST = handle;
+export const PATCH = handle;
 export const DELETE = handle;
