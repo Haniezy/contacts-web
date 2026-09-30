@@ -30,7 +30,12 @@ export interface AuthOptions {
 
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254));
 const signupBody = z
-  .object({ email, password: z.string().min(12).max(128) })
+  .object({
+    email,
+    password: z.string().min(12).max(128),
+    firstName: z.string().trim().min(1).max(100).optional(),
+    lastName: z.string().trim().min(1).max(100).optional(),
+  })
   .strict();
 const loginBody = z
   .object({ email, password: z.string().min(1).max(128) })
@@ -103,7 +108,12 @@ export function authRouter(options: AuthOptions = {}) {
     try {
       const result = await database().$transaction(async (transaction) => {
         const user = await transaction.user.create({
-          data: { email: parsed.data.email, passwordHash },
+          data: {
+            email: parsed.data.email,
+            passwordHash,
+            firstName: parsed.data.firstName,
+            lastName: parsed.data.lastName,
+          },
           select: publicUser,
         });
         const session = await transaction.authSession.create({
