@@ -54,7 +54,21 @@ if (input.action === 'totp') {
         );
       if (input.action === 'delete')
         await db.user.deleteMany({ where: { email: input.email } });
-      else if (input.action === 'names')
+      else if (input.action === 'contacts') {
+        const user = await db.user.findUniqueOrThrow({
+          where: { email: input.email },
+          select: { id: true },
+        });
+        await db.contact.createMany({
+          data: input.contacts.map((contact) => ({
+            userId: user.id,
+            name: contact.name,
+            phone: contact.phone,
+            birthday: contact.birthday ? new Date(contact.birthday) : null,
+            reminder: contact.reminder ?? null,
+          })),
+        });
+      } else if (input.action === 'names')
         console.log(
           JSON.stringify(
             await db.user.findUniqueOrThrow({

@@ -1,6 +1,6 @@
 import { useTranslations, useFormatter } from 'next-intl';
 import Link from 'next/link';
-import { Icon } from './icon';
+import { Icon } from '@/components/icon';
 
 export function AuthShell({
   children,

@@ -11,14 +11,24 @@ const allowed = new Map([
   ['auth/2fa/confirm', 'POST'],
   ['auth/2fa/verify', 'POST'],
   ['contacts', 'GET'],
+  ['contacts/duplicates', 'GET'],
 ]);
+const contactId =
+  /^contacts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function permitted(path: string, method: string) {
+  return (
+    allowed.get(path) === method ||
+    (method === 'DELETE' && contactId.test(path))
+  );
+}
 
 async function handle(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
 ) {
   const path = (await context.params).path.join('/');
-  if (allowed.get(path) !== request.method)
+  if (!permitted(path, request.method))
     return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   const mutation = request.method !== 'GET';
   if (
@@ -28,8 +38,9 @@ async function handle(
   ) {
     return NextResponse.json({ error: 'ORIGIN_NOT_ALLOWED' }, { status: 403 });
   }
+  const hasBody = mutation && request.method !== 'DELETE';
   if (
-    mutation &&
+    hasBody &&
     request.headers.get('content-type')?.split(';')[0].trim() !==
       'application/json'
   ) {
@@ -38,7 +49,7 @@ async function handle(
   try {
     // Bound streamed request size too, not just the untrusted Content-Length header.
     let body: string | undefined;
-    if (mutation && request.body) {
+    if (hasBody && request.body) {
       const reader = request.body.getReader();
       const chunks: Uint8Array[] = [];
       let size = 0;
@@ -63,9 +74,11 @@ async function handle(
       {
         method: request.method,
         body,
-        headers: mutation
+        headers: hasBody
           ? { 'Content-Type': 'application/json', Origin: appOrigin }
-          : {},
+          : mutation
+            ? { Origin: appOrigin }
+            : {},
       },
     );
     const response = new NextResponse(
@@ -104,3 +117,4 @@ async function handle(
 }
 export const GET = handle;
 export const POST = handle;
+export const DELETE = handle;

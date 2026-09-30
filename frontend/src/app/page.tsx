@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Icon } from '@/components/auth/icon';
+import { Icon } from '@/components/icon';
 import { LandingPreview } from '@/components/auth/landing-preview';
 export default function Home() {
   const t = useTranslations('Landing');

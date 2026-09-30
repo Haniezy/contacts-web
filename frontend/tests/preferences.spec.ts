@@ -1,4 +1,17 @@
+import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
+
+// Desktop shows the switches in the header; mobile keeps them in the menu.
+async function preferences(page: Page) {
+  const menu = page.getByRole('button', { name: 'منو' });
+  const english = page.getByRole('button', { name: 'Menu' });
+  for (const button of [menu, english])
+    if (await button.isVisible()) {
+      await button.click();
+      return page.getByRole('dialog');
+    }
+  return page.locator('.header-preferences');
+}
 
 test.beforeEach(async ({ context, account }) => {
   await context.addCookies([
@@ -23,24 +36,25 @@ test('theme and language persist, retain physical knob positions and translate t
   });
   await page.goto('/contacts');
   const html = page.locator('html');
-  const toggle = page.getByRole('switch');
   await expect(html).toHaveAttribute('lang', 'fa');
   await expect(html).toHaveAttribute('dir', 'rtl');
   await expect(html).toHaveAttribute('data-theme', 'light');
   await expect(page.getByRole('heading', { name: 'مخاطبین' })).toBeVisible();
+  let scope = await preferences(page);
+  let toggle = scope.getByRole('switch');
   await expect(toggle).toBeEnabled();
-  await expect(page.locator('.theme-knob')).toHaveCSS(
+  await expect(scope.locator('.theme-knob')).toHaveCSS(
     'transform',
     'matrix(1, 0, 0, 1, 32, 0)',
   );
   await toggle.click();
   await expect(toggle).toBeChecked();
   await expect(html).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('.theme-knob')).toHaveCSS(
+  await expect(scope.locator('.theme-knob')).toHaveCSS(
     'transform',
     'matrix(1, 0, 0, 1, 0, 0)',
   );
-  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await scope.getByRole('button', { name: 'English', exact: true }).click();
   await expect(html).toHaveAttribute('lang', 'en');
   await expect(html).toHaveAttribute('dir', 'ltr');
   await expect(
@@ -49,21 +63,24 @@ test('theme and language persist, retain physical knob positions and translate t
   await page.reload();
   await expect(html).toHaveAttribute('data-theme', 'dark');
   await expect(html).toHaveAttribute('dir', 'ltr');
+  scope = await preferences(page);
+  toggle = scope.getByRole('switch');
   await expect(toggle).toBeChecked();
   await expect(
-    page.getByRole('button', { name: 'English', exact: true }),
+    scope.getByRole('button', { name: 'English', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
   await toggle.click();
-  await expect(page.locator('.theme-knob')).toHaveCSS(
+  await expect(scope.locator('.theme-knob')).toHaveCSS(
     'transform',
     'matrix(1, 0, 0, 1, 32, 0)',
   );
-  await page.getByRole('button', { name: 'فارسی', exact: true }).click();
+  await scope.getByRole('button', { name: 'فارسی', exact: true }).click();
   await expect(html).toHaveAttribute('dir', 'rtl');
   await page.reload();
   await expect(html).toHaveAttribute('data-theme', 'light');
   await expect(html).toHaveAttribute('lang', 'fa');
-  await expect(toggle).not.toBeChecked();
+  scope = await preferences(page);
+  await expect(scope.getByRole('switch')).not.toBeChecked();
   await page.evaluate(() => document.fonts.ready);
   expect(
     await page.evaluate(() =>
@@ -96,16 +113,17 @@ test('cookie renders correct language on the server; invalid values fall back to
 test('keyboard controls and reduced motion work', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/contacts');
-  const toggle = page.getByRole('switch');
+  const scope = await preferences(page);
+  const toggle = scope.getByRole('switch');
   await expect(toggle).toBeEnabled();
   await toggle.focus();
   await page.keyboard.press('Space');
   await expect(toggle).toBeChecked();
-  await expect(page.locator('.theme-knob')).toHaveCSS(
+  await expect(scope.locator('.theme-knob')).toHaveCSS(
     'transition-duration',
     '0s',
   );
-  await page.getByRole('button', { name: 'English', exact: true }).focus();
+  await scope.getByRole('button', { name: 'English', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 });

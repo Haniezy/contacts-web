@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { api, errorKey, asciiDigits } from '@/lib/api';
 import { CodeInput } from './code-input';
 import { Field } from './field';
-import { Icon } from './icon';
+import { Icon } from '@/components/icon';
 export function VerifyForm() {
   const t = useTranslations('Auth');
   const e = useTranslations('Errors');

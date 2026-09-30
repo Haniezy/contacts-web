@@ -1,5 +1,17 @@
 import { randomUUID } from 'node:crypto';
+import type { Page } from '@playwright/test';
 import { test, expect, fixture } from './fixtures';
+
+// Logout lives in the drawer (mobile) or the account dropdown (desktop).
+async function logout(page: Page) {
+  const menu = page.getByRole('button', { name: 'منو' });
+  await (
+    (await menu.isVisible())
+      ? menu
+      : page.getByRole('button', { name: 'حساب کاربری' })
+  ).click();
+  await page.getByRole('button', { name: 'خروج', exact: true }).click();
+}
 
 test('landing → signup → QR → verification → recovery codes → contacts; two-factor login rejects invalid codes', async ({
   page,
@@ -54,7 +66,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
     expect(
       await page.evaluate(() => document.cookie.includes('contacts_session')),
     ).toBe(false);
-    await page.getByRole('button', { name: 'خروج', exact: true }).click();
+    await logout(page);
     await expect(page).toHaveURL(/\/login$/);
     await page.getByLabel('ایمیل', { exact: true }).fill(email);
     await page.getByLabel('رمز عبور', { exact: true }).fill(password);
@@ -79,7 +91,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .getByRole('button', { name: 'تایید و ورود', exact: true })
       .click();
     await expect(page).toHaveURL(/\/contacts$/);
-    await page.getByRole('button', { name: 'خروج', exact: true }).click();
+    await logout(page);
     await expect(page).toHaveURL(/\/login$/);
     await page.getByLabel('ایمیل', { exact: true }).fill(email);
     await page.getByLabel('رمز عبور', { exact: true }).fill(password);

@@ -1,7 +1,7 @@
 'use client';
 import { useState, type InputHTMLAttributes } from 'react';
 import { useTranslations } from 'next-intl';
-import { Icon } from './icon';
+import { Icon } from '@/components/icon';
 export function Field({
   label,
   error,

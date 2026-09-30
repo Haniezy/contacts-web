@@ -6,18 +6,27 @@ export class ApiError extends Error {
     super(code);
   }
 }
-export async function api<T>(path: string, body?: unknown): Promise<T> {
+export async function api<T>(
+  path: string,
+  body?: unknown,
+  options: { method?: 'DELETE'; signal?: AbortSignal } = {},
+): Promise<T> {
   let response: Response;
+  const timeout = AbortSignal.timeout(15000);
   try {
     response = await fetch(`/api/${path}`, {
-      method: body === undefined ? 'GET' : 'POST',
+      method: options.method ?? (body === undefined ? 'GET' : 'POST'),
       credentials: 'same-origin',
       cache: 'no-store',
       headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
+      signal: options.signal
+        ? AbortSignal.any([options.signal, timeout])
+        : timeout,
     });
-  } catch {
+  } catch (error) {
+    // A superseded request is not a service failure.
+    if (options.signal?.aborted) throw error;
     throw new ApiError('SERVICE_UNAVAILABLE', 503);
   }
   const data =

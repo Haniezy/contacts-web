@@ -7,7 +7,7 @@ import { api, errorKey } from '@/lib/api';
 import { useEnrollment, type Enrollment } from './enrollment-context';
 import { Field } from './field';
 import { CodeInput } from './code-input';
-import { Icon } from './icon';
+import { Icon } from '@/components/icon';
 
 export function SetupForm() {
   const t = useTranslations('Auth');
