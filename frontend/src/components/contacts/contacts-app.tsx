@@ -18,17 +18,24 @@ import { ContactRow } from './contact-row';
 import { ContactPanel } from './contact-panel';
 import { AccountMenu, type AccountUser } from './account-menu';
 import { DeleteDialog } from './delete-dialog';
+import { ContactForm } from './contact-form';
 
 const searchDelay = 300;
+// Same alphabetical order as the API (ICU collation).
+const collator = new Intl.Collator('fa');
+export type FormState = { mode: 'new' } | { mode: 'edit'; contact: Contact };
+const editPath = /^\/contacts\/([0-9a-f-]{36})\/edit$/i;
 
 export function ContactsApp({
   user,
   initial,
   duplicates: initialDuplicates,
+  initialForm = null,
 }: {
   user: AccountUser;
   initial: ContactPage | null;
   duplicates: number;
+  initialForm?: FormState | null;
 }) {
   const t = useTranslations('Contacts');
   const a = useTranslations('Auth');
@@ -42,6 +49,9 @@ export function ContactsApp({
   const [deleting, setDeleting] = useState<Contact | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [duplicates, setDuplicates] = useState(initialDuplicates);
+  const [form, setForm] = useState<FormState | null>(initialForm);
+  // True when the form was opened in place (history entry pushed here).
+  const pushed = useRef(false);
   const search = useRef<AbortController | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const firstQuery = useRef(true);
@@ -134,6 +144,84 @@ export function ContactsApp({
     }
   }, []);
 
+  // The form opens in place (list and search state stay intact) while the
+  // address still reflects it, so reload and back behave as expected.
+  function openForm(next: FormState) {
+    setForm(next);
+    setMenuOpen(false);
+    const url =
+      next.mode === 'new'
+        ? '/contacts/new'
+        : `/contacts/${next.contact.id}/edit`;
+    if (pushed.current) history.replaceState(null, '', url);
+    else history.pushState(null, '', url);
+    pushed.current = true;
+    if (!matchMedia('(min-width: 1024px)').matches) scrollTo(0, 0);
+  }
+
+  function closeForm() {
+    if (pushed.current) {
+      pushed.current = false;
+      history.back();
+      setForm(null);
+    } else {
+      setForm(null);
+      router.replace('/contacts');
+    }
+  }
+
+  // Back and forward between the list and a form opened in place.
+  const listed = useRef(data?.contacts);
+  useEffect(() => {
+    listed.current = data?.contacts;
+  }, [data]);
+  useEffect(() => {
+    function sync() {
+      const path = location.pathname;
+      const id = editPath.exec(path)?.[1];
+      const contact = id && listed.current?.find((c) => c.id === id);
+      pushed.current = path !== '/contacts';
+      if (path === '/contacts/new') setForm({ mode: 'new' });
+      else if (contact) setForm({ mode: 'edit', contact });
+      else setForm(null);
+    }
+    addEventListener('popstate', sync);
+    return () => removeEventListener('popstate', sync);
+  }, []);
+
+  async function saved(contact: Contact) {
+    closeForm();
+    setSelectedId(contact.id);
+    setExpandedId(null);
+    // Show the result at once, then re-read the current results so paging
+    // and search stay exact.
+    setData((current) => {
+      if (!current) return current;
+      const rest = current.contacts.filter((c) => c.id !== contact.id);
+      const at = rest.findIndex(
+        (c) => collator.compare(c.name, contact.name) > 0,
+      );
+      return {
+        contacts:
+          at === -1
+            ? [...rest, contact]
+            : [...rest.slice(0, at), contact, ...rest.slice(at)],
+        pagination: {
+          ...current.pagination,
+          total:
+            current.pagination.total +
+            (rest.length === current.contacts.length ? 1 : 0),
+        },
+      };
+    });
+    try {
+      setData(await load(query.trim(), 1));
+    } catch {
+      // The local copy above stays until the next search or reload.
+    }
+    void refreshDuplicates();
+  }
+
   function removed(id: string) {
     setData(
       (current) =>
@@ -160,7 +248,7 @@ export function ContactsApp({
   );
 
   return (
-    <div className="contacts-page">
+    <div className={`contacts-page${form ? ' has-form' : ''}`}>
       <div className="contacts-decor" aria-hidden="true">
         <span className="contacts-circle" />
         <span className="contacts-mint" />
@@ -250,6 +338,7 @@ export function ContactsApp({
                           );
                           setSelectedId(contact.id);
                         }}
+                        onEdit={() => openForm({ mode: 'edit', contact })}
                         onDelete={() => setDeleting(contact)}
                       />
                     ))}
@@ -269,15 +358,33 @@ export function ContactsApp({
             prefetch={false}
             className="contacts-fab"
             aria-label={t('addContact')}
+            onClick={(event) => {
+              event.preventDefault();
+              openForm({ mode: 'new' });
+            }}
           >
             <Icon name="plus" />
           </Link>
         </section>
-        <ContactPanel
-          contact={selected}
-          duplicates={duplicates}
-          onDelete={setDeleting}
-        />
+        {form ? (
+          <aside className="contact-panel is-form">
+            <ContactForm
+              key={form.mode === 'edit' ? form.contact.id : 'new'}
+              mode={form.mode}
+              contact={form.mode === 'edit' ? form.contact : undefined}
+              onClose={closeForm}
+              onSaved={saved}
+            />
+          </aside>
+        ) : (
+          <ContactPanel
+            contact={selected}
+            duplicates={duplicates}
+            onNew={() => openForm({ mode: 'new' })}
+            onEdit={(contact) => openForm({ mode: 'edit', contact })}
+            onDelete={setDeleting}
+          />
+        )}
       </main>
       <div className="contacts-fade" aria-hidden="true" />
       <AccountMenu

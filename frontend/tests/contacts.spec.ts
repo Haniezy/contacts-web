@@ -135,3 +135,126 @@ test('deleting through the BFF is owner-scoped and needs a trusted origin', asyn
   );
   expect(crossSite.status()).toBe(403);
 });
+
+test('one form creates and edits a contact', async ({ page, isMobile }) => {
+  await page.goto('/contacts');
+  await page.locator('.contacts-fab').click();
+  await expect(page).toHaveURL(/\/contacts\/new$/);
+  await expect(page.getByRole('heading', { name: 'مخاطب جدید' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'افزودن عکس' })).toBeVisible();
+  // Mobile shows the form as a page; desktop keeps the list beside it.
+  await expect(page.locator('.contacts-fab')).toBeVisible({
+    visible: !isMobile,
+  });
+
+  await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
+  await expect(
+    page.getByText('نام باید بین ۱ تا ۲۰۰ کاراکتر باشه.'),
+  ).toBeVisible();
+  await expect(
+    page.getByText('شماره معتبر نیست؛ ۳ تا ۱۵ رقم وارد کن.'),
+  ).toBeVisible();
+  await expect(page.getByLabel('نام و نام خانوادگی')).toBeFocused();
+
+  await page.getByLabel('نام و نام خانوادگی').fill('نگار صالحی');
+  await page.getByLabel('شماره تلفن').fill('۰۹۱۲ ۱۱۱ ۲۲۲۲');
+  const birthday = page.getByLabel(/تاریخ تولد/);
+  await birthday.fill('۱/۱/۱۳۷۰');
+  await birthday.blur();
+  await expect(birthday).toHaveValue('۱ فروردین ۱۳۷۰');
+  await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await expect(page.locator('.count-chip').first()).toHaveText('۶ نفر');
+  await expect(page.getByRole('button', { name: 'نگار صالحی' })).toBeVisible();
+
+  await page.reload();
+  await page.getByRole('button', { name: 'نگار صالحی' }).click();
+  await page
+    .locator('.contact-row.is-open')
+    .getByRole('link', { name: 'ویرایش' })
+    .click();
+  await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}\/edit$/);
+  await expect(
+    page.getByRole('heading', { name: 'ویرایش مخاطب' }),
+  ).toBeVisible();
+  await expect(page.getByLabel('نام و نام خانوادگی')).toHaveValue('نگار صالحی');
+  await expect(page.getByLabel('شماره تلفن')).toHaveValue('۰۹۱۲ ۱۱۱ ۲۲۲۲');
+  await expect(birthday).toHaveValue('۱ فروردین ۱۳۷۰');
+  await page.getByLabel(/یادآوری/).fill('کتاب رو پس بده');
+  await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  if (!isMobile)
+    await expect(
+      page.locator('.contact-panel').getByText('کتاب رو پس بده'),
+    ).toBeVisible();
+
+  // A direct load of the edit address opens the same form with saved values.
+  await page.getByRole('button', { name: 'نگار صالحی' }).click();
+  const edit = page
+    .locator('.contact-row.is-open')
+    .getByRole('link', { name: 'ویرایش' });
+  await page.goto((await edit.getAttribute('href'))!);
+  await expect(page.getByLabel(/یادآوری/)).toHaveValue('کتاب رو پس بده');
+  await expect(page.locator('.count-chip').first()).toHaveText('۶ نفر');
+});
+
+test('cancel, close and back leave without saving', async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto('/contacts');
+  await page.locator('.contacts-fab').click();
+  await page.getByLabel('نام و نام خانوادگی').fill('ذخیره نشه');
+  await page.getByRole('button', { name: 'انصراف' }).click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await expect(page.locator('.contact-form')).toHaveCount(0);
+
+  await page.locator('.contacts-fab').click();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await expect(page.locator('.contact-form')).toHaveCount(0);
+  await page.goForward();
+  await expect(page.getByRole('heading', { name: 'مخاطب جدید' })).toBeVisible();
+
+  await page.goto('/contacts/new');
+  await page
+    .getByRole('button', { name: isMobile ? 'بازگشت' : 'بستن' })
+    .click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await expect(page.locator('.count-chip').first()).toHaveText('۵ نفر');
+  await expect(page.getByRole('button', { name: 'ذخیره نشه' })).toHaveCount(0);
+
+  await page.goto('/contacts/00000000-0000-4000-8000-000000000000/edit');
+  await expect(page.getByText('404')).toBeVisible();
+});
+
+test('a chosen photo is previewed and can be removed before saving', async ({
+  page,
+}) => {
+  await page.goto('/contacts/new');
+  const input = page.locator('.photo-field input[type="file"]');
+  await input.setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('not an image'),
+  });
+  await expect(
+    page.getByText('فقط عکس JPEG، PNG یا WebP قابل استفاده‌ست.'),
+  ).toBeVisible();
+  await input.setInputFiles({
+    name: 'photo.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  });
+  await expect(page.locator('.photo-current img')).toHaveAttribute(
+    'src',
+    /^blob:/,
+  );
+  await expect(page.getByRole('button', { name: 'تغییر عکس' })).toBeVisible();
+  await page.getByRole('button', { name: 'حذف عکس' }).click();
+  await expect(page.getByRole('button', { name: 'افزودن عکس' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'حذف عکس' })).toHaveCount(0);
+});

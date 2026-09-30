@@ -13,12 +13,14 @@ export function ContactRow({
   expanded,
   selected,
   onToggle,
+  onEdit,
   onDelete,
 }: {
   contact: Contact;
   expanded: boolean;
   selected: boolean;
   onToggle: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const t = useTranslations('Contacts');
@@ -64,6 +66,10 @@ export function ContactRow({
             href={`/contacts/${contact.id}/edit`}
             prefetch={false}
             className="action action-edit"
+            onClick={(event) => {
+              event.preventDefault();
+              onEdit();
+            }}
           >
             <Icon name="edit" />
             <span className="action-label">{t('edit')}</span>

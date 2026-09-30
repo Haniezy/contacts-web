@@ -2097,7 +2097,8 @@ button:disabled {
     backdrop-filter: blur(16px);
     scrollbar-width: thin;
   }
-  .panel-decor {
+  .panel-decor,
+  .form-decor {
     position: absolute;
     inset: 0;
     z-index: -1;
@@ -2115,18 +2116,21 @@ button:disabled {
     border-end-end-radius: 49% 46%;
     background: var(--decor-mint);
   }
-  .panel-decor .sphere-1 {
+  .panel-decor .sphere-1,
+  .form-decor .sphere-1 {
     inset-inline-end: calc(555.7 * var(--d));
     top: calc(11.7 * var(--u));
     width: calc(26 * var(--u));
     opacity: 0.45;
   }
-  .panel-decor .sphere-2 {
+  .panel-decor .sphere-2,
+  .form-decor .sphere-2 {
     inset-inline-end: calc(556 * var(--d));
     top: calc(58 * var(--u));
     width: calc(34 * var(--u));
   }
-  .panel-decor .sphere-3 {
+  .panel-decor .sphere-3,
+  .form-decor .sphere-3 {
     inset-inline-end: calc(70 * var(--d));
     top: calc(218 * var(--u));
     width: calc(20 * var(--u));
@@ -2373,6 +2377,385 @@ button:disabled {
   .delete-actions .button-danger-solid,
   .delete-actions .button-mint {
     height: calc(51.33 * var(--u));
+  }
+}
+/* Contact form: a full page on mobile (390 artboard), the side panel on
+   desktop. New and edit share every rule; only the photo differs. */
+:root {
+  --photo-fill: rgb(255 255 255 / 70%);
+  --photo-dash: #9ccbdf;
+  --photo-shadow: 0 14px 30px rgb(95 168 198 / 18%);
+  --form-circle: linear-gradient(180deg, #b6d9e8, #a3cedf);
+}
+[data-theme='dark'] {
+  --photo-fill: #181f2b;
+  --photo-dash: #3a4456;
+  --photo-shadow: 0 12px 36px rgb(104 194 232 / 16%);
+  --form-circle: linear-gradient(180deg, #98b9c8, #8cb3c2);
+}
+@media (max-width: 1023px) {
+  .has-form {
+    padding-block-end: 0;
+  }
+  .has-form .contacts-decor,
+  .has-form .contacts-header,
+  .has-form .contacts-column,
+  .has-form .contacts-fade {
+    display: none;
+  }
+  .contact-panel.is-form {
+    display: block;
+  }
+}
+.contact-form {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  padding: 54px 32px 32px;
+  overflow: clip;
+}
+.form-decor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.form-circle {
+  position: absolute;
+  inset-inline-end: -160px;
+  top: -190px;
+  width: 419.4px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--form-circle);
+}
+.form-mint {
+  position: absolute;
+  inset-inline-start: 5px;
+  top: 74px;
+  width: 380px;
+  height: 250px;
+  border-start-start-radius: 45.5% 60%;
+  border-start-end-radius: 54.5% 56%;
+  border-end-start-radius: 51.3% 40%;
+  border-end-end-radius: 48.7% 44%;
+  background: var(--decor-mint);
+  box-shadow: var(--decor-mint-shadow);
+}
+/* Desktop reuses the side panel's spheres. */
+@media (max-width: 1023px) {
+  .form-decor .sphere-1 {
+    inset-inline-start: 44.5px;
+    top: 130px;
+    width: 29.5px;
+  }
+  .form-decor .sphere-2 {
+    inset-inline-end: 52px;
+    top: 250px;
+    width: 17.5px;
+  }
+  .form-decor .sphere-3,
+  .form-close {
+    display: none;
+  }
+}
+.form-back {
+  position: absolute;
+  top: 54px;
+  inset-inline-start: 20px;
+  width: 48px;
+  height: 48px;
+}
+.form-back svg {
+  width: 20px;
+  height: 20px;
+}
+.form-title {
+  margin-block-start: 9px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+.contact-form form {
+  display: flex;
+  flex-direction: column;
+}
+.photo-field {
+  position: relative;
+  width: 124px;
+  margin: 25px auto 0;
+}
+.photo-add {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 124px;
+  height: 124px;
+  padding-block-start: 32.4px;
+  border-radius: 50%;
+  background: var(--photo-fill);
+  color: var(--blue-d);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  box-shadow: var(--photo-shadow);
+}
+/* 42 dashes around a 3px ring, as drawn in the mockups. */
+.photo-add::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    var(--photo-dash) 0 5.57deg,
+    transparent 0 8.571deg
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 3px),
+    #000 calc(100% - 2.5px)
+  );
+}
+.photo-add svg {
+  width: 36.5px;
+  height: 36.5px;
+  stroke-width: 1.35;
+}
+.photo-current {
+  position: relative;
+}
+.photo-current .avatar-xl {
+  width: 124px;
+  height: 124px;
+  font-size: 48px;
+  box-shadow:
+    0 0 0 6px var(--avatar-ring),
+    var(--photo-shadow);
+}
+.photo-change {
+  position: absolute;
+  inset-inline-end: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 37.5px;
+  height: 37.5px;
+  border-radius: 50%;
+  background: var(--chip);
+  color: var(--blue-d);
+  box-shadow: var(--disc-shadow);
+}
+.photo-change svg {
+  width: 18px;
+  height: 18px;
+}
+/* Out of flow so the fields keep their place with or without a photo. */
+.photo-remove {
+  position: absolute;
+  top: calc(100% + 12px);
+  inset-inline: -40px;
+  justify-content: center;
+  font-size: 12px;
+}
+.form-fields {
+  display: grid;
+  gap: 19px;
+  margin-block-start: 127px;
+}
+.contact-field label {
+  display: flex;
+  align-items: center;
+  gap: 8.5px;
+  padding-block-start: 4.5px;
+  color: var(--slate-d);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.optional-chip {
+  padding-inline: 9px;
+  border-radius: 999px;
+  background: var(--lilac);
+  color: var(--lilac-d);
+  font-size: 11px;
+  line-height: 19px;
+}
+.contact-field .field-line input {
+  padding: 5.5px 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+[dir='rtl'] .contact-field input[dir='ltr'] {
+  text-align: right;
+}
+.contact-field .field-line input::placeholder {
+  font-size: 14px;
+  font-weight: 400;
+}
+.contact-field .field-line svg {
+  flex-shrink: 0;
+  width: 17.5px;
+  height: 17.5px;
+  margin-inline-start: 12px;
+  color: var(--blue-d);
+}
+.contact-form .form-error {
+  margin-block-start: 24px;
+}
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 17.5px;
+  margin-block-start: 34px;
+}
+.form-actions .button-primary {
+  min-height: 56px;
+}
+.form-cancel {
+  color: var(--ink2);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+@media (min-width: 1024px) {
+  .contact-panel.is-form {
+    padding: 0;
+  }
+  .contact-form {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+    align-self: stretch;
+    min-height: 0;
+    /* Offsets inside the panel's 1px border. */
+    padding: calc(27 * var(--u)) calc(55 * var(--d)) calc(33 * var(--u));
+    overflow: visible;
+  }
+  .form-circle,
+  .form-back {
+    display: none;
+  }
+  .form-mint {
+    inset-inline-start: auto;
+    inset-inline-end: calc(79 * var(--d));
+    top: calc(11.7 * var(--u));
+    width: calc(498.7 * var(--d));
+    height: calc(218.7 * var(--u));
+    border-start-start-radius: 43.7% 56.4%;
+    border-start-end-radius: 56.3% 51.8%;
+    border-end-start-radius: 54.2% 43.6%;
+    border-end-end-radius: 45.8% 48.2%;
+  }
+  .form-close {
+    position: absolute;
+    top: calc(27 * var(--u));
+    inset-inline-end: calc(39 * var(--d));
+    display: flex;
+    width: calc(44 * var(--u));
+    height: calc(44 * var(--u));
+    color: var(--ink2);
+  }
+  .form-close svg {
+    width: calc(18.5 * var(--u));
+    height: calc(18.5 * var(--u));
+  }
+  .form-title {
+    margin-block-start: calc(5 * var(--u));
+    margin-inline-start: calc(-14.7 * var(--d));
+    font-size: calc(24 * var(--u));
+    text-align: start;
+  }
+  .contact-form form {
+    flex: 1;
+  }
+  .photo-field {
+    width: calc(124 * var(--u));
+    margin-block-start: calc(16 * var(--u));
+  }
+  .photo-add {
+    gap: calc(3 * var(--u));
+    width: calc(124 * var(--u));
+    height: calc(124 * var(--u));
+    padding-block-start: calc(32.4 * var(--u));
+    font-size: calc(12 * var(--u));
+  }
+  .photo-add::before {
+    mask: radial-gradient(
+      farthest-side,
+      transparent calc(100% - 3 * var(--u)),
+      #000 calc(100% - 2.5 * var(--u))
+    );
+  }
+  .photo-add svg {
+    width: calc(36.5 * var(--u));
+    height: calc(36.5 * var(--u));
+  }
+  .photo-current .avatar-xl {
+    width: calc(124 * var(--u));
+    height: calc(124 * var(--u));
+    font-size: calc(48 * var(--u));
+    box-shadow:
+      0 0 0 calc(6 * var(--u)) var(--avatar-ring),
+      var(--photo-shadow);
+  }
+  .photo-change {
+    width: calc(37.5 * var(--u));
+    height: calc(37.5 * var(--u));
+  }
+  .photo-change svg {
+    width: calc(18 * var(--u));
+    height: calc(18 * var(--u));
+  }
+  .photo-remove {
+    top: calc(100% + 8 * var(--u));
+    font-size: calc(12 * var(--u));
+  }
+  .form-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: calc(22.7 * var(--u)) calc(44 * var(--d));
+    margin-block-start: calc(49.8 * var(--u));
+  }
+  .contact-field label {
+    gap: calc(8.5 * var(--u));
+    padding-block-start: calc(4.5 * var(--u));
+    font-size: calc(15 * var(--u));
+  }
+  .optional-chip {
+    padding-inline: calc(9.25 * var(--u));
+    font-size: calc(11 * var(--u));
+    line-height: calc(17.3 * var(--u));
+  }
+  .contact-field .field-line input {
+    padding: calc(5.5 * var(--u)) 0;
+    font-size: calc(16 * var(--u));
+  }
+  .contact-field .field-line input::placeholder {
+    font-size: calc(14 * var(--u));
+  }
+  .contact-field .field-line svg {
+    width: calc(16.5 * var(--u));
+    height: calc(16.5 * var(--u));
+  }
+  .form-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: calc(27.3 * var(--u));
+    margin-block-start: auto;
+    padding-block-start: calc(28 * var(--u));
+  }
+  .form-actions .button-primary {
+    min-width: calc(220 * var(--u));
+    min-height: calc(56 * var(--u));
+    font-size: calc(18 * var(--u));
+  }
+  .form-cancel {
+    margin-block-start: calc(3.8 * var(--u));
+    font-size: calc(15 * var(--u));
   }
 }
 @media (prefers-reduced-motion: reduce) {

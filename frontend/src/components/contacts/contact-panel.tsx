@@ -11,10 +11,14 @@ import { CallLink, ShareButton, SmsLink } from './contact-actions';
 export function ContactPanel({
   contact,
   duplicates,
+  onNew,
+  onEdit,
   onDelete,
 }: {
   contact: Contact | null;
   duplicates: number;
+  onNew: () => void;
+  onEdit: (contact: Contact) => void;
   onDelete: (contact: Contact) => void;
 }) {
   const t = useTranslations('Contacts');
@@ -80,6 +84,10 @@ export function ContactPanel({
               href={`/contacts/${contact.id}/edit`}
               prefetch={false}
               className="button-primary"
+              onClick={(event) => {
+                event.preventDefault();
+                onEdit(contact);
+              }}
             >
               <Icon name="edit" />
               {t('editContact')}
@@ -106,6 +114,10 @@ export function ContactPanel({
               href="/contacts/new"
               prefetch={false}
               className="button-primary"
+              onClick={(event) => {
+                event.preventDefault();
+                onNew();
+              }}
             >
               <Icon name="plus" />
               {t('addContact')}
