@@ -10,7 +10,12 @@ export const getUser = cache(async () => {
   const response = await backendFetch('auth/me', cookie);
   if (response.status === 401) return null;
   if (!response.ok) throw new Error('Authentication service unavailable');
-  return (await response.json()).user as { id: string; email: string };
+  return (await response.json()).user as {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
 });
 export async function requireUser() {
   const user = await getUser();

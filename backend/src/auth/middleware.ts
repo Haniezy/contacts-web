@@ -7,7 +7,7 @@ import { cookieName, verifyToken } from './tokens.js';
 
 export interface AuthPrincipal {
   sessionId: string;
-  user: { id: string; email: string };
+  user: { id: string; email: string; firstName: string; lastName: string };
 }
 
 export function requireAuth(
@@ -35,7 +35,15 @@ export function requireAuth(
         userId: true,
         expiresAt: true,
         twoFactorVerified: true,
-        user: { select: { id: true, email: true, twoFactorEnabled: true } },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            twoFactorEnabled: true,
+          },
+        },
       },
     });
     if (
@@ -48,7 +56,12 @@ export function requireAuth(
     }
     response.locals.auth = {
       sessionId: claims.jti,
-      user: { id: session.user.id, email: session.user.email },
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
+      },
     } satisfies AuthPrincipal;
     next();
   };

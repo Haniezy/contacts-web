@@ -100,7 +100,7 @@ test('auth HTTP lifecycle against PostgreSQL', async (t) => {
         const response = await getMe();
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), {
-          user: { id: userId, email },
+          user: { id: userId, email, firstName: '', lastName: '' },
         });
       },
     );
