@@ -104,14 +104,14 @@ test('duplicates are counted in the menu and the empty panel', async ({
 }) => {
   await page.goto('/contacts');
   if (!isMobile)
-    await expect(page.getByText('۲ مخاطب تکراری پیدا شد')).toBeVisible();
+    await expect(page.getByText('۱ گروه تکراری پیدا شد')).toBeVisible();
   await page
     .getByRole('button', { name: isMobile ? 'منو' : 'حساب کاربری' })
     .click();
   const menu = page.getByRole('dialog', { name: 'منو' });
   await expect(
     menu.getByRole('link', { name: /ادغام تکراری‌ها/ }),
-  ).toContainText('۲');
+  ).toContainText('۱');
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
 });

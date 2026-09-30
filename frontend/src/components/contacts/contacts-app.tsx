@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api, ApiError } from '@/lib/api';
 import {
-  countDuplicates,
+  duplicateCountPath,
   groupByInitial,
   pageSize,
   type Contact,
   type ContactPage,
+  type DuplicatePage,
 } from '@/lib/contacts';
 import { Icon } from '@/components/icon';
 import { ThemeSwitch } from '@/components/preferences/theme-switch';
@@ -131,14 +132,9 @@ export function ContactsApp({
 
   const refreshDuplicates = useCallback(async () => {
     try {
-      const results = await Promise.all(
-        (['phone', 'name'] as const).map((by) =>
-          api<Parameters<typeof countDuplicates>[0][number]>(
-            `contacts/duplicates?by=${by}&pageSize=100`,
-          ),
-        ),
+      setDuplicates(
+        (await api<DuplicatePage>(duplicateCountPath)).pagination.total,
       );
-      setDuplicates(countDuplicates(results));
     } catch {
       // The badge keeps its previous value; the list is already correct.
     }

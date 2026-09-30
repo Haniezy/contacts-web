@@ -128,7 +128,7 @@
     "addContact": "New contact",
     "selectTitle": "Select a contact",
     "selectHelp": "Click any contact to see their details, or create a new one.",
-    "duplicatesFound": "{count, plural, one {# duplicate contact found} other {# duplicate contacts found}}",
+    "duplicatesFound": "{count, plural, one {# duplicate group found} other {# duplicate groups found}}",
     "duplicatesHelp": "You can merge them together",
     "review": "Review",
     "birthday": "Birthday",
@@ -170,5 +170,27 @@
     "photoUnavailable": "Photo storage is unavailable right now; the contact was saved without a photo.",
     "saveFailed": "Couldn't save. Please try again.",
     "notFound": "This contact wasn't found."
+  },
+  "Duplicates": {
+    "title": "Duplicate contacts",
+    "summary": "{count, plural, one {# group} other {# groups}} may be the same person",
+    "summaryHint": "review and decide",
+    "empty": "No duplicate contacts found.",
+    "review": "Review and merge",
+    "ignore": "Ignore",
+    "ignoreFailed": "Couldn't ignore this group. Try again.",
+    "mergeTitle": "Merge contact",
+    "versions": "{count, plural, one {# version} other {# versions}} of this contact found",
+    "name": "Name",
+    "phone": "Phone number",
+    "birthday": "Birthday",
+    "reminder": "Reminder",
+    "notSet": "Not set",
+    "merge": "Merge",
+    "merging": "Merging…",
+    "mergeFailed": "Couldn't merge. Try again.",
+    "changed": "These contacts have changed. Reopen the list.",
+    "cancel": "Cancel",
+    "back": "Back"
   }
 }

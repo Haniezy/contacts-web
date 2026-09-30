@@ -2758,13 +2758,547 @@ button:disabled {
     font-size: calc(15 * var(--u));
   }
 }
+/* Duplicates: a standalone page (390 artboard on mobile, 1280×800 desktop)
+   and the merge view, a full page on mobile and a modal on desktop. */
+.duplicates-page .sphere,
+.duplicates-icon,
+.merge-count {
+  display: none;
+}
+.duplicates-header {
+  position: relative;
+  padding: 63px 20px 0;
+  text-align: center;
+}
+.duplicates-back {
+  position: absolute;
+  top: 54px;
+  inset-inline-start: 20px;
+  width: 48px;
+  height: 48px;
+}
+.duplicates-back svg,
+.merge-back svg {
+  width: 20px;
+  height: 20px;
+}
+.duplicates-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.duplicates-main {
+  padding: 0 20px;
+}
+.duplicates-summary {
+  margin-block-start: 27px;
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.duplicate-groups {
+  display: grid;
+  gap: 24px;
+  margin-block-start: 14.5px;
+}
+.duplicate-card {
+  padding: 16px 15px 15px;
+  border: 1px solid var(--row-border);
+  border-radius: 24px;
+  background: var(--row);
+  box-shadow: var(--row-shadow);
+}
+.duplicate-members {
+  display: flex;
+  flex-direction: column;
+}
+.duplicate-member {
+  display: flex;
+  align-items: center;
+  gap: 13.5px;
+  min-width: 0;
+}
+.duplicate-member .avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+.duplicate-member > div {
+  min-width: 0;
+}
+.member-name {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.member-phone {
+  color: var(--ink2);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: end;
+}
+[dir='ltr'] .member-phone {
+  text-align: start;
+}
+/* Merge mark between two versions: a line broken by the people icon. */
+.duplicate-link {
+  display: flex;
+  align-items: center;
+  gap: 11.5px;
+  height: 41px;
+  color: var(--ink2);
+}
+.duplicate-link::before,
+.duplicate-link::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.duplicate-link svg {
+  width: 16px;
+  height: 16px;
+}
+.duplicate-card .form-error {
+  margin-block-start: 12px;
+}
+.duplicate-actions {
+  display: grid;
+  grid-template-columns: 241px 1fr;
+  align-items: center;
+  margin-block-start: 14px;
+}
+.duplicate-actions .button-primary {
+  gap: 10px;
+  min-height: 44px;
+  padding-inline: 16px;
+  font-size: 14px;
+}
+.duplicate-actions .button-primary svg {
+  display: none;
+}
+.duplicate-ignore {
+  justify-self: end;
+  margin-inline-end: 6px;
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.duplicate-ignore:disabled {
+  opacity: 0.6;
+}
+
+.merge-dialog {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(135deg, var(--page-start), var(--page-end));
+  color: var(--ink);
+}
+.merge-dialog::backdrop {
+  background: transparent;
+}
+/* The page behind a modal must not scroll. */
+html:has(.merge-dialog[open]) {
+  overflow: hidden;
+}
+.merge-sheet {
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
+  padding: 54px 26px 32px;
+  overflow: clip;
+}
+.merge-decor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.merge-back {
+  position: absolute;
+  top: 54px;
+  inset-inline-start: 20px;
+  width: 48px;
+  height: 48px;
+}
+.merge-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.merge-head h2 {
+  margin-block-start: 9px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.merge-avatar {
+  width: 88px;
+  height: 88px;
+  margin-block-start: 19px;
+  font-size: 36px;
+  box-shadow:
+    0 0 0 6px var(--avatar-ring),
+    var(--photo-shadow);
+}
+.merge-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.merge-field legend {
+  padding: 0;
+  color: var(--slate-d);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.merge-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12.5px;
+  margin-block-start: 9px;
+}
+.merge-option {
+  display: flex;
+  align-items: center;
+  gap: 11.5px;
+  min-width: 0;
+  height: 50px;
+  padding-inline: 14px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+/* Long values (such as +98 numbers) wrap to a second line instead of
+   hiding digits. */
+.merge-option bdi {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+[dir='rtl'] .merge-option bdi[dir='ltr'] {
+  text-align: right;
+}
+.merge-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.merge-option:has(:checked) {
+  border-color: var(--mint-t);
+  background: var(--mint);
+}
+.merge-option:has(:focus-visible) {
+  outline: 2px solid var(--sky-d);
+  outline-offset: 2px;
+}
+.merge-check {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  color: var(--chip);
+}
+.merge-check svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.4;
+  visibility: hidden;
+}
+.merge-option:has(:checked) .merge-check {
+  border: 0;
+  background: var(--mint-t);
+}
+.merge-option:has(:checked) .merge-check svg {
+  visibility: visible;
+}
+.merge-sheet form {
+  display: grid;
+  gap: 23.5px;
+  margin-block-start: 21px;
+}
+.merge-sheet .form-error {
+  margin: 0;
+}
+.merge-actions {
+  display: grid;
+  gap: 16px;
+  margin-block-start: -1.5px;
+}
+.merge-actions .button-primary {
+  gap: 16px;
+  min-height: 56px;
+}
+.merge-actions svg {
+  width: 20px;
+  height: 20px;
+}
+.merge-cancel {
+  color: var(--ink2);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+@media (min-width: 1024px) {
+  .duplicates-page {
+    grid-template-rows: calc(84.67 * var(--d)) minmax(0, 1fr);
+  }
+  .duplicates-page .sphere {
+    display: block;
+  }
+  .duplicates-page .sphere-1 {
+    inset-inline-end: calc(600 * var(--d));
+    top: calc(126 * var(--d));
+    width: calc(25.3 * var(--u));
+  }
+  .duplicates-page .sphere-2 {
+    inset-inline-end: calc(470 * var(--d));
+    top: calc(690 * var(--d));
+    width: calc(17.3 * var(--u));
+  }
+  .duplicates-header {
+    display: flex;
+    align-items: center;
+    gap: calc(13.4 * var(--u));
+    padding: 0 calc(44 * var(--d));
+    text-align: start;
+  }
+  .duplicates-back {
+    top: calc(18 * var(--d));
+    inset-inline: auto calc(44 * var(--d));
+    width: calc(47.3 * var(--u));
+    height: calc(47.3 * var(--u));
+  }
+  .duplicates-back svg {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+  }
+  .duplicates-icon {
+    display: grid;
+    place-items: center;
+    width: calc(38.6 * var(--u));
+    height: calc(46 * var(--u));
+    border-radius: calc(14 * var(--u));
+    background: var(--mint);
+    color: var(--mint-t);
+  }
+  .duplicates-icon svg {
+    width: calc(24 * var(--u));
+    height: calc(24 * var(--u));
+  }
+  /* The mockup sets the title one word per line beside the icon. */
+  .duplicates-header h1 {
+    width: min-content;
+    font-size: calc(22 * var(--u));
+    line-height: 1.57;
+  }
+  .duplicates-main {
+    overflow-y: auto;
+    padding: 0 calc(260 * var(--d)) calc(40 * var(--d));
+    scrollbar-width: thin;
+  }
+  .duplicates-summary {
+    margin-block-start: calc(47.6 * var(--d));
+    font-size: calc(14 * var(--u));
+  }
+  .duplicate-groups {
+    gap: calc(28 * var(--d));
+    margin-block-start: calc(19.5 * var(--d));
+  }
+  .duplicate-card {
+    padding: calc(19 * var(--u)) calc(21.7 * var(--d)) calc(19 * var(--u));
+    border-radius: calc(28 * var(--u));
+  }
+  .duplicate-members {
+    flex-direction: row;
+    align-items: center;
+  }
+  .duplicate-member {
+    flex: 1 1 0;
+    gap: calc(13.3 * var(--u));
+  }
+  .duplicate-member .avatar {
+    width: calc(48 * var(--u));
+    height: calc(48 * var(--u));
+    font-size: calc(17 * var(--u));
+  }
+  .member-name {
+    font-size: calc(17 * var(--u));
+  }
+  .member-phone {
+    font-size: calc(12 * var(--u));
+  }
+  .duplicate-link {
+    flex-direction: column;
+    gap: calc(4 * var(--u));
+    width: calc(54.7 * var(--d));
+    height: calc(61.3 * var(--u));
+  }
+  .duplicate-link::before,
+  .duplicate-link::after {
+    width: 1px;
+    height: auto;
+  }
+  .duplicate-link svg {
+    width: calc(16 * var(--u));
+    height: calc(16 * var(--u));
+  }
+  .duplicate-actions {
+    display: flex;
+    justify-content: center;
+    gap: calc(15.3 * var(--u));
+    margin-block-start: calc(20.7 * var(--u));
+  }
+  .duplicate-actions .button-primary {
+    min-width: calc(200 * var(--u));
+    min-height: calc(49.3 * var(--u));
+    gap: calc(12 * var(--u));
+    font-size: calc(15 * var(--u));
+  }
+  .duplicate-actions .button-primary svg {
+    display: block;
+    width: calc(18 * var(--u));
+    height: calc(18 * var(--u));
+  }
+  .duplicate-ignore {
+    margin: 0;
+    font-size: calc(14 * var(--u));
+  }
+
+  .merge-dialog {
+    --d: min(100vw / 1280, 1.5px);
+    --u: max(var(--d), 1px);
+    width: calc(560 * var(--u));
+    height: fit-content;
+    max-height: calc(100dvh - 32px);
+    /* The mockup sits the card slightly above the vertical centre. */
+    inset-block: 0 calc(34 * var(--u));
+    margin: auto;
+    overflow-y: auto;
+    border-radius: calc(32 * var(--u));
+    background: var(--sheet);
+    box-shadow: 0 30px 60px rgb(40 60 80 / 18%);
+  }
+  .merge-dialog::backdrop {
+    background: var(--scrim);
+    backdrop-filter: blur(8px);
+  }
+  .merge-dialog[open] {
+    animation: dialog-in 200ms ease-out;
+  }
+  .merge-sheet {
+    min-height: 0;
+    padding: calc(34 * var(--u)) calc(34.4 * var(--u)) calc(28.7 * var(--u));
+  }
+  .merge-decor,
+  .merge-back {
+    display: none;
+  }
+  .merge-head {
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: calc(18 * var(--u));
+    text-align: start;
+  }
+  .merge-head > div {
+    margin-block-start: calc(9.3 * var(--u));
+  }
+  .merge-head h2 {
+    margin: 0;
+    font-size: calc(19 * var(--u));
+  }
+  .merge-count {
+    display: block;
+    margin-block-start: calc(1.9 * var(--u));
+    color: var(--ink2);
+    font-size: calc(13 * var(--u));
+    line-height: 1.5;
+  }
+  .merge-avatar {
+    width: calc(64 * var(--u));
+    height: calc(64 * var(--u));
+    margin: 0;
+    font-size: calc(26 * var(--u));
+    box-shadow:
+      0 0 0 calc(4 * var(--u)) var(--avatar-ring),
+      var(--photo-shadow);
+  }
+  .merge-sheet form {
+    gap: calc(23.5 * var(--u));
+    margin-block-start: calc(25.5 * var(--u));
+  }
+  .merge-field legend {
+    font-size: calc(13 * var(--u));
+  }
+  .merge-options {
+    gap: calc(12.7 * var(--u));
+    margin-block-start: calc(9 * var(--u));
+  }
+  .merge-option {
+    gap: calc(11.5 * var(--u));
+    height: calc(50 * var(--u));
+    padding-inline: calc(14 * var(--u));
+    border-radius: calc(16 * var(--u));
+    font-size: calc(14 * var(--u));
+  }
+  .merge-check {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+  }
+  .merge-check svg {
+    width: calc(13 * var(--u));
+    height: calc(13 * var(--u));
+  }
+  .merge-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: calc(12.7 * var(--u));
+  }
+  .merge-actions .button-primary {
+    gap: calc(12 * var(--u));
+    min-height: calc(51.3 * var(--u));
+    padding-inline: calc(16 * var(--u));
+    font-size: calc(16 * var(--u));
+  }
+  .merge-actions svg {
+    width: calc(18 * var(--u));
+    height: calc(18 * var(--u));
+  }
+  .merge-cancel {
+    border-radius: 999px;
+    background: var(--mint);
+    color: var(--mint-t);
+    font-size: calc(16 * var(--u));
+    font-weight: 700;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .row-actions,
   .row-actions > div,
   .row-toggle svg,
   .contact-row,
   .account-menu[open],
-  .delete-dialog[open] {
+  .delete-dialog[open],
+  .merge-dialog[open] {
     animation: none;
     transition: none;
   }

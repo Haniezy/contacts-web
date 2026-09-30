@@ -11,6 +11,8 @@ const routes: [RegExp, Record<string, Body | null>][] = [
   [/^auth\/2fa\/(setup|confirm|verify)$/, { POST: 'json' }],
   [/^contacts$/, { GET: null, POST: 'json' }],
   [/^contacts\/duplicates$/, { GET: null }],
+  [/^contacts\/duplicates\/ignore$/, { POST: 'json' }],
+  [/^contacts\/merge$/, { POST: 'json' }],
   [
     new RegExp(`^contacts/${uuid}$`, 'i'),
     { GET: null, PATCH: 'json', DELETE: null },

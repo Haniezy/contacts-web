@@ -4,10 +4,11 @@ import { notFound, redirect } from 'next/navigation';
 import { requireUser } from '@/lib/session';
 import { backendFetch } from '@/lib/backend';
 import {
-  countDuplicates,
+  duplicateCountPath,
   pageSize,
   type Contact,
   type ContactPage,
+  type DuplicatePage,
 } from '@/lib/contacts';
 import {
   ContactsApp,
@@ -24,10 +25,9 @@ export async function ContactsView({
   const user = await requireUser();
   const cookie = (await cookies()).toString();
   // First page, duplicate counts and the edited contact load in parallel.
-  const [list, byPhone, byName, edited] = await Promise.all([
+  const [list, duplicateList, edited] = await Promise.all([
     backendFetch(`contacts?page=1&pageSize=${pageSize}`, cookie),
-    backendFetch('contacts/duplicates?by=phone&pageSize=100', cookie),
-    backendFetch('contacts/duplicates?by=name&pageSize=100', cookie),
+    backendFetch(duplicateCountPath, cookie),
     form?.mode === 'edit'
       ? backendFetch(`contacts/${encodeURIComponent(form.id)}`, cookie)
       : null,
@@ -36,10 +36,9 @@ export async function ContactsView({
   if (edited && (edited.status === 404 || edited.status === 400)) notFound();
   if (edited && !edited.ok) throw new Error('Contacts service unavailable');
   const initial = list.ok ? ((await list.json()) as ContactPage) : null;
-  const duplicates =
-    byPhone.ok && byName.ok
-      ? countDuplicates(await Promise.all([byPhone.json(), byName.json()]))
-      : 0;
+  const duplicates = duplicateList.ok
+    ? ((await duplicateList.json()) as DuplicatePage).pagination.total
+    : 0;
   const initialForm: FormState | null = edited
     ? {
         mode: 'edit',
