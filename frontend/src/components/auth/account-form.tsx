@@ -28,7 +28,7 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
     const invalid: Record<string, string> = {};
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
       invalid.email = e('email');
-    if (!password || password.length > 128 || (signup && password.length < 12))
+    if (!password || password.length > 128 || (signup && password.length < 8))
       invalid.password = e(signup ? 'password' : 'required');
     if (signup) {
       if (!firstName || firstName.length > 100) invalid.firstName = e('name');

@@ -32,7 +32,7 @@ const email = z.string().trim().toLowerCase().pipe(z.email().max(254));
 const signupBody = z
   .object({
     email,
-    password: z.string().min(12).max(128),
+    password: z.string().min(8).max(128),
     firstName: z.string().trim().min(1).max(100).optional(),
     lastName: z.string().trim().min(1).max(100).optional(),
   })

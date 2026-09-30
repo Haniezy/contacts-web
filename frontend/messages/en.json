@@ -34,7 +34,7 @@
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm password",
-    "passwordHint": "At least 12 characters",
+    "passwordHint": "At least 8 characters",
     "confirmHint": "Enter your password again",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
@@ -74,7 +74,7 @@
   },
   "Errors": {
     "email": "Enter a valid email address.",
-    "password": "Use between 12 and 128 characters.",
+    "password": "Use between 8 and 128 characters.",
     "required": "Fill in this field.",
     "name": "Use between 1 and 100 characters.",
     "mismatch": "The passwords do not match.",
