@@ -12,7 +12,7 @@ Next.js App Router موجود حفظ شده و Tailwind با پلاگین PostCS
 - تغییر زبان با Server Action در کوکی `contacts-locale` با عمر یک سال، HttpOnly و SameSite=Lax ذخیره می‌شود. در HTTPS کوکی Secure است. فقط `fa` و `en` پذیرفته می‌شوند.
 - سرور از همان کوکی، `lang` و `dir` روی HTML و عنوان صفحه را تولید می‌کند. مقدار کوکی نامعتبر به فارسی برمی‌گردد.
 - برای نمایش اعداد در اجزای بعدی از `useFormatter().number(value)` در next-intl استفاده شود؛ زبان فارسی به‌صورت پیش‌فرض ارقام فارسی تولید می‌کند. داده مخاطبین و شماره مورد استفاده در تماس یا API تغییر نمی‌کند.
-- اجزای `ThemeSwitch` و `LanguageSwitch` مستقل و قابل استفاده در هدر دسکتاپ و منوی موبایل هستند. در این فاز برای بررسی روی صفحه موقت موجود نمایش داده شده‌اند؛ منوی کامل و صفحات محصول هنوز ساخته نشده‌اند.
+- اجزای `ThemeSwitch` و `LanguageSwitch` مستقل و قابل استفاده در هدر دسکتاپ و منوی موبایل هستند. در فاز ۵ روی صفحه موقت قرار داشتند؛ از فاز ۶ روی مقصد محافظت‌شده مخاطبین هستند و منوی کامل در فاز مربوط تکمیل می‌شود.
 
 ## رفتار تأییدشده سوییچ‌ها
 
@@ -23,6 +23,8 @@ Next.js App Router موجود حفظ شده و Tailwind با پلاگین PostCS
 ## بررسی
 
 ```bash
+# از فاز ۶ برای تست مرورگر، DATABASE_TEST_URL باید در محیط تنظیم باشد.
+npm --prefix backend run build
 npm --prefix frontend run lint
 npm --prefix frontend run typecheck
 npm --prefix frontend run build

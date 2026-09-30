@@ -1,4 +1,17 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
+
+test.beforeEach(async ({ context, account }) => {
+  await context.addCookies([
+    {
+      name: 'contacts_session',
+      value: account.token,
+      domain: '127.0.0.1',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+});
 
 test('theme and language persist, retain physical knob positions and translate the document', async ({
   page,
@@ -8,15 +21,13 @@ test('theme and language persist, retain physical knob positions and translate t
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
   });
-  await page.goto('/');
+  await page.goto('/contacts');
   const html = page.locator('html');
   const toggle = page.getByRole('switch');
   await expect(html).toHaveAttribute('lang', 'fa');
   await expect(html).toHaveAttribute('dir', 'rtl');
   await expect(html).toHaveAttribute('data-theme', 'light');
-  await expect(
-    page.getByRole('heading', { name: 'دفترچه تلفن' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'مخاطبین' })).toBeVisible();
   await expect(toggle).toBeEnabled();
   await expect(page.locator('.theme-knob')).toHaveCSS(
     'transform',
@@ -84,7 +95,7 @@ test('cookie renders correct language on the server; invalid values fall back to
 
 test('keyboard controls and reduced motion work', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/');
+  await page.goto('/contacts');
   const toggle = page.getByRole('switch');
   await expect(toggle).toBeEnabled();
   await toggle.focus();
