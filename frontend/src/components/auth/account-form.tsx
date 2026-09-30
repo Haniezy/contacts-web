@@ -39,8 +39,12 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
     setFields(invalid);
     setError('');
     if (Object.keys(invalid).length) {
-      form
-        .querySelector<HTMLInputElement>(`[name="${Object.keys(invalid)[0]}"]`)
+      // Focus the first invalid field in visual order.
+      [...form.elements]
+        .find(
+          (el): el is HTMLInputElement =>
+            el instanceof HTMLInputElement && el.name in invalid,
+        )
         ?.focus();
       return;
     }
@@ -72,9 +76,10 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
     <>
       <h1>{t(signup ? 'signup' : 'login')}</h1>
       <form
+        method="post"
         onSubmit={submit}
         noValidate
-        className="account-form"
+        className={`account-form${signup ? ' is-signup' : ''}`}
         aria-busy={busy}
       >
         {signup && (

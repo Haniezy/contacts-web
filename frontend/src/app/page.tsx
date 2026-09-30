@@ -7,9 +7,13 @@ export default function Home() {
   const a = useTranslations('Auth');
   return (
     <main className="landing">
-      <div className="landing-blob" aria-hidden="true" />
-      <span className="auth-sphere landing-sphere-one" aria-hidden="true" />
-      <span className="auth-sphere landing-sphere-two" aria-hidden="true" />
+      <div className="landing-decor" aria-hidden="true">
+        <span className="landing-circle" />
+        <span className="landing-mint" />
+        <span className="sphere sphere-1" />
+        <span className="sphere sphere-2" />
+        <span className="sphere sphere-3" />
+      </div>
       <div className="landing-copy">
         <p className="landing-logo">
           <span>

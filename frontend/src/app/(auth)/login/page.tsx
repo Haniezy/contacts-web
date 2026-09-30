@@ -5,7 +5,7 @@ import { AccountForm } from '@/components/auth/account-form';
 export default async function Login() {
   if (await getUser()) redirect('/contacts');
   return (
-    <AuthShell>
+    <AuthShell variant="login">
       <AccountForm />
     </AuthShell>
   );

@@ -5,7 +5,7 @@ import { AccountForm } from '@/components/auth/account-form';
 export default async function Signup() {
   if (await getUser()) redirect('/contacts');
   return (
-    <AuthShell>
+    <AuthShell variant="signup">
       <AccountForm signup />
     </AuthShell>
   );

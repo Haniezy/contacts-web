@@ -60,7 +60,7 @@ export function VerifyForm() {
       <p className="auth-description">
         {t(recovery ? 'recoveryHelp' : 'verifyHelp')}
       </p>
-      <form onSubmit={submit} aria-busy={busy}>
+      <form method="post" onSubmit={submit} aria-busy={busy}>
         {recovery ? (
           <Field
             name="recoveryCode"

@@ -19,7 +19,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
     await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
     await expect(page).toHaveURL(/\/2fa\/setup$/);
     await expect(
-      page.getByAltText('کد QR راه‌اندازی تأیید دو مرحله‌ای'),
+      page.getByAltText('کد QR راه‌اندازی تایید دو مرحله‌ای'),
     ).toBeVisible();
     const secret = (
       await page.locator('.secret-code code').innerText()
@@ -34,7 +34,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .getByRole('textbox', { name: 'رقم ۱', exact: true })
       .fill(code.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]));
     await page
-      .getByRole('button', { name: 'تأیید و فعال‌سازی', exact: true })
+      .getByRole('button', { name: 'تایید و فعال‌سازی', exact: true })
       .click();
     await expect(page.locator('.recovery-codes li')).toHaveCount(10);
     const recovery = await page
@@ -67,7 +67,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .getByRole('textbox', { name: 'رقم ۱', exact: true })
       .fill(invalid);
     await page
-      .getByRole('button', { name: 'تأیید و ورود', exact: true })
+      .getByRole('button', { name: 'تایید و ورود', exact: true })
       .click();
     await expect(page.getByRole('alert')).toBeVisible();
     expect((await page.request.get('/api/contacts')).status()).toBe(401);
@@ -76,7 +76,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .getByRole('textbox', { name: 'رقم ۱', exact: true })
       .fill(nextCode);
     await page
-      .getByRole('button', { name: 'تأیید و ورود', exact: true })
+      .getByRole('button', { name: 'تایید و ورود', exact: true })
       .click();
     await expect(page).toHaveURL(/\/contacts$/);
     await page.getByRole('button', { name: 'خروج', exact: true }).click();
@@ -90,7 +90,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .click();
     await page.getByLabel('کد بازیابی', { exact: true }).fill(recovery);
     await page
-      .getByRole('button', { name: 'تأیید و ورود', exact: true })
+      .getByRole('button', { name: 'تایید و ورود', exact: true })
       .click();
     await expect(page).toHaveURL(/\/contacts$/);
     await page.reload();

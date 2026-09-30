@@ -148,18 +148,30 @@ export function SetupForm() {
       >
         <Icon name="back" className="directional-icon" />
       </Link>
-      <h1>{t(stage === 'code' ? 'verifyTitle' : 'setupTitle')}</h1>
+      <h1>
+        {stage === 'code' ? (
+          t('verifyTitle')
+        ) : (
+          <>
+            <span className="only-desktop">{t('setupTitle')}</span>
+            <span className="only-mobile">{t('setupTitleMobile')}</span>
+          </>
+        )}
+      </h1>
       <p className="auth-description">
-        {t(
-          stage === 'code'
-            ? 'verifyHelp'
-            : enrollment
-              ? 'setupHelp'
-              : 'setupPasswordHelp',
+        {stage === 'code' ? (
+          t('verifyHelp')
+        ) : enrollment ? (
+          <>
+            <span className="only-desktop">{t('setupHelp')}</span>
+            <span className="only-mobile">{t('setupHelpMobile')}</span>
+          </>
+        ) : (
+          t('setupPasswordHelp')
         )}
       </p>
       {!enrollment ? (
-        <form onSubmit={setup} aria-busy={busy}>
+        <form method="post" onSubmit={setup} aria-busy={busy}>
           <Field
             name="setupPassword"
             label={t('password')}
@@ -182,17 +194,19 @@ export function SetupForm() {
       ) : stage === 'qr' ? (
         <>
           <div className="qr-layout">
-            <Image
-              className="qr-image"
-              src={enrollment.qrCodeDataUrl}
-              width={224}
-              height={224}
-              alt={t('qrAlt')}
-              unoptimized
-            />
-            <div>
-              <p className="text-ink2">{t('manualCode')}</p>
+            <div className="qr-card">
+              <Image
+                src={enrollment.qrCodeDataUrl}
+                width={190}
+                height={190}
+                alt={t('qrAlt')}
+                unoptimized
+              />
+            </div>
+            <div className="qr-manual">
+              <p className="manual-label">{t('manualCode')}</p>
               <button
+                type="button"
                 className="secret-code"
                 onClick={() => copy(enrollment.secret)}
                 aria-label={t('copySecret')}
@@ -202,7 +216,14 @@ export function SetupForm() {
                 </code>
                 <Icon name="copy" />
               </button>
-              <p aria-live="polite" className="text-link">
+              <button
+                type="button"
+                className="copy-code text-link only-desktop"
+                onClick={() => copy(enrollment.secret)}
+              >
+                {t(copied ? 'copied' : 'copyCode')}
+              </button>
+              <p aria-live="polite" className="copy-status only-mobile">
                 {copied ? t('copied') : ''}
               </p>
             </div>
@@ -228,7 +249,7 @@ export function SetupForm() {
           </div>
         </>
       ) : (
-        <form onSubmit={confirm} aria-busy={busy}>
+        <form method="post" onSubmit={confirm} aria-busy={busy}>
           <CodeInput value={code} onChange={setCode} invalid={!!error} />
           {error && (
             <p role="alert" className="form-error">
