@@ -17,6 +17,8 @@ import { MergeDialog } from './merge-dialog';
 
 const listPath = '/contacts/duplicates';
 const ids = (group: DuplicateGroup) => group.contacts.map((c) => c.id).join();
+// Phone and name groups share the list, so the kind is part of the key.
+const keyOf = (group: DuplicateGroup) => `${group.by}:${group.value}`;
 const mergePath = (group: DuplicateGroup) =>
   `${listPath}/merge?ids=${ids(group)}`;
 
@@ -75,7 +77,7 @@ export function DuplicatesApp({
           setGroups((current) => [
             ...current,
             ...next.groups.filter(
-              (g) => !current.some((o) => o.value === g.value),
+              (g) => !current.some((o) => keyOf(o) === keyOf(g)),
             ),
           ]);
           setTotal(next.pagination.total);
@@ -131,12 +133,40 @@ export function DuplicatesApp({
     setTotal((current) => Math.max(0, current - 1));
   }
 
+  // A merge can change other groups too (a contact in both a phone and a
+  // name group, or a new name or number), so the loaded pages are re-read.
+  async function reload() {
+    const pages = Math.max(
+      1,
+      Math.ceil(listed.current.length / duplicatePageSize),
+    );
+    try {
+      const results = await Promise.all(
+        Array.from({ length: pages }, (_, i) =>
+          api<DuplicatePage>(`${duplicatesPath}&page=${i + 1}`),
+        ),
+      );
+      const seen = new Set<string>();
+      setGroups(
+        results
+          .flatMap((r) => r.groups)
+          .filter((g) => !seen.has(keyOf(g)) && seen.add(keyOf(g))),
+      );
+      const last = results.at(-1)!.pagination;
+      setTotal(last.total);
+      setMore(pages < last.totalPages);
+    } catch {
+      // The list already shows the merge; other groups update on reload.
+    }
+  }
+
   async function ignore(group: DuplicateGroup) {
     if (busy) return;
-    setBusy(group.value);
+    setBusy(keyOf(group));
     setFailed(null);
     try {
       await api('contacts/duplicates/ignore', {
+        by: group.by,
         contactIds: group.contacts.map((c) => c.id),
       });
       drop(group);
@@ -148,7 +178,7 @@ export function DuplicatesApp({
         drop(group);
       else if (error instanceof ApiError && error.status === 401)
         router.replace('/login');
-      else setFailed(group.value);
+      else setFailed(keyOf(group));
     } finally {
       setBusy(null);
     }
@@ -190,7 +220,7 @@ export function DuplicatesApp({
         </p>
         <ul className="duplicate-groups">
           {groups.map((group) => (
-            <li key={group.value} className="duplicate-card">
+            <li key={keyOf(group)} className="duplicate-card">
               <div className="duplicate-members">
                 {group.contacts.map((contact, index) => (
                   <Fragment key={contact.id}>
@@ -213,7 +243,7 @@ export function DuplicatesApp({
                   </Fragment>
                 ))}
               </div>
-              {failed === group.value && (
+              {failed === keyOf(group) && (
                 <p role="alert" className="form-error">
                   {t('ignoreFailed')}
                 </p>
@@ -230,7 +260,7 @@ export function DuplicatesApp({
                 <button
                   type="button"
                   className="duplicate-ignore"
-                  disabled={busy === group.value}
+                  disabled={busy === keyOf(group)}
                   onClick={() => ignore(group)}
                 >
                   {t('ignore')}
@@ -253,6 +283,7 @@ export function DuplicatesApp({
           drop(group);
           stale.current = true;
           closeMerge();
+          void reload();
         }}
       />
     </div>

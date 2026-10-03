@@ -14,6 +14,9 @@ test.beforeEach(async ({ context, account }) => {
       { name: 'آرش محمدی', phone: '09121112233' },
       { name: 'آرش م', phone: '9121112233' },
       { name: 'پریسا احمدی', phone: '09125556677' },
+      // Same name (written differently), different numbers.
+      { name: 'سارا احمدی', phone: '09351110000' },
+      { name: 'سارا  احمدي', phone: '09361110000' },
     ],
   });
   await context.addCookies([
@@ -42,14 +45,14 @@ test('merging keeps one complete record with the chosen fields', async ({
   const link = page
     .getByRole('dialog', { name: 'منو' })
     .getByRole('link', { name: /ادغام تکراری‌ها/ });
-  // The badge counts groups.
-  await expect(link).toContainText('۲');
+  // The badge counts groups: two phone groups and one name group.
+  await expect(link).toContainText('۳');
   await link.click();
   await expect(page).toHaveURL(/\/contacts\/duplicates$/);
   await expect(
-    page.getByText('۲ گروه پیدا شد که ممکنه یک نفر باشن'),
+    page.getByText('۳ گروه پیدا شد که ممکنه یک نفر باشن'),
   ).toBeVisible();
-  await expect(page.locator('.duplicate-card')).toHaveCount(2);
+  await expect(page.locator('.duplicate-card')).toHaveCount(3);
 
   await card(page, 'بهار رضایی')
     .getByRole('button', { name: 'بررسی و ادغام' })
@@ -71,17 +74,17 @@ test('merging keeps one complete record with the chosen fields', async ({
 
   await expect(dialog).toBeHidden();
   await expect(page).toHaveURL(/\/contacts\/duplicates$/);
-  await expect(page.locator('.duplicate-card')).toHaveCount(1);
+  await expect(page.locator('.duplicate-card')).toHaveCount(2);
   await expect(
-    page.getByText('۱ گروه پیدا شد که ممکنه یک نفر باشن'),
+    page.getByText('۲ گروه پیدا شد که ممکنه یک نفر باشن'),
   ).toBeVisible();
 
   // The browser's back button must not show the contacts page from before.
   await page.goBack();
   await expect(page).toHaveURL(/\/contacts$/);
-  await expect(page.locator('.count-chip').first()).toHaveText('۴ نفر');
+  await expect(page.locator('.count-chip').first()).toHaveText('۶ نفر');
   if (!isMobile)
-    await expect(page.getByText('۱ گروه تکراری پیدا شد')).toBeVisible();
+    await expect(page.getByText('۲ گروه تکراری پیدا شد')).toBeVisible();
   await expect(page.getByRole('button', { name: 'بهار.ر نوری' })).toHaveCount(
     0,
   );
@@ -116,14 +119,14 @@ test('ignore hides a group; back, Escape and cancel leave the merge view', async
   await review.click();
   await dialog.getByRole('button', { name: 'انصراف' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator('.duplicate-card')).toHaveCount(2);
+  await expect(page.locator('.duplicate-card')).toHaveCount(3);
 
   await card(page, 'آرش محمدی')
     .getByRole('button', { name: 'نادیده بگیر' })
     .click();
-  await expect(page.locator('.duplicate-card')).toHaveCount(1);
+  await expect(page.locator('.duplicate-card')).toHaveCount(2);
   await page.reload();
-  await expect(page.locator('.duplicate-card')).toHaveCount(1);
+  await expect(page.locator('.duplicate-card')).toHaveCount(2);
   await expect(card(page, 'آرش محمدی')).toHaveCount(0);
 
   // A merge address for a group that no longer shows goes back to the list.
@@ -132,4 +135,29 @@ test('ignore hides a group; back, Escape and cancel leave the merge view', async
   );
   await expect(page).toHaveURL(/\/contacts\/duplicates$/);
   await expect(dialog).toBeHidden();
+});
+
+test('contacts with the same name merge too, keeping the chosen number', async ({
+  page,
+}) => {
+  await page.goto('/contacts/duplicates');
+  const group = card(page, '۰۹۳۵ ۱۱۱ ۰۰۰۰');
+  await expect(group).toContainText('۰۹۳۶ ۱۱۱ ۰۰۰۰');
+  await group.getByRole('button', { name: 'بررسی و ادغام' }).click();
+  const dialog = page.getByRole('dialog', { name: 'ادغام مخاطب' });
+  await dialog.locator('.merge-option', { hasText: 'سارا احمدی' }).click();
+  await dialog.locator('.merge-option', { hasText: '۰۹۳۶ ۱۱۱ ۰۰۰۰' }).click();
+  await dialog.getByRole('button', { name: 'ادغام نهایی' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('.duplicate-card')).toHaveCount(2);
+  await expect(card(page, '۰۹۳۵ ۱۱۱ ۰۰۰۰')).toHaveCount(0);
+
+  await page.goto('/contacts');
+  await expect(page.getByRole('button', { name: /^سارا/ })).toHaveCount(1);
+  await page.getByRole('button', { name: 'سارا احمدی' }).click();
+  const edit = page
+    .locator('.contact-row.is-open')
+    .getByRole('link', { name: 'ویرایش' });
+  await page.goto((await edit.getAttribute('href'))!);
+  await expect(page.getByLabel('شماره تلفن')).toHaveValue('۰۹۳۶ ۱۱۱ ۰۰۰۰');
 });

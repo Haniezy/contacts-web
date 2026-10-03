@@ -16,6 +16,7 @@ export type ContactPage = {
   };
 };
 export type DuplicateGroup = {
+  by: 'phone' | 'name';
   value: string;
   count: number;
   hasMore: boolean;
@@ -27,11 +28,12 @@ export type DuplicatePage = {
 };
 
 export const pageSize = 50;
-// Duplicates are contacts sharing a phone number (normalized by the API).
+// Duplicates are contacts sharing a phone number or a name (normalized by
+// the API); "all" lists phone groups first, each group once.
 export const duplicatePageSize = 100;
-export const duplicatesPath = `contacts/duplicates?by=phone&pageSize=${duplicatePageSize}`;
+export const duplicatesPath = `contacts/duplicates?by=all&pageSize=${duplicatePageSize}`;
 // The badge counts groups; the total comes with any page, so one is enough.
-export const duplicateCountPath = 'contacts/duplicates?by=phone&pageSize=1';
+export const duplicateCountPath = 'contacts/duplicates?by=all&pageSize=1';
 
 export function initial(name: string) {
   const first = [...name.trim()][0] ?? '#';
