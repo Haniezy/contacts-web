@@ -403,7 +403,13 @@ export function ContactForm({
           </p>
         )}
         <div className="form-actions">
-          <button className="button-primary" disabled={busy}>
+          <button
+            className="button-primary"
+            disabled={busy}
+            // Keep focus in the field: its blur error would move this
+            // button away mid-click. Submitting validates every field.
+            onMouseDown={(event) => event.preventDefault()}
+          >
             {t(busy ? 'saving' : mode === 'new' ? 'saveNew' : 'saveEdit')}
           </button>
           <button type="button" className="form-cancel" onClick={onClose}>
