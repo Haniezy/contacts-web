@@ -27,6 +27,13 @@ export function ContactDetails({ contact }: { contact: Contact }) {
         <span className="sphere sphere-1" />
         <span className="sphere sphere-2" />
       </div>
+      {/* The phone layout has the form's circle and mint shape instead. */}
+      <div className="details-decor" aria-hidden="true">
+        <span className="form-circle" />
+        <span className="form-mint" />
+        <span className="sphere sphere-1" />
+        <span className="sphere sphere-2" />
+      </div>
       <header className="details-header">
         <Link href="/contacts" className="contacts-logo">
           <span>
@@ -40,6 +47,14 @@ export function ContactDetails({ contact }: { contact: Contact }) {
           aria-label={t('back')}
         >
           <Icon name="back" className="directional-icon" />
+        </Link>
+        <Link
+          href={`/contacts/${contact.id}/edit`}
+          prefetch={false}
+          className="details-edit icon-disc"
+          aria-label={t('editContact')}
+        >
+          <Icon name="edit" />
         </Link>
       </header>
       <main className="details-main">

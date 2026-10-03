@@ -3915,23 +3915,49 @@ html:has(.merge-dialog[open]) {
     font-size: calc(12 * var(--u));
   }
 }
-/* Contact details: the mobile avatar opens this page. Phone layout below
-   1024px; from there it sits in the same side-panel card as the list. */
+/* Contact details: the mobile avatar opens this page. Phone layout (390
+   artboard) below 1024px; from there it sits in the same side-panel card as
+   the list, with the panel's buttons. */
 .contact-details-page {
   padding-block-end: 40px;
 }
-.contact-details-page > .contacts-decor .sphere,
-.details-card .panel-decor {
+.contact-details-page > .contacts-decor,
+.details-card .panel-decor,
+.details-card .panel-buttons .button-primary {
   display: none;
+}
+.details-decor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+}
+.details-decor .form-mint {
+  inset-inline-start: 15.5px;
+  top: 84px;
+  width: 359.5px;
+}
+.details-decor .sphere-1 {
+  inset-inline-start: 46px;
+  top: 120px;
+  width: 30px;
+}
+.details-decor .sphere-2 {
+  inset-inline-end: 56px;
+  top: 262px;
+  width: 18px;
 }
 .details-header {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   min-height: 112px;
   padding: 54px 20px 0;
 }
-.details-back {
+.details-back,
+.details-edit {
   width: 48px;
   height: 48px;
 }
@@ -3939,8 +3965,12 @@ html:has(.merge-dialog[open]) {
   width: 20px;
   height: 20px;
 }
+.details-edit svg {
+  width: 22px;
+  height: 22px;
+}
 .details-main {
-  padding: 4px 20px 0;
+  padding: 10px 24px 0;
 }
 .details-card {
   display: flex;
@@ -3954,16 +3984,16 @@ html:has(.merge-dialog[open]) {
   text-align: center;
 }
 .details-card .avatar-xl {
-  width: 112px;
-  height: 112px;
-  font-size: 40px;
+  width: 124px;
+  height: 124px;
+  font-size: 44px;
   box-shadow:
     0 0 0 6px var(--avatar-ring),
     0 14px 30px rgb(95 168 198 / 20%);
 }
 .details-card .panel-hero h1 {
-  margin-block-start: 16px;
-  font-size: 24px;
+  margin-block-start: 19px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -3975,9 +4005,8 @@ html:has(.merge-dialog[open]) {
 }
 .details-card .panel-actions {
   display: flex;
-  gap: 28px;
-  margin-block-start: 22px;
-  margin-block-end: 36px;
+  gap: 26px;
+  margin-block: 19px 80px;
 }
 .details-card .panel-actions .action {
   position: relative;
@@ -4003,18 +4032,17 @@ html:has(.merge-dialog[open]) {
 }
 .details-card .panel-cards {
   display: grid;
-  grid-template-columns: 1fr;
   gap: 12px;
   width: 100%;
 }
 .details-card .info-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 84px;
-  padding: 12px 16px;
-  border-radius: 22px;
-  background: var(--chip);
+  gap: 15px;
+  min-height: 74px;
+  padding: 0 16px;
+  border-radius: 24px;
+  background: var(--row);
   box-shadow: var(--row-shadow);
 }
 .details-card .info-card p:first-child {
@@ -4049,44 +4077,49 @@ html:has(.merge-dialog[open]) {
 }
 .details-card .panel-buttons {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   gap: 12px;
   width: 100%;
-  margin-block-start: 28px;
+  margin-block-start: 20px;
 }
 .details-card .panel-buttons .button-primary,
 .details-card .button-danger {
-  gap: 10px;
-  width: 100%;
-  min-height: 56px;
+  gap: 8px;
 }
 .details-card .button-danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 146px;
+  min-height: 42px;
   border: 0;
   border-radius: 999px;
   background: var(--coral);
   color: var(--coral-d);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 .details-card .panel-buttons svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 .details-card .skeleton-card {
-  height: 84px;
-  border-radius: 22px;
-}
-@media (min-width: 600px) {
-  .details-card .panel-cards {
-    grid-template-columns: 1fr 1fr;
-  }
+  height: 74px;
+  border-radius: 24px;
 }
 @media (min-width: 1024px) {
   .contact-details-page {
     padding-block-end: 0;
+  }
+  .contact-details-page > .contacts-decor {
+    display: block;
+  }
+  .details-card .panel-buttons .button-primary {
+    display: inline-flex;
+  }
+  .details-decor,
+  .details-edit {
+    display: none;
   }
   .contact-details-page > .contacts-decor .sphere {
     display: block;
@@ -4102,6 +4135,7 @@ html:has(.merge-dialog[open]) {
     width: calc(17.3 * var(--u));
   }
   .details-header {
+    align-items: center;
     justify-content: space-between;
     min-height: 0;
     height: calc(84.67 * var(--d));
@@ -4168,6 +4202,7 @@ html:has(.merge-dialog[open]) {
     font-size: calc(12 * var(--u));
   }
   .details-card .panel-cards {
+    grid-template-columns: 1fr 1fr;
     gap: calc(16 * var(--d));
     margin-block-start: calc(26 * var(--u));
   }
@@ -4176,6 +4211,7 @@ html:has(.merge-dialog[open]) {
     min-height: calc(98 * var(--u));
     padding: calc(10 * var(--u)) calc(16 * var(--u));
     border-radius: calc(22 * var(--u));
+    background: var(--chip);
   }
   .details-card .info-card p:first-child {
     font-size: calc(12 * var(--u));
@@ -4193,7 +4229,7 @@ html:has(.merge-dialog[open]) {
     height: calc(24 * var(--u));
   }
   .details-card .panel-buttons {
-    flex-direction: row;
+    justify-content: flex-start;
     gap: calc(18 * var(--u));
     margin-block-start: auto;
     padding-block-start: calc(28 * var(--u));
@@ -4234,6 +4270,7 @@ html:has(.merge-dialog[open]) {
     overflow: visible;
   }
   .contacts-decor,
+  .details-decor,
   .contact-form {
     overflow: visible;
   }
