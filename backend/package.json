@@ -16,6 +16,7 @@
     "test:db": "prisma generate && tsx --test test/database.integration.ts",
     "test:auth": "prisma generate && tsx --test test/auth.integration.ts",
     "test:2fa": "prisma generate && tsx --test test/two-factor.integration.ts",
+    "test:account": "prisma generate && tsx --test test/account.integration.ts",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:format": "prisma format",

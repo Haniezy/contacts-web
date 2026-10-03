@@ -188,6 +188,90 @@ export async function confirmTwoFactor(
 
 export type TwoFactorInput = { code: string } | { recoveryCode: string };
 
+// Checks a TOTP code (not reused) or a recovery code. Returns the update that
+// consumes it, or null when it is wrong.
+export async function checkSecondFactor(
+  user: {
+    id: string;
+    twoFactorSecretEncrypted: string;
+    twoFactorLastStep: number | null;
+    recoveryCodeHashes: string[];
+  },
+  input: TwoFactorInput,
+  config: AuthConfig,
+  now: Date,
+) {
+  if ('code' in input) {
+    const step = await verifyTotp(
+      decryptSecret(user.twoFactorSecretEncrypted, user.id, config),
+      input.code,
+      now,
+      user.twoFactorLastStep,
+    );
+    return step === null ? null : { twoFactorLastStep: step };
+  }
+  const index = findRecoveryHash(
+    user.recoveryCodeHashes,
+    recoveryHash(user.id, input.recoveryCode),
+  );
+  return index === -1
+    ? null
+    : {
+        recoveryCodeHashes: user.recoveryCodeHashes.filter(
+          (_, i) => i !== index,
+        ),
+      };
+}
+
+// Turning 2FA off needs the password and a current code (or recovery code).
+// The current session stays; pending login challenges are dropped.
+export async function disableTwoFactor(
+  database: PrismaClient,
+  principal: AuthPrincipal,
+  password: string,
+  input: TwoFactorInput,
+  config: AuthConfig,
+  now: Date,
+) {
+  const user = await database.user.findUnique({
+    where: { id: principal.user.id },
+  });
+  if (!user || !(await verifyPassword(password, user.passwordHash)))
+    return failure(401, 'INVALID_CREDENTIALS');
+  return database.$transaction(async (tx) => {
+    await lockUser(tx, user.id);
+    const current = await tx.user.findUnique({ where: { id: user.id } });
+    if (!current || current.passwordHash !== user.passwordHash)
+      return failure(401, 'UNAUTHENTICATED');
+    if (!current.twoFactorEnabled || !current.twoFactorSecretEncrypted)
+      return failure(409, 'TWO_FACTOR_NOT_ENABLED');
+    const twoFactorSecretEncrypted = current.twoFactorSecretEncrypted;
+    if (
+      !(await checkSecondFactor(
+        { ...current, twoFactorSecretEncrypted },
+        input,
+        config,
+        now,
+      ))
+    )
+      return failure(401, 'INVALID_TWO_FACTOR_CODE');
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecretEncrypted: null,
+        twoFactorLastStep: null,
+        recoveryCodeHashes: [],
+        twoFactorSetupExpiresAt: null,
+        twoFactorSetupSessionId: null,
+        twoFactorSetupAttempts: 0,
+      },
+    });
+    await tx.loginChallenge.deleteMany({ where: { userId: user.id } });
+    return { ok: true as const };
+  });
+}
+
 export async function completeTwoFactor(
   database: PrismaClient,
   token: string,
@@ -214,39 +298,20 @@ export async function completeTwoFactor(
     if (!user?.twoFactorEnabled || !user.twoFactorSecretEncrypted)
       return failure(401, 'INVALID_CHALLENGE');
 
-    let step: number | null = null;
-    let recoveryIndex = -1;
-    if ('code' in input) {
-      step = await verifyTotp(
-        decryptSecret(user.twoFactorSecretEncrypted, user.id, config),
-        input.code,
-        now,
-        user.twoFactorLastStep,
-      );
-    } else {
-      recoveryIndex = findRecoveryHash(
-        user.recoveryCodeHashes,
-        recoveryHash(user.id, input.recoveryCode),
-      );
-    }
-    if (step === null && recoveryIndex === -1) {
+    const used = await checkSecondFactor(
+      { ...user, twoFactorSecretEncrypted: user.twoFactorSecretEncrypted },
+      input,
+      config,
+      now,
+    );
+    if (!used) {
       await tx.loginChallenge.update({
         where: { tokenHash },
         data: { attempts: { increment: 1 } },
       });
       return failure(401, 'INVALID_TWO_FACTOR_CODE');
     }
-    await tx.user.update({
-      where: { id: user.id },
-      data:
-        step !== null
-          ? { twoFactorLastStep: step }
-          : {
-              recoveryCodeHashes: user.recoveryCodeHashes.filter(
-                (_, index) => index !== recoveryIndex,
-              ),
-            },
-    });
+    await tx.user.update({ where: { id: user.id }, data: used });
     await tx.loginChallenge.delete({ where: { tokenHash } });
     const expiresAt = new Date(now.getTime() + sessionSeconds * 1000);
     const session = await tx.authSession.create({

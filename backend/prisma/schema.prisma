@@ -24,6 +24,8 @@ model User {
   twoFactorLastStep        Int?
   // Store hashes only. Never persist plaintext recovery codes.
   recoveryCodeHashes       String[]          @default([])
+  // Cloudinary asset of the profile photo; never exposed, only signed URLs.
+  photoKey                 String?           @db.Text
   createdAt                DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt                DateTime          @updatedAt @db.Timestamptz(3)
   contacts                 Contact[]

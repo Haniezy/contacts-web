@@ -8,6 +8,7 @@ import { getAuthConfig } from './config.js';
 import { requireAuth, type AuthPrincipal } from './middleware.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { issueLogin } from './two-factor-service.js';
+import { cloudinaryPhotos, type PhotoStore } from '../contacts/photos.js';
 import {
   challengeCookieName,
   challengeCookieOptions,
@@ -42,7 +43,24 @@ const loginBody = z
   .strict();
 const publicUser = { id: true, email: true } as const;
 
-export function authRouter(options: AuthOptions = {}) {
+// The profile as clients see it: a short-lived signed photo URL, never the key.
+export async function presentUser(
+  user: AuthPrincipal['user'],
+  photos: () => PhotoStore,
+) {
+  const { photoKey, ...fields } = user;
+  if (photoKey && !photoKey.startsWith(`contacts/${user.id}/`))
+    throw new Error('Invalid photo reference');
+  return {
+    ...fields,
+    photoUrl: photoKey ? await photos().url(photoKey) : null,
+  };
+}
+
+export function authRouter(
+  options: AuthOptions = {},
+  photos: () => PhotoStore = cloudinaryPhotos,
+) {
   const database = options.database ?? getDatabase;
   const config = options.config ?? getAuthConfig;
   const router = Router();
@@ -192,8 +210,13 @@ export function authRouter(options: AuthOptions = {}) {
 
   router.use('/2fa', twoFactorRouter(options));
 
-  router.get('/me', authenticated, (_request, response) => {
-    response.json({ user: (response.locals.auth as AuthPrincipal).user });
+  router.get('/me', authenticated, async (_request, response) => {
+    response.json({
+      user: await presentUser(
+        (response.locals.auth as AuthPrincipal).user,
+        photos,
+      ),
+    });
   });
 
   router.post('/logout', authenticated, async (_request, response) => {

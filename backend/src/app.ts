@@ -2,6 +2,7 @@ import express, { type ErrorRequestHandler } from 'express';
 import { checkDatabase } from './database/client.js';
 import { authRouter, type AuthOptions } from './auth/routes.js';
 import { contactsRouter, type ContactOptions } from './contacts/routes.js';
+import { accountRouter } from './account/routes.js';
 import { ContactError } from './contacts/photos.js';
 import { MulterError } from 'multer';
 
@@ -35,8 +36,9 @@ export function createApp(
     }
   });
 
-  app.use('/api/auth', authRouter(authOptions));
+  app.use('/api/auth', authRouter(authOptions, contactOptions.photos));
   app.use('/api/contacts', contactsRouter(authOptions, contactOptions));
+  app.use('/api/account', accountRouter(authOptions, contactOptions));
 
   app.use((_request, response) => {
     response.status(404).json({ error: 'Not found' });

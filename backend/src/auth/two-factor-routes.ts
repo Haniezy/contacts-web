@@ -10,6 +10,7 @@ import { cookieOptions, setSessionCookie } from './tokens.js';
 import {
   confirmTwoFactor,
   completeTwoFactor,
+  disableTwoFactor,
   setupTwoFactor,
 } from './two-factor-service.js';
 
@@ -26,6 +27,22 @@ const recoveryBody = z
       .regex(/^(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{8}){3})$/),
   })
   .strict();
+
+// The password plus either a current code or a recovery code.
+export const secondFactorBody = z
+  .object({
+    password: z.string().min(1).max(128),
+    code: codeBody.shape.code.optional(),
+    recoveryCode: recoveryBody.shape.recoveryCode.optional(),
+  })
+  .strict()
+  .refine((v) => !(v.code && v.recoveryCode));
+export const secondFactor = (v: { code?: string; recoveryCode?: string }) =>
+  v.code
+    ? { code: v.code }
+    : v.recoveryCode
+      ? { recoveryCode: v.recoveryCode }
+      : null;
 
 export function twoFactorRouter(options: AuthOptions) {
   const database = options.database ?? getDatabase;
@@ -107,6 +124,27 @@ export function twoFactorRouter(options: AuthOptions) {
     );
     response.clearCookie(challengeCookieName, challengeCookieOptions(settings));
     response.json({ enabled: true, recoveryCodes: result.recoveryCodes });
+  });
+  router.post('/disable', authenticated, async (request, response) => {
+    const parsed = secondFactorBody.safeParse(request.body);
+    const input = parsed.success ? secondFactor(parsed.data) : null;
+    if (!parsed.success || !input) {
+      response.status(400).json({ error: 'INVALID_INPUT' });
+      return;
+    }
+    const result = await disableTwoFactor(
+      database(),
+      response.locals.auth as AuthPrincipal,
+      parsed.data.password,
+      input,
+      config(),
+      now(),
+    );
+    if (!result.ok) {
+      response.status(result.status).json({ error: result.error });
+      return;
+    }
+    response.json({ enabled: false });
   });
   router.post('/verify', async (request, response) => {
     const parsed = z.union([codeBody, recoveryBody]).safeParse(request.body);

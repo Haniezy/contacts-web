@@ -7,7 +7,14 @@ import { cookieName, verifyToken } from './tokens.js';
 
 export interface AuthPrincipal {
   sessionId: string;
-  user: { id: string; email: string; firstName: string; lastName: string };
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    // Internal; responses carry a signed photoUrl instead.
+    photoKey: string | null;
+  };
 }
 
 export function requireAuth(
@@ -41,6 +48,7 @@ export function requireAuth(
             email: true,
             firstName: true,
             lastName: true,
+            photoKey: true,
             twoFactorEnabled: true,
           },
         },
@@ -61,6 +69,7 @@ export function requireAuth(
         email: session.user.email,
         firstName: session.user.firstName,
         lastName: session.user.lastName,
+        photoKey: session.user.photoKey,
       },
     } satisfies AuthPrincipal;
     next();
