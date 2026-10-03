@@ -330,9 +330,6 @@ button:disabled {
   background: var(--decor-mint);
   box-shadow: var(--decor-mint-shadow);
 }
-.auth-signup .auth-mint {
-  height: 150px;
-}
 .auth-verify .auth-mint,
 .auth-setup .auth-mint,
 .auth-setup .sphere-1,
@@ -353,9 +350,6 @@ button:disabled {
   inset-inline-end: 62px;
   top: 250px;
   width: 22px;
-}
-.auth-signup .sphere-2 {
-  top: 170px;
 }
 .auth-verify .sphere-1 {
   z-index: 2;
@@ -384,14 +378,6 @@ button:disabled {
   top: 112px;
   inset-inline-start: 28px;
   white-space: nowrap;
-}
-.auth-signup .auth-brand {
-  top: 89.5px;
-}
-@media (max-width: 1023px) {
-  .auth-signup .auth-brand h2 {
-    margin-block-start: 7.5px;
-  }
 }
 .auth-verify .auth-brand,
 .auth-setup .auth-brand,
@@ -454,8 +440,10 @@ button:disabled {
   --actions-gap: 10px;
   --actions-inner: 21.5px;
 }
+/* Signup shares the login header (mint shape, brand and spheres) so the
+   tagline stays inside the mint shape; the form starts at the same line. */
 .auth-signup {
-  --top: 247.5px;
+  --top: 319.5px;
   --h1-gap: 20.5px;
   --field-gap: 20px;
   --actions-gap: 10.1px;
