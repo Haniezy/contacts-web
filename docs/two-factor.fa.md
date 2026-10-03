@@ -94,7 +94,7 @@ docker compose up --build --wait
 
 ## وضعیت و تست‌ها
 
-`GET /api/auth/2fa/status` با نشست معتبر فقط `enabled` و `recoveryCodesRemaining` را برمی‌گرداند.
+`GET /api/auth/2fa/status` با نشست معتبر فقط `enabled` و `recoveryCodesRemaining` را برمی‌گرداند. خاموش کردن 2FA با `POST /api/auth/2fa/disable` و رمز عبور به‌همراه کد یا کد بازیابی انجام می‌شود ([فاز ۱۰](account.fa.md)).
 
 ```bash
 npm run check
