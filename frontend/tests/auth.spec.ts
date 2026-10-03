@@ -111,6 +111,14 @@ test('landing → signup → QR → verification → recovery codes → contacts
   }
 });
 
+test('login and signup lead back to the landing page', async ({ page }) => {
+  for (const path of ['/login', '/signup']) {
+    await page.goto(path);
+    await page.getByRole('link', { name: 'بازگشت به صفحه اصلی' }).click();
+    await expect(page).toHaveURL(/\/$/);
+  }
+});
+
 test('route protection checks forged sessions; BFF blocks cross-origin changes; forms validate', async ({
   page,
   context,

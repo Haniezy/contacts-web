@@ -14,6 +14,7 @@
   "Auth": {
     "brand": "Contacts",
     "home": "Home",
+    "backHome": "Back to the home page",
     "tagline": "All your contacts, together and organized",
     "taglineMobile": "Your contacts, in one tidy place",
     "feature1": "Find any contact in seconds",

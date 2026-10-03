@@ -410,6 +410,27 @@ button:disabled {
   width: 30px;
   height: 30px;
 }
+/* Back to the landing page: a blue disc at the far end of the title row on
+   phones and tablets. */
+.auth-home {
+  position: absolute;
+  top: 1.5px;
+  inset-inline-end: 0;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(180deg, #93cde2, #68aecb);
+  color: #fff;
+  box-shadow: var(--button-shadow);
+}
+.auth-home svg {
+  width: 20px;
+  height: 20px;
+}
+/* Points away from the form, toward the landing page: left in Persian,
+   right in English. */
+[dir='rtl'] .auth-home svg {
+  transform: scaleX(-1);
+}
 .auth-brand h2 {
   margin-block-start: 12px;
   font-size: 26px;
@@ -496,8 +517,20 @@ button:disabled {
   color: var(--hint);
   opacity: 1;
 }
+/* Autofilled fields keep the page's look instead of the browser's tint. */
+.field-line input:autofill {
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  transition: background-color 0s 600000s;
+}
+.auth-shell .field-line input {
+  padding-inline: 10px;
+}
 .field-line:has(.password-toggle) input {
   padding-inline-end: 44px;
+}
+.auth-shell .field-line:has(.password-toggle) input {
+  padding-inline-end: 40px;
 }
 .password-toggle {
   position: absolute;
@@ -807,6 +840,20 @@ button:disabled {
   .brand-mobile-icon {
     display: none;
   }
+  /* Desktop: just outside the form, level with the email label. */
+  .auth-home {
+    top: calc(81.5 * var(--u));
+    inset-inline-end: calc(-72 * var(--d));
+    width: calc(48 * var(--u));
+    height: calc(48 * var(--u));
+  }
+  .auth-home svg {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+  }
+  .auth-signup .auth-home {
+    top: calc(159.5 * var(--u));
+  }
   .brand-dash {
     display: block;
     width: calc(132 * var(--u));
@@ -888,6 +935,12 @@ button:disabled {
   .field-line input {
     padding: calc(4.8 * var(--u)) 0 calc(4 * var(--u));
     font-size: calc(14 * var(--u));
+  }
+  .auth-shell .field-line input {
+    padding-inline: calc(10 * var(--u));
+  }
+  .auth-shell .field-line:has(.password-toggle) input {
+    padding-inline-end: calc(40 * var(--u));
   }
   .name-fields {
     gap: calc(33.33 * var(--u));

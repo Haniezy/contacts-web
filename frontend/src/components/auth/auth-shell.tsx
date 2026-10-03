@@ -73,7 +73,18 @@ export function AuthShell({
           </span>
         )}
       </aside>
-      <section className="auth-content">{children}</section>
+      <section className="auth-content">
+        {account && (
+          <Link
+            href="/"
+            className="auth-home icon-disc"
+            aria-label={t('backHome')}
+          >
+            <Icon name="back" />
+          </Link>
+        )}
+        {children}
+      </section>
     </main>
   );
 }
