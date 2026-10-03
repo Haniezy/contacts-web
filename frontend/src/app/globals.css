@@ -537,6 +537,17 @@ button:disabled {
   color: var(--coral-d);
   font-size: 14px;
 }
+/* The corrected address inside "Did you mean …?"; a click fills it in. */
+.email-fix {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .form-error {
   padding: 12px 16px;
   border-radius: 12px;

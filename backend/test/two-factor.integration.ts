@@ -33,7 +33,7 @@ test('two-factor enrollment, login and atomic recovery against PostgreSQL', asyn
   await once(server, 'listening');
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/auth`;
   const email = `two-factor-test-${randomUUID()}@contacts.example`;
-  const password = randomBytes(24).toString('base64url');
+  const password = randomBytes(9).toString('base64url');
   let userId = '',
     session = '',
     secret = '';

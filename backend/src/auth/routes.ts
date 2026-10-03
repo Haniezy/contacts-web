@@ -8,6 +8,8 @@ import { getAuthConfig } from './config.js';
 import { requireAuth, type AuthPrincipal } from './middleware.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { issueLogin } from './two-factor-service.js';
+import { emailSuggestion } from './email-typo.js';
+import { firstName, lastName, newPassword } from './account-rules.js';
 import { cloudinaryPhotos, type PhotoStore } from '../contacts/photos.js';
 import {
   challengeCookieName,
@@ -32,10 +34,11 @@ export interface AuthOptions {
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254));
 const signupBody = z
   .object({
-    email,
-    password: z.string().min(8).max(128),
-    firstName: z.string().trim().min(1).max(100).optional(),
-    lastName: z.string().trim().min(1).max(100).optional(),
+    // A misspelt popular domain (gmial.com) is refused.
+    email: email.refine((value) => !emailSuggestion(value)),
+    password: newPassword,
+    firstName: firstName.optional(),
+    lastName: lastName.optional(),
   })
   .strict();
 const loginBody = z

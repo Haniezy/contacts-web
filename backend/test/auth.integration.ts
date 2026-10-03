@@ -29,7 +29,7 @@ test('auth HTTP lifecycle against PostgreSQL', async (t) => {
   await once(server, 'listening');
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/auth`;
   const email = `auth-test-${randomUUID()}@contacts.example`;
-  const password = 'Test-only password 12345!';
+  const password = 'Test-only 1234!';
   let cookie = '';
   let userId = '';
   const post = (
@@ -48,10 +48,14 @@ test('auth HTTP lifecycle against PostgreSQL', async (t) => {
     await t.test(
       'signup validates input and returns only public fields with a secure HTTP-only cookie',
       async () => {
-        assert.equal(
-          (await post('signup', { email, password: 'short' })).status,
-          400,
-        );
+        for (const body of [
+          { email, password: 'short' },
+          // A misspelt popular domain is refused.
+          { email: 'auth-test@gmial.com', password },
+          // Name lengths share the profile's rules (see the account tests).
+          { email, password, firstName: 'x' },
+        ])
+          assert.equal((await post('signup', body)).status, 400);
         const response = await post('signup', {
           email: ` ${email.toUpperCase()} `,
           password,

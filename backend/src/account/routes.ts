@@ -12,6 +12,7 @@ import { cookieName, cookieOptions } from '../auth/tokens.js';
 import { presentUser, type AuthOptions } from '../auth/routes.js';
 import { checkSecondFactor } from '../auth/two-factor-service.js';
 import { secondFactor, secondFactorBody } from '../auth/two-factor-routes.js';
+import { firstName, lastName, newPassword } from '../auth/account-rules.js';
 import {
   cleanupPhotos,
   cloudinaryPhotos,
@@ -20,20 +21,11 @@ import {
 } from '../contacts/photos.js';
 import type { ContactOptions } from '../contacts/routes.js';
 
-const namePart = (min: number) =>
-  z
-    .string()
-    .trim()
-    .min(min)
-    .max(100)
-    .refine((v) => !/\p{Cc}/u.test(v));
-const profileBody = z
-  .object({ firstName: namePart(1), lastName: namePart(0) })
-  .strict();
+const profileBody = z.object({ firstName, lastName }).strict();
 const passwordBody = z
   .object({
     currentPassword: z.string().min(1).max(128),
-    newPassword: z.string().min(8).max(128),
+    newPassword,
   })
   .strict();
 const userSelect = {

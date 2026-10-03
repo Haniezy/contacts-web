@@ -34,13 +34,15 @@ function splitName(name: string) {
 function problems(fields: Fields): FieldErrors {
   const errors: FieldErrors = {};
   const { firstName, lastName } = splitName(fields.name);
-  if (!firstName || firstName.length > 100 || lastName.length > 100)
-    errors.name = 'name';
+  // Same rules as signup: first names of 2–16 and last names of 2–28.
+  if (firstName.length < 2 || firstName.length > 16) errors.name = 'firstName';
+  else if (lastName.length < 2 || lastName.length > 28)
+    errors.name = 'lastName';
   const changing =
     fields.currentPassword || fields.newPassword || fields.confirmPassword;
   if (changing) {
     if (!fields.currentPassword) errors.currentPassword = 'currentRequired';
-    if (fields.newPassword.length < 8 || fields.newPassword.length > 128)
+    if (fields.newPassword.length < 6 || fields.newPassword.length > 16)
       errors.newPassword = 'password';
     if (fields.confirmPassword !== fields.newPassword)
       errors.confirmPassword = 'mismatch';
@@ -188,7 +190,7 @@ export function ProfileForm({
           onBlur={() => setTouched((current) => ({ ...current, [key]: true }))}
           placeholder={placeholder}
           autoComplete={autoComplete}
-          maxLength={128}
+          maxLength={key === 'currentPassword' ? 128 : 16}
           dir="ltr"
           aria-invalid={Boolean(shown(key))}
           aria-describedby={shown(key) ? `profile-${key}-error` : undefined}
@@ -290,7 +292,7 @@ export function ProfileForm({
                 }
                 placeholder={t('namePlaceholder')}
                 autoComplete="name"
-                maxLength={201}
+                maxLength={45}
                 aria-invalid={Boolean(shown('name'))}
                 aria-describedby={
                   shown('name') ? 'profile-name-error' : undefined

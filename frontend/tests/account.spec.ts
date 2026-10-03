@@ -41,7 +41,7 @@ test('the menu opens the profile, which changes the name and the password', asyn
   await next.fill('short');
   await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
   await expect(
-    page.getByText('رمز عبور باید بین ۸ تا ۱۲۸ کاراکتر باشه.'),
+    page.getByText('رمز عبور باید بین ۶ تا ۱۶ کاراکتر باشه.'),
   ).toBeVisible();
   await expect(page.getByText('تکرار رمز عبور با رمز یکی نیست.')).toBeVisible();
   // The eye button shows what was typed.
@@ -51,7 +51,7 @@ test('the menu opens the profile, which changes the name and the password', asyn
     .click();
   await expect(next).toHaveAttribute('type', 'text');
 
-  const password = 'Changed test password 456!';
+  const password = 'Changed test 45!';
   await next.fill(password);
   await repeat.fill(password);
   await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();

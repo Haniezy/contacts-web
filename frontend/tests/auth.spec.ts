@@ -13,7 +13,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
   context,
 }) => {
   const email = `browser-test-${randomUUID()}@contacts.example`;
-  const password = 'Browser test password 123!';
+  const password = 'Browser test 12!';
   try {
     await page.goto('/');
     await expect(page.locator('header')).toHaveCount(0);
@@ -161,6 +161,33 @@ test('route protection checks forged sessions; BFF blocks cross-origin changes; 
   await expect(page.getByLabel('رمز عبور', { exact: true })).toHaveAttribute(
     'type',
     'text',
+  );
+
+  // Signup rules: names of 2–16 and 2–28 characters, passwords of 6–16, and
+  // a misspelt popular mail domain is caught with a one-click fix.
+  await page.getByLabel('نام', { exact: true }).fill('س');
+  await page.getByLabel('نام خانوادگی', { exact: true }).fill('ا');
+  await page.getByLabel('ایمیل', { exact: true }).fill('sara@gmial.com');
+  await page.getByLabel('رمز عبور', { exact: true }).fill('12345');
+  await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
+  await expect(
+    page.getByText('نام باید بین ۲ تا ۱۶ کاراکتر باشه.'),
+  ).toBeVisible();
+  await expect(
+    page.getByText('نام خانوادگی باید بین ۲ تا ۲۸ کاراکتر باشه.'),
+  ).toBeVisible();
+  await expect(
+    page.getByText('رمز عبور باید بین ۶ تا ۱۶ کاراکتر باشه.'),
+  ).toBeVisible();
+  await expect(page.getByText('منظورت sara@gmail.com بود؟')).toBeVisible();
+  await page.getByRole('button', { name: 'sara@gmail.com' }).click();
+  await expect(page.getByLabel('ایمیل', { exact: true })).toHaveValue(
+    'sara@gmail.com',
+  );
+  await expect(page.getByText('منظورت sara@gmail.com بود؟')).toHaveCount(0);
+  await expect(page.getByLabel('رمز عبور', { exact: true })).toHaveAttribute(
+    'maxlength',
+    '16',
   );
   expect(
     await page.evaluate(

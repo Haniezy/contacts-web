@@ -1,5 +1,5 @@
 'use client';
-import { useState, type InputHTMLAttributes } from 'react';
+import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Icon } from '@/components/icon';
 export function Field({
@@ -9,7 +9,7 @@ export function Field({
 }: InputHTMLAttributes<HTMLInputElement> & {
   name: string;
   label: string;
-  error?: string;
+  error?: ReactNode;
 }) {
   const [visible, setVisible] = useState(false);
   const t = useTranslations('Auth');

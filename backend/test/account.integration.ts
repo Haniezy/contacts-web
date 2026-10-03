@@ -47,7 +47,7 @@ test('profile, password, photo, 2FA off, sign out everywhere and account deletio
   await once(server, 'listening');
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
   const email = `account-test-${randomUUID()}@contacts.example`;
-  let password = randomBytes(18).toString('base64url');
+  let password = randomBytes(9).toString('base64url');
   const request = (
     method: string,
     path: string,
@@ -87,10 +87,16 @@ test('profile, password, photo, 2FA off, sign out everywhere and account deletio
     const b = await login();
 
     await t.test('name changes are validated and owner-scoped', async () => {
-      assert.equal(
-        (await request('PATCH', 'account', a, { firstName: ' ' })).status,
-        400,
-      );
+      // First names take 2–16 characters and last names 2–28.
+      for (const body of [
+        { firstName: ' ', lastName: 'احمدی' },
+        { firstName: 'سارا' },
+        { firstName: 'س', lastName: 'احمدی' },
+        { firstName: 'س'.repeat(17), lastName: 'احمدی' },
+        { firstName: 'سارا', lastName: 'ا' },
+        { firstName: 'سارا', lastName: 'ا'.repeat(29) },
+      ])
+        assert.equal((await request('PATCH', 'account', a, body)).status, 400);
       assert.equal(
         (
           await request(
@@ -128,7 +134,8 @@ test('profile, password, photo, 2FA off, sign out everywhere and account deletio
         401,
       );
       assert.equal((await change(password, 'short')).status, 400);
-      const next = randomBytes(18).toString('base64url');
+      assert.equal((await change(password, 'x'.repeat(17))).status, 400);
+      const next = randomBytes(9).toString('base64url');
       assert.equal((await change(password, next)).status, 204);
       password = next;
       assert.equal((await me(a)).status, 200);

@@ -1,9 +1,10 @@
 'use client';
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api, errorKey } from '@/lib/api';
+import { emailSuggestion } from '@/lib/email';
 import { Field } from './field';
 import { useEnrollment, type Enrollment } from './enrollment-context';
 
@@ -14,7 +15,7 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
   const { setEnrollment } = useEnrollment();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<Record<string, ReactNode>>({});
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -25,14 +26,44 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
     const password = value('password');
     const firstName = value('firstName').trim();
     const lastName = value('lastName').trim();
-    const invalid: Record<string, string> = {};
+    const invalid: Record<string, ReactNode> = {};
+    const suggestion = emailSuggestion(email);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)
       invalid.email = e('email');
-    if (!password || password.length > 128 || (signup && password.length < 8))
+    else if (suggestion)
+      // A misspelt popular domain (gmial.com): one click puts the fix in.
+      invalid.email = e.rich('emailTypo', {
+        email: suggestion,
+        fix: (chunks) => (
+          <button
+            type="button"
+            className="email-fix"
+            dir="ltr"
+            onClick={() => {
+              const input = form.elements.namedItem('email');
+              if (input instanceof HTMLInputElement) {
+                input.value = suggestion;
+                input.focus();
+              }
+              setFields((current) => ({ ...current, email: undefined }));
+            }}
+          >
+            {chunks}
+          </button>
+        ),
+      });
+    // New passwords take 6–16 characters; a login accepts any stored one.
+    if (
+      !password ||
+      password.length > (signup ? 16 : 128) ||
+      (signup && password.length < 6)
+    )
       invalid.password = e(signup ? 'password' : 'required');
     if (signup) {
-      if (!firstName || firstName.length > 100) invalid.firstName = e('name');
-      if (!lastName || lastName.length > 100) invalid.lastName = e('name');
+      if (firstName.length < 2 || firstName.length > 16)
+        invalid.firstName = e('firstName');
+      if (lastName.length < 2 || lastName.length > 28)
+        invalid.lastName = e('lastName');
       if (value('confirmPassword') !== password)
         invalid.confirmPassword = e('mismatch');
     }
@@ -89,7 +120,7 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
               label={t('firstName')}
               placeholder={t('firstNameExample')}
               autoComplete="given-name"
-              maxLength={100}
+              maxLength={16}
               error={fields.firstName}
             />
             <Field
@@ -97,7 +128,7 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
               label={t('lastName')}
               placeholder={t('lastNameExample')}
               autoComplete="family-name"
-              maxLength={100}
+              maxLength={28}
               error={fields.lastName}
             />
           </div>
@@ -117,7 +148,7 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
           type="password"
           autoComplete={signup ? 'new-password' : 'current-password'}
           placeholder={signup ? t('passwordHint') : '••••••••'}
-          maxLength={128}
+          maxLength={signup ? 16 : 128}
           error={fields.password}
         />
         {signup && (
@@ -127,7 +158,7 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
             type="password"
             autoComplete="new-password"
             placeholder={t('confirmHint')}
-            maxLength={128}
+            maxLength={16}
             error={fields.confirmPassword}
           />
         )}
