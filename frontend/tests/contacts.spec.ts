@@ -225,7 +225,9 @@ test('cancel, close and back leave without saving', async ({
   await expect(page.getByRole('button', { name: 'ذخیره نشه' })).toHaveCount(0);
 
   await page.goto('/contacts/00000000-0000-4000-8000-000000000000/edit');
-  await expect(page.getByText('404')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'این صفحه پیدا نشد' }),
+  ).toBeVisible();
 });
 
 test('a chosen photo is previewed and can be removed before saving', async ({

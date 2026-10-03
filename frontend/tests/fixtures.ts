@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 export function fixture<T = unknown>(data: Record<string, unknown>): T {
@@ -24,3 +24,13 @@ export const test = base.extend<{
   },
 });
 export { expect };
+
+// The menu opens from «منو» on mobile and tablet and from «حساب کاربری» on
+// desktop. Waits for the loaded page, whose skeleton has neither.
+export async function openMenu(page: Page) {
+  await page
+    .getByRole('button', { name: /^(منو|حساب کاربری)$/ })
+    .filter({ visible: true })
+    .click();
+  return page.getByRole('dialog', { name: 'منو' });
+}

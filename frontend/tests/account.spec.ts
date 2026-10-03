@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, fixture, test } from './fixtures';
+import { expect, fixture, openMenu, test } from './fixtures';
 
 test.beforeEach(async ({ context, account }) => {
   await context.addCookies([
@@ -14,15 +14,6 @@ test.beforeEach(async ({ context, account }) => {
   ]);
 });
 
-async function openMenu(page: Page) {
-  const menu = page.getByRole('button', { name: 'منو' });
-  await (
-    (await menu.isVisible())
-      ? menu
-      : page.getByRole('button', { name: 'حساب کاربری' })
-  ).click();
-  return page.getByRole('dialog', { name: 'منو' });
-}
 async function login(page: Page, email: string, password: string) {
   await page.goto('/login');
   await page.getByLabel('ایمیل', { exact: true }).fill(email);
