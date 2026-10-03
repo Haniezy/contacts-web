@@ -15,8 +15,22 @@ export const getUser = cache(async () => {
     email: string;
     firstName: string;
     lastName: string;
+    photoUrl: string | null;
   };
 });
+// Display fields shared by the header, the menu and the account pages.
+export function accountUser(
+  user: NonNullable<Awaited<ReturnType<typeof getUser>>>,
+) {
+  const name = `${user.firstName} ${user.lastName}`.trim();
+  const shown = name || user.email.split('@')[0];
+  return {
+    name: shown,
+    email: user.email,
+    initial: [...shown][0] ?? '?',
+    photoUrl: user.photoUrl,
+  };
+}
 export async function requireUser() {
   const user = await getUser();
   if (!user) redirect('/login');

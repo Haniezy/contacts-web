@@ -9,7 +9,11 @@ import { Field } from './field';
 import { CodeInput } from './code-input';
 import { Icon } from '@/components/icon';
 
-export function SetupForm() {
+export function SetupForm({
+  done = '/contacts',
+}: {
+  done?: '/contacts' | '/settings';
+}) {
   const t = useTranslations('Auth');
   const e = useTranslations('Errors');
   const { enrollment, setEnrollment } = useEnrollment();
@@ -126,14 +130,14 @@ export function SetupForm() {
           {saved ? (
             <Link
               className="button-primary"
-              href="/contacts"
+              href={done}
               onClick={() => setCodes([])}
             >
-              {t('goContacts')}
+              {t(done === '/settings' ? 'goSettings' : 'goContacts')}
             </Link>
           ) : (
             <button className="button-primary" disabled>
-              {t('goContacts')}
+              {t(done === '/settings' ? 'goSettings' : 'goContacts')}
             </button>
           )}
         </div>
@@ -141,11 +145,7 @@ export function SetupForm() {
     );
   return (
     <>
-      <Link
-        href="/contacts"
-        className="auth-back icon-disc"
-        aria-label={t('back')}
-      >
+      <Link href={done} className="auth-back icon-disc" aria-label={t('back')}>
         <Icon name="back" className="directional-icon" />
       </Link>
       <h1>
@@ -188,7 +188,7 @@ export function SetupForm() {
             <button className="button-primary" disabled={busy}>
               {t(busy ? 'working' : 'createQr')}
             </button>
-            <Link href="/contacts">{t('skip')}</Link>
+            <Link href={done}>{t('skip')}</Link>
           </div>
         </form>
       ) : stage === 'qr' ? (
@@ -243,7 +243,7 @@ export function SetupForm() {
             >
               {t('continue')}
             </button>
-            <Link href="/contacts" onClick={() => setEnrollment(null)}>
+            <Link href={done} onClick={() => setEnrollment(null)}>
               {t('skip')}
             </Link>
           </div>

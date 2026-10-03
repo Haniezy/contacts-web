@@ -3291,6 +3291,612 @@ html:has(.merge-dialog[open]) {
     font-weight: 700;
   }
 }
+/* Profile and settings: 390 artboard on mobile, 1280×800 on desktop. */
+:root {
+  --danger-border: #efb2ac;
+}
+[data-theme='dark'] {
+  --danger-border: #734140;
+}
+.account-page {
+  padding-block-end: 40px;
+}
+.account-page .sphere,
+.profile-help,
+.profile-cancel {
+  display: none;
+}
+.account-back {
+  position: absolute;
+  top: 54px;
+  inset-inline-start: 20px;
+  width: 48px;
+  height: 48px;
+}
+.account-back svg {
+  width: 20px;
+  height: 20px;
+}
+.account-main {
+  /* Keeps the title's top margin inside instead of moving the page. */
+  display: flow-root;
+  padding: 0 20px;
+}
+.account-profile .account-main {
+  padding-inline: 30px;
+}
+/* On mobile the profile has the contact form's circle and a shorter mint blob. */
+@media (max-width: 1023px) {
+  .account-profile .contacts-circle {
+    inset-inline-end: -160px;
+    top: -190px;
+    width: 419.4px;
+    background: var(--form-circle);
+  }
+  .account-profile .contacts-mint {
+    inset-inline-start: 6px;
+    top: 74px;
+    width: 379px;
+    height: 229px;
+    border-start-start-radius: 42.4% 56.7%;
+    border-start-end-radius: 57.6% 52.4%;
+    border-end-start-radius: 53.8% 43.3%;
+    border-end-end-radius: 46.2% 47.6%;
+    opacity: 1;
+    box-shadow: var(--decor-mint-shadow);
+  }
+  .account-profile .sphere {
+    display: block;
+  }
+  .account-profile .sphere-1 {
+    inset-inline-start: 44.5px;
+    top: 130px;
+    width: 29.5px;
+  }
+  .account-profile .sphere-2 {
+    inset-inline-end: 52px;
+    top: 250px;
+    width: 17.5px;
+  }
+}
+.profile-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.profile-head h1,
+.settings-title {
+  margin-block-start: 63px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+.profile-photo {
+  width: 112px;
+  margin-block-start: 26px;
+}
+.profile-avatar {
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  font-size: 44px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 6px var(--avatar-ring),
+    var(--photo-shadow);
+}
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.user-avatar:has(img) {
+  overflow: hidden;
+}
+.profile-fields,
+.password-fields {
+  display: grid;
+  gap: 19px;
+}
+.profile-fields {
+  margin-block-start: 28px;
+}
+.locked-chip {
+  padding-inline: 9.2px;
+  border-radius: 999px;
+  background: var(--slate);
+  color: var(--slate-d);
+  font-size: 11px;
+  line-height: 18.5px;
+}
+.profile-email .field-line input {
+  color: var(--ink2);
+  font-size: 14px;
+  font-weight: 400;
+}
+[dir='rtl'] .profile-email input,
+[dir='rtl'] .password-fields input {
+  text-align: right;
+}
+.profile-email svg {
+  stroke-width: 1.6;
+}
+.profile-divider {
+  display: flex;
+  align-items: center;
+  gap: 9.5px;
+  margin-block: 27px 15px;
+  color: var(--slate-d);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.profile-divider::before,
+.profile-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.password-fields .password-toggle {
+  bottom: 0;
+  margin-inline-end: -2px;
+}
+.password-fields .password-toggle svg {
+  width: 21px;
+  height: 21px;
+}
+.profile-card .form-error {
+  margin-block-start: 20px;
+}
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  margin-block-start: 28px;
+}
+.profile-actions .button-primary {
+  min-height: 56px;
+}
+.profile-cancel {
+  color: var(--ink2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.settings-list {
+  display: grid;
+  gap: 24px;
+  margin-block-start: 25px;
+}
+.settings-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  min-height: 74px;
+  padding: 13px 16px;
+  border: 1px solid var(--row-border);
+  border-radius: 24px;
+  background: var(--row);
+  color: var(--ink);
+  text-align: start;
+  box-shadow: var(--row-shadow);
+}
+.settings-expand {
+  border-radius: 24px;
+  background: var(--row);
+  box-shadow: var(--row-shadow);
+}
+.settings-expand .settings-card {
+  box-shadow: none;
+}
+.settings-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+.settings-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.icon-shield {
+  background: var(--mint);
+  color: var(--mint-t);
+}
+.icon-logout {
+  background: var(--sky);
+  color: var(--sky-d);
+}
+.settings-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.settings-name {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.settings-help {
+  color: var(--ink2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.status-chip {
+  padding-inline: 10px;
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--mint-t);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18.5px;
+}
+.status-chip.is-off {
+  background: var(--slate);
+  color: var(--slate-d);
+}
+.settings-chevron {
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  margin-inline-end: -1.75px;
+  transition: transform 200ms ease;
+}
+.settings-expand.is-open .settings-chevron {
+  transform: rotate(180deg);
+}
+.settings-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease;
+}
+.settings-expand.is-open .settings-reveal {
+  grid-template-rows: 1fr;
+}
+.settings-reveal > div {
+  overflow: hidden;
+  padding-inline: 16px;
+}
+.settings-reveal p {
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.settings-reveal .form-error {
+  margin-block-start: 10px;
+}
+.settings-reveal .button-primary {
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  margin-block: 12px 16px;
+  font-size: 15px;
+}
+.settings-reveal .button-primary svg {
+  width: 18px;
+  height: 18px;
+}
+.danger-card {
+  display: grid;
+  margin-block-start: 33px;
+  padding: 18px 20.5px 17.5px;
+  border: 1px solid var(--danger-border);
+  border-radius: 24px;
+  background: var(--coral);
+  color: var(--coral-d);
+}
+.danger-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.danger-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 50%);
+}
+.danger-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.danger-card h2 {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.danger-card > p {
+  margin-block-start: 9px;
+  font-size: 13px;
+  line-height: 24px;
+}
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  gap: 10px;
+  min-width: 134.5px;
+  height: 41.5px;
+  margin-block-start: 14px;
+  padding-inline: 19.4px;
+  border-radius: 999px;
+  background: var(--coral-d);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+.danger-button svg {
+  width: 15px;
+  height: 15px;
+}
+.app-version {
+  margin-block-start: 24px;
+  color: var(--hint);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+.badge-shield {
+  background: var(--mint);
+  color: var(--mint-t);
+}
+.account-dialog form {
+  display: contents;
+}
+.account-dialog-fields {
+  display: grid;
+  gap: 14px;
+  margin-block-start: 18px;
+  text-align: start;
+}
+.account-dialog-fields .text-link {
+  justify-self: start;
+  font-size: 13px;
+}
+.account-dialog .form-error {
+  margin-block-start: 14px;
+}
+
+@media (min-width: 1024px) {
+  .account-page {
+    grid-template-rows: calc(84.67 * var(--d)) minmax(0, 1fr);
+  }
+  .account-page .sphere {
+    display: block;
+  }
+  .account-page .sphere-1 {
+    inset-inline-end: calc(600 * var(--d));
+    top: calc(126 * var(--d));
+    width: calc(25.3 * var(--u));
+  }
+  .account-page .sphere-2 {
+    inset-inline-end: calc(470 * var(--d));
+    top: calc(690 * var(--d));
+    width: calc(17.3 * var(--u));
+  }
+  .account-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 calc(44 * var(--d));
+  }
+  .account-back {
+    position: static;
+    width: calc(47.3 * var(--u));
+    height: calc(47.3 * var(--u));
+  }
+  .account-back svg {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+  }
+  .account-main,
+  .account-profile .account-main {
+    overflow-y: auto;
+    padding: calc(34 * var(--d)) calc(320 * var(--d)) calc(40 * var(--d));
+    scrollbar-width: thin;
+  }
+  .profile-card {
+    /* Offsets inside the card's 1px border. */
+    padding: calc(36.3 * var(--u)) calc(43 * var(--d)) calc(33.3 * var(--u));
+    border: 1px solid var(--surface-border);
+    border-radius: calc(28 * var(--u));
+    background: var(--panel);
+    box-shadow: var(--surface-shadow);
+    backdrop-filter: blur(16px);
+  }
+  .profile-head {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: calc(22 * var(--u));
+    text-align: start;
+  }
+  .profile-head > div {
+    padding-block-start: calc(4 * var(--u));
+  }
+  .profile-head h1 {
+    margin: 0;
+    font-size: calc(22 * var(--u));
+    text-align: start;
+  }
+  .profile-help {
+    display: block;
+    margin-block-start: calc(2 * var(--u));
+    color: var(--ink2);
+    font-size: calc(13 * var(--u));
+    line-height: 1.5;
+  }
+  .profile-photo {
+    width: calc(88 * var(--u));
+    margin: 0;
+  }
+  .profile-avatar {
+    width: calc(88 * var(--u));
+    height: calc(88 * var(--u));
+    font-size: calc(36 * var(--u));
+    box-shadow:
+      0 0 0 calc(4 * var(--u)) var(--avatar-ring),
+      var(--photo-shadow);
+  }
+  .profile-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: calc(19 * var(--u)) calc(44.7 * var(--d));
+    margin-block-start: calc(27.3 * var(--u));
+  }
+  .locked-chip {
+    padding-inline: calc(9.2 * var(--u));
+    font-size: calc(11 * var(--u));
+    line-height: calc(18.7 * var(--u));
+  }
+  .profile-email .field-line input {
+    font-size: calc(14 * var(--u));
+  }
+  .profile-divider {
+    gap: calc(9.5 * var(--u));
+    margin-block: calc(26.2 * var(--u)) calc(16.2 * var(--u));
+    font-size: calc(14 * var(--u));
+  }
+  .password-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 0 calc(44.7 * var(--d));
+  }
+  .field-currentPassword {
+    grid-column: 1 / -1;
+  }
+  .field-newPassword label,
+  .field-confirmPassword label {
+    padding-block-start: 0;
+  }
+  .password-fields .password-toggle {
+    margin-inline-end: calc(-3.5 * var(--u));
+  }
+  .password-fields .password-toggle svg {
+    width: calc(21.5 * var(--u));
+    height: calc(21.5 * var(--u));
+  }
+  .profile-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: calc(25.3 * var(--u));
+    margin-block-start: calc(30 * var(--u));
+  }
+  .profile-actions .button-primary {
+    min-width: calc(199.3 * var(--u));
+    min-height: calc(53.3 * var(--u));
+    font-size: calc(16 * var(--u));
+  }
+  .profile-cancel {
+    display: inline;
+    font-size: calc(14 * var(--u));
+  }
+
+  .settings-title {
+    margin-block-start: 0;
+    font-size: calc(22 * var(--u));
+    text-align: start;
+  }
+  .settings-list {
+    gap: calc(12.6 * var(--u));
+    margin-block-start: calc(24 * var(--u));
+  }
+  .settings-card {
+    gap: calc(15.3 * var(--u));
+    min-height: calc(73.4 * var(--u));
+    padding: calc(12.7 * var(--u)) calc(16 * var(--u));
+    border-radius: calc(24 * var(--u));
+  }
+  .settings-expand {
+    border-radius: calc(24 * var(--u));
+  }
+  .settings-icon {
+    width: calc(45.3 * var(--u));
+    height: calc(46 * var(--u));
+    border-radius: calc(14 * var(--u));
+  }
+  .settings-icon svg {
+    width: calc(22 * var(--u));
+    height: calc(22 * var(--u));
+  }
+  .settings-name {
+    font-size: calc(16 * var(--u));
+  }
+  .settings-help {
+    font-size: calc(12 * var(--u));
+  }
+  .status-chip {
+    padding-inline: calc(10 * var(--u));
+    font-size: calc(11 * var(--u));
+    line-height: calc(18.6 * var(--u));
+  }
+  .settings-chevron {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+    margin-inline-end: calc(-1.25 * var(--u));
+  }
+  .settings-reveal > div {
+    padding-inline: calc(16 * var(--u));
+  }
+  .settings-reveal p {
+    font-size: calc(13 * var(--u));
+  }
+  .settings-reveal .button-primary {
+    width: auto;
+    min-height: calc(44 * var(--u));
+    margin-block: calc(12 * var(--u)) calc(16 * var(--u));
+    padding-inline: calc(24 * var(--u));
+    font-size: calc(14 * var(--u));
+  }
+  .danger-card {
+    margin-block-start: calc(21.3 * var(--u));
+    /* Offsets inside the card's 1px border. */
+    padding: calc(17 * var(--u)) calc(20.3 * var(--u)) calc(17.7 * var(--u));
+    border-radius: calc(24 * var(--u));
+  }
+  .danger-head {
+    gap: calc(12.7 * var(--u));
+  }
+  .danger-icon {
+    width: calc(40 * var(--u));
+    height: calc(40 * var(--u));
+    border-radius: calc(12 * var(--u));
+  }
+  .danger-icon svg {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+  }
+  .danger-card h2 {
+    font-size: calc(15 * var(--u));
+  }
+  .danger-card > p {
+    margin-block-start: calc(9 * var(--u));
+    font-size: calc(13 * var(--u));
+    line-height: calc(24 * var(--u));
+  }
+  .danger-button {
+    gap: calc(10 * var(--u));
+    min-width: calc(134 * var(--u));
+    height: calc(40.7 * var(--u));
+    margin-block-start: calc(13.3 * var(--u));
+    padding-inline: calc(19.1 * var(--u));
+    font-size: calc(14 * var(--u));
+  }
+  .danger-button svg {
+    width: calc(15 * var(--u));
+    height: calc(15 * var(--u));
+  }
+  .app-version {
+    margin-block-start: calc(21.7 * var(--u));
+    font-size: calc(12 * var(--u));
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .row-actions,
   .row-actions > div,
@@ -3298,7 +3904,9 @@ html:has(.merge-dialog[open]) {
   .contact-row,
   .account-menu[open],
   .delete-dialog[open],
-  .merge-dialog[open] {
+  .merge-dialog[open],
+  .settings-reveal,
+  .settings-chevron {
     animation: none;
     transition: none;
   }

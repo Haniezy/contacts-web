@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { requireUser } from '@/lib/session';
+import { accountUser, requireUser } from '@/lib/session';
 import { backendFetch } from '@/lib/backend';
 import {
   duplicateCountPath,
@@ -47,11 +47,9 @@ export async function ContactsView({
     : form
       ? { mode: 'new' }
       : null;
-  const name = `${user.firstName} ${user.lastName}`.trim();
-  const shown = name || user.email.split('@')[0];
   return (
     <ContactsApp
-      user={{ name: shown, email: user.email, initial: [...shown][0] ?? '?' }}
+      user={accountUser(user)}
       initial={initial}
       duplicates={duplicates}
       initialForm={initialForm}

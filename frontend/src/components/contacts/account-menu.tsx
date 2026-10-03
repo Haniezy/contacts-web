@@ -13,7 +13,29 @@ export type AccountUser = {
   name: string;
   email: string;
   initial: string;
+  photoUrl: string | null;
 };
+
+// The user's photo, or the first letter of their name.
+export function UserAvatar({
+  user,
+  className = '',
+}: {
+  user: Pick<AccountUser, 'initial' | 'photoUrl'>;
+  className?: string;
+}) {
+  return (
+    <span className={`user-avatar ${className}`} aria-hidden="true">
+      {user.photoUrl ? (
+        // Signed photo links expire after minutes; the image optimizer would cache them.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={user.photoUrl} alt="" decoding="async" />
+      ) : (
+        user.initial
+      )}
+    </span>
+  );
+}
 
 // Mobile: side drawer. Desktop: dropdown under the account button.
 export function AccountMenu({
@@ -71,7 +93,7 @@ export function AccountMenu({
     >
       <div className="menu-sheet">
         <div className="menu-user">
-          <span className="user-avatar">{user.initial}</span>
+          <UserAvatar user={user} />
           <div>
             <p className="menu-name">
               <bdi>{user.name}</bdi>

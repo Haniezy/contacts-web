@@ -6,4 +6,6 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   return NextResponse.next();
 }
-export const config = { matcher: ['/contacts/:path*', '/2fa/setup'] };
+export const config = {
+  matcher: ['/contacts/:path*', '/2fa/setup', '/profile', '/settings'],
+};

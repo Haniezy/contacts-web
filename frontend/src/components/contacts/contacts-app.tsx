@@ -17,7 +17,7 @@ import { ThemeSwitch } from '@/components/preferences/theme-switch';
 import { LanguageSwitch } from '@/components/preferences/language-switch';
 import { ContactRow } from './contact-row';
 import { ContactPanel } from './contact-panel';
-import { AccountMenu, type AccountUser } from './account-menu';
+import { AccountMenu, UserAvatar, type AccountUser } from './account-menu';
 import { DeleteDialog } from './delete-dialog';
 import { ContactForm } from './contact-form';
 
@@ -294,7 +294,7 @@ export function ContactsApp({
             onClick={() => setMenuOpen(true)}
           >
             <Icon name="chevron" />
-            <span className="user-avatar">{user.initial}</span>
+            <UserAvatar user={user} />
           </button>
         </div>
         <div className="contacts-title">
