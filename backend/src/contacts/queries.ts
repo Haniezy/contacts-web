@@ -60,29 +60,44 @@ export async function listContacts(
   };
 }
 
+type Kind = 'phone' | 'name';
+const keyOf = (kind: Kind) => (kind === 'name' ? nameKey : phoneKey);
+
+// Groups of one kind with all member IDs, oldest first.
+const groupsOf = (kind: Kind, userId: string) => {
+  const key = keyOf(kind);
+  return Prisma.sql`SELECT ${kind}::text AS by, ${key} AS value, count(*) AS count,
+    array_agg("id" ORDER BY "createdAt", "id") AS all_ids FROM "Contact"
+    WHERE "userId" = ${userId}::uuid GROUP BY ${key} HAVING count(*) > 1 AND ${key} <> ''`;
+};
+
 export async function duplicateContacts(
   db: PrismaClient,
   userId: string,
-  query: { by: 'name' | 'phone'; page: number; pageSize: number },
+  query: { by: Kind | 'all'; page: number; pageSize: number },
 ) {
   const { by, page, pageSize } = query;
-  const key = by === 'name' ? nameKey : phoneKey;
-  // A phone group the user ignored stays hidden while no new member joins it.
-  const ignored =
-    by === 'phone'
-      ? Prisma.sql`WHERE NOT EXISTS (SELECT 1 FROM "DuplicateIgnore" i
-          WHERE i."userId" = ${userId}::uuid AND i."phone" = all_groups.value
-          AND all_groups.all_ids <@ i."contactIds")`
-      : Prisma.empty;
-  const base = Prisma.sql`WITH all_groups AS (SELECT ${key} AS value, count(*) AS count,
-    array_agg("id" ORDER BY "createdAt", "id") AS all_ids FROM "Contact"
-    WHERE "userId" = ${userId}::uuid GROUP BY ${key} HAVING count(*) > 1 AND ${key} <> ''),
-    groups AS (SELECT value, count, all_ids[1:20] AS ids FROM all_groups ${ignored})`;
+  // "all" lists phone groups, then name groups; a name group with exactly the
+  // members of a phone group is the same group and is listed once.
+  const candidates =
+    by === 'all'
+      ? Prisma.sql`phone_groups AS (${groupsOf('phone', userId)}),
+        all_groups AS (SELECT * FROM phone_groups UNION ALL
+          SELECT * FROM (${groupsOf('name', userId)}) n
+          WHERE NOT EXISTS (SELECT 1 FROM phone_groups p WHERE p.all_ids = n.all_ids))`
+      : Prisma.sql`all_groups AS (${groupsOf(by, userId)})`;
+  // An ignored group stays hidden while no new member joins it.
+  const base = Prisma.sql`WITH ${candidates},
+    groups AS (SELECT by, value, count, all_ids[1:20] AS ids FROM all_groups g
+      WHERE NOT EXISTS (SELECT 1 FROM "DuplicateIgnore" i
+        WHERE i."userId" = ${userId}::uuid AND i."by" = g.by AND i."value" = g.value
+        AND g.all_ids <@ i."contactIds"))`;
   const groups = await db.$queryRaw<
-    { value: string; count: bigint; ids: string[]; total: bigint }[]
+    { by: Kind; value: string; count: bigint; ids: string[]; total: bigint }[]
   >(Prisma.sql`${base}
     SELECT *, count(*) OVER() AS total FROM groups
-    ORDER BY value COLLATE "contacts_alphabetic" LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`);
+    ORDER BY by = 'phone' DESC, value COLLATE "contacts_alphabetic", by
+    LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`);
   const total = groups.length
     ? Number(groups[0].total)
     : page > 1
@@ -105,7 +120,7 @@ export async function duplicateContacts(
     : [];
   return {
     groups: groups.map((g) => ({
-      by,
+      by: g.by,
       value: g.value,
       count: Number(g.count),
       hasMore: Number(g.count) > g.ids.length,
@@ -120,25 +135,26 @@ export async function duplicateContacts(
   };
 }
 
-// Hides the phone group of the given contacts until a new member joins it.
-// Returns false when the contacts are not one phone group of this user.
+// Hides the phone or name group of the given contacts until a new member
+// joins it. The contacts must be exactly one such group of this user.
 export async function ignoreDuplicates(
   tx: Prisma.TransactionClient,
   userId: string,
-  ids: string[],
+  { by, contactIds }: { by: Kind; contactIds: string[] },
 ) {
+  const key = keyOf(by);
   const [chosen] = await tx.$queryRaw<{ count: bigint; keys: string[] }[]>(
-    Prisma.sql`SELECT count(*) AS count, array_agg(DISTINCT ${phoneKey}) AS keys
-      FROM "Contact" WHERE "userId" = ${userId}::uuid AND "id" = ANY(${ids}::uuid[])`,
+    Prisma.sql`SELECT count(*) AS count, array_agg(DISTINCT ${key}) AS keys
+      FROM "Contact" WHERE "userId" = ${userId}::uuid AND "id" = ANY(${contactIds}::uuid[])`,
   );
-  if (Number(chosen.count) !== ids.length) return 'missing';
+  if (Number(chosen.count) !== contactIds.length) return 'missing';
   if (chosen.keys.length !== 1 || chosen.keys[0] === '') return 'mismatch';
-  const phone = chosen.keys[0];
+  const value = chosen.keys[0];
   await tx.$executeRaw(
-    Prisma.sql`INSERT INTO "DuplicateIgnore" ("userId", "phone", "contactIds")
-      SELECT ${userId}::uuid, ${phone}, array_agg("id" ORDER BY "id") FROM "Contact"
-      WHERE "userId" = ${userId}::uuid AND ${phoneKey} = ${phone}
-      ON CONFLICT ("userId", "phone") DO UPDATE SET "contactIds" = EXCLUDED."contactIds", "createdAt" = now()`,
+    Prisma.sql`INSERT INTO "DuplicateIgnore" ("userId", "by", "value", "contactIds")
+      SELECT ${userId}::uuid, ${by}, ${value}, array_agg("id" ORDER BY "id") FROM "Contact"
+      WHERE "userId" = ${userId}::uuid AND ${key} = ${value}
+      ON CONFLICT ("userId", "by", "value") DO UPDATE SET "contactIds" = EXCLUDED."contactIds", "createdAt" = now()`,
   );
   return 'ignored';
 }

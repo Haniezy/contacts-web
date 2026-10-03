@@ -362,6 +362,45 @@ test('an ignored phone group stays hidden until a new member joins it', async ()
   expect(await groups()).toHaveLength(1);
 });
 
+test('the combined list shows phone groups, then name groups, each group once', async () => {
+  await add({ name: 'سارا احمدی', phone: '09120000002' });
+  await add({ name: 'سارا  احمدي', phone: '09360000002' });
+  await add({ name: 'X', phone: '09120000003' });
+  await add({ name: 'Y', phone: '+989120000003' });
+  // Same name and same number: one group, listed as a phone group.
+  await add({ name: 'Same', phone: '09120000004' });
+  await add({ name: 'Same', phone: '09120000004' });
+  await add({ name: 'سارا احمدی', phone: '09120000002' }, 1);
+  const all = async () =>
+    (await api('get', '/duplicates?by=all').expect(200)).body;
+  const body = await all();
+  expect(body.pagination.total).toBe(3);
+  expect(body.groups.map((g) => [g.by, g.count])).toEqual([
+    ['phone', 2],
+    ['phone', 2],
+    ['name', 2],
+  ]);
+  const sara = body.groups[2].contacts.map((c) => c.id);
+
+  // A name group is ignored by name; asking for it as a phone group fails.
+  await api('post', '/duplicates/ignore')
+    .send({ by: 'phone', contactIds: sara })
+    .expect(409);
+  await api('post', '/duplicates/ignore')
+    .send({ by: 'email', contactIds: sara })
+    .expect(400);
+  await api('post', '/duplicates/ignore')
+    .send({ by: 'name', contactIds: sara })
+    .expect(204);
+  expect((await all()).groups.map((g) => g.by)).toEqual(['phone', 'phone']);
+  await add({ name: 'سارا احمدی', phone: '09390000002' });
+  expect((await all()).groups.map((g) => [g.by, g.count])).toEqual([
+    ['phone', 2],
+    ['phone', 2],
+    ['name', 3],
+  ]);
+});
+
 test('duplicate group and member previews are bounded', async () => {
   await db.contact.createMany({
     data: Array.from({ length: 23 }, (_, i) => ({

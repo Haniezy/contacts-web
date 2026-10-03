@@ -73,7 +73,11 @@ export const listQuery = z
   })
   .strict();
 export const duplicateQuery = z
-  .object({ by: z.enum(['phone', 'name']).default('phone'), page, pageSize })
+  .object({
+    by: z.enum(['phone', 'name', 'all']).default('phone'),
+    page,
+    pageSize,
+  })
   .strict();
 export const mergeBody = z
   .object({
@@ -87,7 +91,10 @@ export const mergeBody = z
       new Set([v.targetId, ...v.sourceIds]).size === v.sourceIds.length + 1,
   );
 export const ignoreBody = z
-  .object({ contactIds: z.array(idSchema).min(2).max(20) })
+  .object({
+    by: z.enum(['phone', 'name']).default('phone'),
+    contactIds: z.array(idSchema).min(2).max(20),
+  })
   .strict()
   .refine((v) => new Set(v.contactIds).size === v.contactIds.length);
 export const contactSelect = {

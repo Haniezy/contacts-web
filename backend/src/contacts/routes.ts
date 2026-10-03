@@ -172,7 +172,7 @@ export function contactsRouter(
     }
     const userId = owner(res.locals);
     const result = await mutate(userId, (tx) =>
-      ignoreDuplicates(tx, userId, body.data.contactIds),
+      ignoreDuplicates(tx, userId, body.data),
     );
     if (result === 'missing') throw new ContactError(404, 'CONTACT_NOT_FOUND');
     if (result === 'mismatch') throw new ContactError(409, 'NOT_DUPLICATES');

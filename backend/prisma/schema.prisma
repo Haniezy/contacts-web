@@ -10,22 +10,22 @@ datasource db {
 }
 
 model User {
-  id                       String           @id @default(uuid()) @db.Uuid
-  email                    String           @unique @db.VarChar(254)
-  firstName                String           @default("") @db.VarChar(100)
-  lastName                 String           @default("") @db.VarChar(100)
-  passwordHash             String           @db.Text
+  id                       String            @id @default(uuid()) @db.Uuid
+  email                    String            @unique @db.VarChar(254)
+  firstName                String            @default("") @db.VarChar(100)
+  lastName                 String            @default("") @db.VarChar(100)
+  passwordHash             String            @db.Text
   // AES-256-GCM encrypted; pending until enrollment has been confirmed.
-  twoFactorSecretEncrypted String?          @db.Text
-  twoFactorEnabled         Boolean          @default(false)
-  twoFactorSetupExpiresAt  DateTime?        @db.Timestamptz(3)
-  twoFactorSetupSessionId  String?          @db.Uuid
-  twoFactorSetupAttempts   Int              @default(0)
+  twoFactorSecretEncrypted String?           @db.Text
+  twoFactorEnabled         Boolean           @default(false)
+  twoFactorSetupExpiresAt  DateTime?         @db.Timestamptz(3)
+  twoFactorSetupSessionId  String?           @db.Uuid
+  twoFactorSetupAttempts   Int               @default(0)
   twoFactorLastStep        Int?
   // Store hashes only. Never persist plaintext recovery codes.
-  recoveryCodeHashes       String[]         @default([])
-  createdAt                DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt                DateTime         @updatedAt @db.Timestamptz(3)
+  recoveryCodeHashes       String[]          @default([])
+  createdAt                DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime          @updatedAt @db.Timestamptz(3)
   contacts                 Contact[]
   sessions                 AuthSession[]
   loginChallenges          LoginChallenge[]
@@ -73,14 +73,17 @@ model Contact {
   @@index([userId, phone])
 }
 
-// A phone duplicate group the user chose to keep apart. The group stays hidden
-// while all of its members are listed here; a new matching contact shows it again.
+// A duplicate group (same phone or same name) the user chose to keep apart.
+// The group stays hidden while all of its members are listed here; a new
+// matching contact shows it again.
 model DuplicateIgnore {
   userId     String   @db.Uuid
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phone      String   @db.VarChar(32)
+  // "phone" or "name"; value is the normalized number or name.
+  by         String   @db.VarChar(5)
+  value      String   @db.VarChar(200)
   contactIds String[] @db.Uuid
   createdAt  DateTime @default(now()) @db.Timestamptz(3)
 
-  @@id([userId, phone])
+  @@id([userId, by, value])
 }
