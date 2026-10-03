@@ -303,9 +303,10 @@ export function ContactForm({
       >
         <Icon name="close" />
       </button>
-      <h2 className="form-title">
+      {/* On mobile the form is the whole page, so its title is the page's h1. */}
+      <h1 className="form-title">
         {t(mode === 'new' ? 'newTitle' : 'editTitle')}
-      </h2>
+      </h1>
       <form
         ref={form}
         method="post"

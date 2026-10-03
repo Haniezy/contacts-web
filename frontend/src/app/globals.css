@@ -47,6 +47,10 @@
   --disc-shadow: 0 10px 22px rgb(95 168 198 / 14%);
   --button-shadow: 0 12px 28px rgb(95 168 198 / 30%);
   --feature-text: var(--ink);
+  /* Slightly darker than ink2/blue-d where small text sits on a tint:
+     enough for WCAG AA contrast, barely visible against the design. */
+  --ink2-strong: #606d81;
+  --blue-strong: #599dba;
 }
 
 [data-theme='dark'] {
@@ -96,6 +100,8 @@
   --disc-shadow: 0 10px 24px rgb(0 0 0 / 25%);
   --button-shadow: 0 10px 30px rgb(104 194 232 / 24%);
   --feature-text: var(--ink2);
+  --ink2-strong: var(--ink2);
+  --blue-strong: var(--blue-d);
 }
 
 @theme inline {
@@ -193,7 +199,7 @@ button:disabled {
   padding-inline: 12px;
   border: 0;
   border-radius: 999px;
-  color: var(--ink2);
+  color: var(--ink2-strong);
   font-weight: 700;
 }
 .language-switch button[aria-pressed='true'] {
@@ -235,7 +241,7 @@ button:disabled {
 }
 .button-secondary {
   background: var(--chip);
-  color: var(--blue-d);
+  color: var(--blue-strong);
   box-shadow: 0 10px 24px rgb(95 168 198 / 12%);
 }
 .button-primary:disabled {
@@ -401,7 +407,7 @@ button:disabled {
 }
 .auth-brand > p {
   margin-block-start: -1px;
-  color: var(--ink2);
+  color: var(--ink2-strong);
   font-size: 12px;
 }
 .auth-content {
@@ -3897,6 +3903,198 @@ html:has(.merge-dialog[open]) {
     font-size: calc(12 * var(--u));
   }
 }
+/* Portrait tablets (600–1023px): the phone layout in a centred 600px column.
+   Decoration may spill out of the column; the page never scrolls sideways.
+   Desktop starts at 1024px. */
+@media (min-width: 600px) and (max-width: 1023px) {
+  /* On both: html's value goes to the viewport, so body clips for itself. */
+  html,
+  body {
+    overflow-x: clip;
+  }
+  .contacts-page,
+  .auth-shell,
+  .merge-sheet {
+    max-width: 600px;
+    margin-inline: auto;
+    overflow: visible;
+  }
+  .contacts-decor,
+  .contact-form {
+    overflow: visible;
+  }
+  .merge-dialog {
+    overflow-x: clip;
+  }
+  .contacts-fab {
+    inset-inline-end: calc((100vw - 600px) / 2 + 24px);
+  }
+}
+/* Loading placeholders and the not-found / error screens. */
+:root {
+  --skeleton: rgb(255 255 255 / 75%);
+}
+[data-theme='dark'] {
+  --skeleton: rgb(255 255 255 / 6%);
+}
+.skeleton {
+  display: block;
+  border-radius: 999px;
+  background: var(--skeleton);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+.skeleton-disc {
+  width: 48px;
+  height: 48px;
+}
+.skeleton-search {
+  height: 48px;
+}
+.skeleton-title {
+  grid-column: 1 / -1;
+  width: 140px;
+  height: 26px;
+  margin-block-start: 20px;
+}
+.skeleton-row {
+  height: 64px;
+  margin-block-end: 12px;
+  border-radius: 22px;
+}
+.skeleton-line {
+  width: 60%;
+  height: 16px;
+  margin: 12px auto 0;
+}
+.skeleton-card {
+  height: 140px;
+  border-radius: 24px;
+}
+.skeleton-field {
+  height: 64px;
+  border-radius: 16px;
+}
+.skeleton-avatar {
+  width: 112px;
+  height: 112px;
+  margin-inline: auto;
+  border-radius: 50%;
+}
+.is-loading .contacts-header {
+  align-content: start;
+}
+.duplicates-main .skeleton-line {
+  margin-block-start: 30px;
+}
+.duplicates-main .duplicate-groups,
+.settings-list:has(.skeleton) {
+  margin-block-start: 20px;
+}
+.profile-head .skeleton-avatar {
+  margin-block-start: 26px;
+}
+
+.status-screen {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 32px 20px;
+  overflow: clip;
+}
+.status-decor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.status-card {
+  display: grid;
+  justify-items: center;
+  max-width: 360px;
+  text-align: center;
+}
+.status-icon {
+  width: 74px;
+  height: 74px;
+}
+.status-icon svg {
+  width: 32px;
+  height: 32px;
+}
+.status-card h1 {
+  margin-block-start: 20px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.status-card p {
+  margin-block-start: 8px;
+  color: var(--ink2);
+  font-size: 14px;
+}
+.status-actions {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  margin-block-start: 24px;
+}
+.status-actions .button-primary {
+  min-height: 52px;
+  font-size: 16px;
+}
+@media (min-width: 1024px) {
+  .status-screen {
+    --d: min(100vw / 1280, 1.5px);
+    --u: max(var(--d), 1px);
+  }
+  .skeleton-disc {
+    width: calc(47.3 * var(--u));
+    height: calc(47.3 * var(--u));
+  }
+  .skeleton-search {
+    position: absolute;
+    inset-inline-start: calc(316 * var(--d));
+    width: calc(520 * var(--d));
+    height: calc(48 * var(--u));
+  }
+  .is-loading .contacts-header .skeleton-title {
+    display: none;
+  }
+  .skeleton-title {
+    width: calc(160 * var(--u));
+    height: calc(30 * var(--u));
+    margin: 0 0 calc(20 * var(--u));
+  }
+  .skeleton-row {
+    height: calc(66 * var(--u));
+    margin-block-end: calc(10 * var(--u));
+    border-radius: calc(22 * var(--u));
+  }
+  .contact-panel .skeleton-avatar {
+    width: calc(132 * var(--u));
+    height: calc(132 * var(--u));
+  }
+  .contact-panel .skeleton-line {
+    width: calc(260 * var(--u));
+    margin-block-start: calc(20 * var(--u));
+  }
+  .skeleton-card {
+    height: calc(150 * var(--u));
+    border-radius: calc(24 * var(--u));
+  }
+  .profile-head .skeleton-avatar {
+    width: calc(88 * var(--u));
+    height: calc(88 * var(--u));
+    margin: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .row-actions,
   .row-actions > div,
@@ -3906,7 +4104,8 @@ html:has(.merge-dialog[open]) {
   .delete-dialog[open],
   .merge-dialog[open],
   .settings-reveal,
-  .settings-chevron {
+  .settings-chevron,
+  .skeleton {
     animation: none;
     transition: none;
   }

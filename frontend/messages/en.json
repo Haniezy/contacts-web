@@ -97,7 +97,12 @@
     "sixDigits": "Enter all six digits.",
     "recoveryFormat": "Enter the complete recovery code as saved.",
     "clipboard": "Automatic copying failed. Select the text and copy it manually.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundHelp": "The address may be wrong, or this page no longer exists.",
+    "errorTitle": "Something went wrong",
+    "home": "Back to the home page",
+    "loading": "Loading…"
   },
   "Landing": {
     "title": "All your contacts, together and organized",
