@@ -76,6 +76,31 @@ export function DuplicatesSkeleton() {
   );
 }
 
+export function ContactDetailsSkeleton() {
+  return (
+    <Loading>
+      <div className="contacts-page contact-details-page is-loading">
+        <div className="contacts-decor" aria-hidden="true">
+          <span className="contacts-circle" />
+          <span className="contacts-mint" />
+        </div>
+        <header className="details-header">
+          <span className="details-back icon-disc" aria-hidden="true" />
+        </header>
+        <main className="details-main">
+          <div className="details-card">
+            <span className="skeleton skeleton-avatar" />
+            <Bars count={2} className="skeleton-line" />
+            <div className="panel-cards">
+              <Bars count={2} className="skeleton-card" />
+            </div>
+          </div>
+        </main>
+      </div>
+    </Loading>
+  );
+}
+
 export function AccountSkeleton({
   variant,
 }: {

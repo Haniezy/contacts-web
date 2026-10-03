@@ -230,6 +230,124 @@ test('cancel, close and back leave without saving', async ({
   ).toBeVisible();
 });
 
+test('the details page shows one owned contact and its actions', async ({
+  page,
+  context,
+  account,
+  isMobile,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/contacts');
+  const link = page.getByRole('link', { name: 'جزئیات بهار رضایی' });
+  const href = await link.getAttribute('href');
+  expect(href).toMatch(/\/contacts\/[0-9a-f-]{36}$/);
+  // Desktop keeps the avatar click on the list; the address still opens the page.
+  if (isMobile) await link.click();
+  else await page.goto(href!);
+
+  await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole('heading', { name: 'بهار رضایی' })).toBeVisible();
+  await expect(page.getByText('۰۹۱۲ ۳۴۵ ۶۷۸۹')).toBeVisible();
+  await expect(page.getByText('۱۵ مهر ۱۳۷۵')).toBeVisible();
+  await expect(page.getByText('پنجشنبه زنگ بزن')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'تماس' })).toHaveAttribute(
+    'href',
+    'tel:09123456789',
+  );
+  await expect(page.getByRole('link', { name: 'پیامک' })).toHaveAttribute(
+    'href',
+    'sms:09123456789',
+  );
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data: { title?: string; text?: string }) => {
+        (window as unknown as { __shared?: unknown }).__shared = data;
+      },
+    });
+  });
+  await page.getByRole('button', { name: 'اشتراک' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as { __shared?: unknown }).__shared),
+    )
+    .toEqual({ title: 'بهار رضایی', text: 'بهار رضایی\n09123456789' });
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: undefined,
+    });
+  });
+  await page.getByRole('button', { name: 'اشتراک' }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('بهار رضایی\n09123456789');
+  await expect(page.getByRole('status')).toHaveText('اطلاعات مخاطب کپی شد.');
+
+  await page.getByRole('link', { name: 'ویرایش مخاطب' }).click();
+  await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}\/edit$/);
+  await expect(page.getByLabel('نام و نام خانوادگی')).toHaveValue('بهار رضایی');
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: 'بهار رضایی' })).toBeVisible();
+
+  const other = fixture<{ email: string; token: string }>({ action: 'create' });
+  try {
+    await context.clearCookies();
+    await context.addCookies([
+      {
+        name: 'contacts_session',
+        value: other.token,
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+    await page.goto(href!);
+    await expect(
+      page.getByRole('heading', { name: 'این صفحه پیدا نشد' }),
+    ).toBeVisible();
+  } finally {
+    fixture({ action: 'delete', email: other.email });
+  }
+  await context.clearCookies();
+  await context.addCookies([
+    {
+      name: 'contacts_session',
+      value: account.token,
+      domain: '127.0.0.1',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/contacts/00000000-0000-4000-8000-000000000000');
+  await expect(
+    page.getByRole('heading', { name: 'این صفحه پیدا نشد' }),
+  ).toBeVisible();
+  await page.goto('/contacts/not-a-contact');
+  await expect(
+    page.getByRole('heading', { name: 'این صفحه پیدا نشد' }),
+  ).toBeVisible();
+
+  await page.goto(href!);
+  await page.getByRole('button', { name: 'حذف مخاطب' }).click();
+  const dialog = page.getByRole('dialog', { name: 'حذف «بهار رضایی»؟' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'انصراف' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'بهار رضایی' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'حذف مخاطب' }).click();
+  await dialog.getByRole('button', { name: 'حذف', exact: true }).click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await expect(page.getByRole('button', { name: 'بهار رضایی' })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'بهار رضایی' })).toHaveCount(0);
+});
+
 test('a chosen photo is previewed and can be removed before saving', async ({
   page,
 }) => {

@@ -96,6 +96,19 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
   await page.goto('/contacts');
   await page.getByRole('button', { name: 'بهار رضایی' }).click();
   await audit(page);
+  const details = page.getByRole('link', { name: 'جزئیات بهار رضایی' });
+  await page.goto((await details.getAttribute('href'))!);
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'بهار رضایی' }),
+  ).toBeVisible();
+  await audit(page);
+  await page.getByRole('button', { name: 'حذف مخاطب' }).click();
+  await expect(
+    page.getByRole('dialog', { name: 'حذف «بهار رضایی»؟' }),
+  ).toBeVisible();
+  await audit(page);
+  await page.keyboard.press('Escape');
+  await page.goto('/contacts');
   await expect(await openMenu(page)).toBeVisible();
   await audit(page);
   await page.keyboard.press('Escape');
@@ -133,7 +146,11 @@ test('the keyboard reaches every control with a visible focus ring', async ({
       sameSite: 'Lax',
     },
   ]);
-  for (const path of ['/contacts', '/profile', '/settings']) {
+  await page.goto('/contacts');
+  const details = await page
+    .getByRole('link', { name: 'جزئیات آرش محمدی' })
+    .getAttribute('href');
+  for (const path of ['/contacts', details!, '/profile', '/settings']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     const seen = new Set<string>();
