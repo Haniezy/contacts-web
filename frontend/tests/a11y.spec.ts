@@ -17,6 +17,7 @@ const designColours = [
   '.button-mint',
   '.language-switch [aria-pressed="true"]',
   '.theme-switch',
+  '.error-toast',
 ];
 
 async function audit(page: Page) {
@@ -123,6 +124,32 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
   await expect(
     page.getByRole('dialog', { name: 'حساب کاربری حذف بشه؟' }),
   ).toBeVisible();
+  await audit(page);
+});
+
+test('the empty book and the error toast pass the accessibility checks', async ({
+  page,
+  context,
+  account,
+}) => {
+  await context.addCookies([
+    {
+      name: 'contacts_session',
+      value: account.token,
+      domain: '127.0.0.1',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/contacts');
+  await expect(
+    page.getByRole('heading', { name: 'هنوز مخاطبی نداری' }),
+  ).toBeVisible();
+  await audit(page);
+  await page.route('**/api/contacts?**', (route) => route.abort());
+  await page.getByRole('searchbox').fill('x');
+  await expect(page.getByRole('alert')).toBeVisible();
   await audit(page);
 });
 

@@ -22,36 +22,6 @@ function Loading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ContactsSkeleton() {
-  return (
-    <Loading>
-      <div className="contacts-page is-loading">
-        <div className="contacts-decor" aria-hidden="true">
-          <span className="contacts-circle" />
-          <span className="contacts-mint" />
-        </div>
-        <header className="contacts-header">
-          <span className="skeleton skeleton-disc" />
-          <span className="skeleton skeleton-search" />
-          <span className="skeleton skeleton-title" />
-        </header>
-        <main className="contacts-main">
-          <section className="contacts-column">
-            <span className="skeleton skeleton-title only-desktop" />
-            <div className="contacts-scroll">
-              <Bars count={7} className="skeleton-row" />
-            </div>
-          </section>
-          <aside className="contact-panel">
-            <span className="skeleton skeleton-avatar" />
-            <Bars count={2} className="skeleton-line" />
-          </aside>
-        </main>
-      </div>
-    </Loading>
-  );
-}
-
 export function DuplicatesSkeleton() {
   const t = useTranslations('Duplicates');
   return (

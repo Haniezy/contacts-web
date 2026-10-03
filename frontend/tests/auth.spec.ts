@@ -53,7 +53,9 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .getByRole('link', { name: 'ورود به مخاطبین', exact: true })
       .click();
     await expect(page).toHaveURL(/\/contacts$/);
-    await expect(page.getByText('هنوز مخاطبی نداری.')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'هنوز مخاطبی نداری' }),
+    ).toBeVisible();
     const cookies = await context.cookies();
     const session = cookies.find((c) => c.name === 'contacts_session');
     expect(session?.httpOnly).toBe(true);
@@ -101,7 +103,9 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .click();
     await expect(page).toHaveURL(/\/contacts$/);
     await page.reload();
-    await expect(page.getByText('هنوز مخاطبی نداری.')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'هنوز مخاطبی نداری' }),
+    ).toBeVisible();
   } finally {
     fixture({ action: 'delete', email });
   }

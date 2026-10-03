@@ -26,7 +26,7 @@ export const test = base.extend<{
 export { expect };
 
 // The menu opens from «منو» on mobile and tablet and from «حساب کاربری» on
-// desktop. Waits for the loaded page, whose skeleton has neither.
+// desktop.
 export async function openMenu(page: Page) {
   await page
     .getByRole('button', { name: /^(منو|حساب کاربری)$/ })

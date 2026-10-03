@@ -13,6 +13,7 @@ import {
 import {
   ContactsApp,
   type FormState,
+  type InitialContacts,
 } from '@/components/contacts/contacts-app';
 
 // Shared by /contacts, /contacts/new and /contacts/[id]/edit: the list page,
@@ -24,21 +25,29 @@ export async function ContactsView({
 }) {
   const user = await requireUser();
   const cookie = (await cookies()).toString();
-  // First page, duplicate counts and the edited contact load in parallel.
-  const [list, duplicateList, edited] = await Promise.all([
-    backendFetch(`contacts?page=1&pageSize=${pageSize}`, cookie),
-    backendFetch(duplicateCountPath, cookie),
+  // The list and the duplicate count stream in behind the real header (the
+  // page shows skeletons meanwhile); a failure becomes the retry toast.
+  const initial: Promise<InitialContacts> = Promise.all([
+    backendFetch(`contacts?page=1&pageSize=${pageSize}`, cookie)
+      .then(async (list) =>
+        list.ok ? ((await list.json()) as ContactPage) : null,
+      )
+      .catch(() => null),
+    backendFetch(duplicateCountPath, cookie)
+      .then(async (response) =>
+        response.ok
+          ? ((await response.json()) as DuplicatePage).pagination.total
+          : 0,
+      )
+      .catch(() => 0),
+  ]).then(([page, duplicates]) => ({ page, duplicates }));
+  const edited =
     form?.mode === 'edit'
-      ? backendFetch(`contacts/${encodeURIComponent(form.id)}`, cookie)
-      : null,
-  ]);
-  if (list.status === 401 || edited?.status === 401) redirect('/login');
+      ? await backendFetch(`contacts/${encodeURIComponent(form.id)}`, cookie)
+      : null;
+  if (edited?.status === 401) redirect('/login');
   if (edited && (edited.status === 404 || edited.status === 400)) notFound();
   if (edited && !edited.ok) throw new Error('Contacts service unavailable');
-  const initial = list.ok ? ((await list.json()) as ContactPage) : null;
-  const duplicates = duplicateList.ok
-    ? ((await duplicateList.json()) as DuplicatePage).pagination.total
-    : 0;
   const initialForm: FormState | null = edited
     ? {
         mode: 'edit',
@@ -51,7 +60,6 @@ export async function ContactsView({
     <ContactsApp
       user={accountUser(user)}
       initial={initial}
-      duplicates={duplicates}
       initialForm={initialForm}
     />
   );

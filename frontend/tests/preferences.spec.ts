@@ -3,7 +3,7 @@ import { expect, test } from './fixtures';
 
 // Desktop shows the switches in the header; mobile keeps them in the menu.
 async function preferences(page: Page) {
-  // The search box appears once the page is loaded, past its skeleton.
+  // Wait for the contacts header.
   await page.locator('.contacts-search').waitFor();
   const menu = page.getByRole('button', { name: 'منو' });
   const english = page.getByRole('button', { name: 'Menu' });

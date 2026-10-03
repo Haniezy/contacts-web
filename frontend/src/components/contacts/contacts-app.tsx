@@ -1,5 +1,13 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -25,31 +33,51 @@ const searchDelay = 300;
 // Same alphabetical order as the API (ICU collation).
 const collator = new Intl.Collator('fa');
 export type FormState = { mode: 'new' } | { mode: 'edit'; contact: Contact };
+// First page (null when it could not be read) and the duplicate group count.
+export type InitialContacts = { page: ContactPage | null; duplicates: number };
 const editPath = /^\/contacts\/([0-9a-f-]{36})\/edit$/i;
+const skeletonRows = 6;
+
+// Renders from local state once it exists; before that, from the streamed
+// first page, suspending (showing the fallback) until it arrives.
+function Loaded({
+  data,
+  initial,
+  children,
+}: {
+  data: ContactPage | null | undefined;
+  initial: Promise<InitialContacts>;
+  children: (page: ContactPage | null, duplicates: number) => ReactNode;
+}) {
+  const first = data === undefined ? use(initial) : null;
+  return children(first ? first.page : (data ?? null), first?.duplicates ?? 0);
+}
 
 export function ContactsApp({
   user,
   initial,
-  duplicates: initialDuplicates,
   initialForm = null,
 }: {
   user: AccountUser;
-  initial: ContactPage | null;
-  duplicates: number;
+  initial: Promise<InitialContacts>;
   initialForm?: FormState | null;
 }) {
   const t = useTranslations('Contacts');
   const a = useTranslations('Auth');
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [data, setData] = useState(initial);
-  const [failed, setFailed] = useState(initial === null);
+  // The search the shown results belong to (the empty state needs none).
+  const [shownQuery, setShownQuery] = useState('');
+  // Undefined until the streamed first page has been taken over.
+  const [data, setData] = useState<ContactPage | null>();
+  const [failed, setFailed] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Contact | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [duplicates, setDuplicates] = useState(initialDuplicates);
+  const [duplicates, setDuplicates] = useState<number>();
   const [form, setForm] = useState<FormState | null>(initialForm);
   // True when the form was opened in place (history entry pushed here).
   const pushed = useRef(false);
@@ -67,6 +95,19 @@ export function ContactsApp({
     [],
   );
 
+  // Take over the streamed first page, unless a search already replaced it.
+  useEffect(() => {
+    let live = true;
+    void initial.then((first) => {
+      if (!live) return;
+      setData((current) => (current === undefined ? first.page : current));
+      setDuplicates((current) => current ?? first.duplicates);
+    });
+    return () => {
+      live = false;
+    };
+  }, [initial]);
+
   // Debounced search; a newer query aborts the request of an older one.
   useEffect(() => {
     if (firstQuery.current) {
@@ -79,6 +120,7 @@ export function ContactsApp({
       search.current = controller;
       try {
         setData(await load(query.trim(), 1, controller.signal));
+        setShownQuery(query.trim());
         setFailed(false);
       } catch (error) {
         if (!controller.signal.aborted) setFailed(true);
@@ -139,6 +181,21 @@ export function ContactsApp({
       // The badge keeps its previous value; the list is already correct.
     }
   }, []);
+
+  // The error toast's retry: re-read the current results from the start.
+  async function retry() {
+    setRetrying(true);
+    try {
+      setData(await load(query.trim(), 1));
+      setShownQuery(query.trim());
+      setFailed(false);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401)
+        router.replace('/login');
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   // The form opens in place (list and search state stay intact) while the
   // address still reflects it, so reload and back behave as expected.
@@ -212,6 +269,7 @@ export function ContactsApp({
     });
     try {
       setData(await load(query.trim(), 1));
+      setShownQuery(query.trim());
     } catch {
       // The local copy above stays until the next search or reload.
     }
@@ -235,12 +293,44 @@ export function ContactsApp({
     void refreshDuplicates();
   }
 
-  const contacts = data?.contacts ?? [];
-  const selected = contacts.find((c) => c.id === selectedId) ?? null;
-  const count = (
-    <span className="count-chip">
-      {t('count', { count: data?.pagination.total ?? 0 })}
-    </span>
+  const selected = data?.contacts.find((c) => c.id === selectedId) ?? null;
+  // Parts that need the first page wait for it behind their own skeleton;
+  // the header and everything else render straight away.
+  const loaded = (
+    fallback: ReactNode,
+    render: (page: ContactPage | null, duplicates: number) => ReactNode,
+  ) => (
+    <Suspense fallback={fallback}>
+      <Loaded data={data} initial={initial}>
+        {render}
+      </Loaded>
+    </Suspense>
+  );
+  const countSkeleton = (
+    <span className="shimmer count-skeleton" aria-hidden="true" />
+  );
+  const count = loaded(countSkeleton, (page) =>
+    page ? (
+      <span className="count-chip">
+        {t('count', { count: page.pagination.total })}
+      </span>
+    ) : (
+      countSkeleton
+    ),
+  );
+  const addLink = (className: string, children: ReactNode, label?: string) => (
+    <Link
+      href="/contacts/new"
+      prefetch={false}
+      className={className}
+      aria-label={label}
+      onClick={(event) => {
+        event.preventDefault();
+        openForm({ mode: 'new' });
+      }}
+    >
+      {children}
+    </Link>
   );
 
   return (
@@ -309,38 +399,70 @@ export function ContactsApp({
             {count}
           </div>
           <div className="contacts-scroll">
-            {failed ? (
-              <p role="alert" className="form-error">
-                {t('failed')}
-              </p>
-            ) : contacts.length === 0 ? (
-              <p className="contacts-empty">
-                {t(query.trim() ? 'noResults' : 'empty')}
-              </p>
-            ) : (
-              groupByInitial(contacts).map((group) => (
-                <section key={group.letter} className="contact-group">
-                  <h2 className="letter-chip">{group.letter}</h2>
-                  <ul>
-                    {group.contacts.map((contact) => (
-                      <ContactRow
-                        key={contact.id}
-                        contact={contact}
-                        expanded={expandedId === contact.id}
-                        selected={selectedId === contact.id}
-                        onToggle={() => {
-                          setExpandedId((id) =>
-                            id === contact.id ? null : contact.id,
-                          );
-                          setSelectedId(contact.id);
-                        }}
-                        onEdit={() => openForm({ mode: 'edit', contact })}
-                        onDelete={() => setDeleting(contact)}
-                      />
-                    ))}
-                  </ul>
-                </section>
-              ))
+            {loaded(
+              <>
+                <div className="contacts-skeleton" aria-hidden="true">
+                  {Array.from({ length: skeletonRows }, (_, i) => (
+                    <div key={i} className="row-skeleton">
+                      <span className="row-skeleton-avatar" />
+                      <span className="row-skeleton-text">
+                        <span className="shimmer" />
+                        <span className="shimmer" />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="sr-only" role="status">
+                  {t('loading')}
+                </p>
+              </>,
+              (page) =>
+                !page ? null : page.pagination.total === 0 &&
+                  !shownQuery &&
+                  !query.trim() ? (
+                  <div className="contacts-blank">
+                    <span className="blank-avatar" aria-hidden="true">
+                      <Icon name="user" />
+                    </span>
+                    <h2>{t('emptyTitle')}</h2>
+                    <p>{t('emptyHelp')}</p>
+                    {addLink(
+                      'button-primary blank-add',
+                      <>
+                        <Icon name="plus" />
+                        {t('add')}
+                      </>,
+                    )}
+                    <span className="sphere sphere-1" aria-hidden="true" />
+                    <span className="sphere sphere-2" aria-hidden="true" />
+                  </div>
+                ) : page.contacts.length === 0 ? (
+                  <p className="contacts-empty">{t('noResults')}</p>
+                ) : (
+                  groupByInitial(page.contacts).map((group) => (
+                    <section key={group.letter} className="contact-group">
+                      <h2 className="letter-chip">{group.letter}</h2>
+                      <ul>
+                        {group.contacts.map((contact) => (
+                          <ContactRow
+                            key={contact.id}
+                            contact={contact}
+                            expanded={expandedId === contact.id}
+                            selected={selectedId === contact.id}
+                            onToggle={() => {
+                              setExpandedId((id) =>
+                                id === contact.id ? null : contact.id,
+                              );
+                              setSelectedId(contact.id);
+                            }}
+                            onEdit={() => openForm({ mode: 'edit', contact })}
+                            onDelete={() => setDeleting(contact)}
+                          />
+                        ))}
+                      </ul>
+                    </section>
+                  ))
+                ),
             )}
             <div ref={sentinel} className="list-sentinel" aria-hidden="true" />
             {loadingMore && (
@@ -349,18 +471,7 @@ export function ContactsApp({
               </p>
             )}
           </div>
-          <Link
-            href="/contacts/new"
-            prefetch={false}
-            className="contacts-fab"
-            aria-label={t('addContact')}
-            onClick={(event) => {
-              event.preventDefault();
-              openForm({ mode: 'new' });
-            }}
-          >
-            <Icon name="plus" />
-          </Link>
+          {addLink('contacts-fab', <Icon name="plus" />, t('addContact'))}
         </section>
         {form ? (
           <aside className="contact-panel is-form">
@@ -373,21 +484,54 @@ export function ContactsApp({
             />
           </aside>
         ) : (
-          <ContactPanel
-            contact={selected}
-            duplicates={duplicates}
-            onNew={() => openForm({ mode: 'new' })}
-            onEdit={(contact) => openForm({ mode: 'edit', contact })}
-            onDelete={setDeleting}
-          />
+          loaded(
+            <aside className="contact-panel is-loading">
+              <div className="panel-decor" aria-hidden="true">
+                <span className="sphere sphere-1" />
+                <span className="sphere sphere-4" />
+              </div>
+              <span className="panel-spinner" />
+              <p aria-hidden="true">{t('loading')}</p>
+            </aside>,
+            (_, first) => (
+              <ContactPanel
+                contact={selected}
+                duplicates={duplicates ?? first}
+                onNew={() => openForm({ mode: 'new' })}
+                onEdit={(contact) => openForm({ mode: 'edit', contact })}
+                onDelete={setDeleting}
+              />
+            ),
+          )
         )}
       </main>
+      {loaded(null, (page) =>
+        failed || !page ? (
+          <div className="error-toast" role="alert">
+            <span className="error-icon">
+              <Icon name="alert" />
+            </span>
+            <div>
+              <p className="error-title">{t('errorTitle')}</p>
+              <p>{t('errorHelp')}</p>
+            </div>
+            <button
+              type="button"
+              className="error-retry"
+              disabled={retrying}
+              onClick={retry}
+            >
+              {t('retry')}
+            </button>
+          </div>
+        ) : null,
+      )}
       <div className="contacts-fade" aria-hidden="true" />
       <AccountMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         user={user}
-        duplicates={duplicates}
+        duplicates={duplicates ?? 0}
       />
       <DeleteDialog
         contact={deleting}

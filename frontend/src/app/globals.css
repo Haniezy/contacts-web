@@ -1321,6 +1321,7 @@ button:disabled {
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-areas: 'menu search' 'title title';
+  grid-template-rows: auto 1fr;
   column-gap: 12px;
   min-height: 173px;
   padding: 56px 18px 0;
@@ -1341,7 +1342,7 @@ button:disabled {
   align-items: center;
   gap: 10px;
   height: 48px;
-  padding-inline: 18px 16px;
+  padding-inline: 14.5px 16px;
   border: 2px solid var(--blue-l);
   border-radius: 999px;
   background: var(--chip);
@@ -1394,7 +1395,7 @@ button:disabled {
 .contacts-header .contacts-title {
   grid-area: title;
   padding-inline-start: 5px;
-  margin-block-start: 1.2px;
+  margin-block-start: -2.8px;
 }
 .contacts-title h1 {
   font-size: 22px;
@@ -4242,6 +4243,9 @@ html:has(.merge-dialog[open]) {
   .contacts-fab {
     inset-inline-end: calc((100vw - 600px) / 2 + 24px);
   }
+  .error-toast {
+    inset-inline: calc((100vw - 600px) / 2 + 20px);
+  }
 }
 /* Loading placeholders and the not-found / error screens. */
 :root {
@@ -4261,24 +4265,6 @@ html:has(.merge-dialog[open]) {
     opacity: 0.5;
   }
 }
-.skeleton-disc {
-  width: 48px;
-  height: 48px;
-}
-.skeleton-search {
-  height: 48px;
-}
-.skeleton-title {
-  grid-column: 1 / -1;
-  width: 140px;
-  height: 26px;
-  margin-block-start: 20px;
-}
-.skeleton-row {
-  height: 64px;
-  margin-block-end: 12px;
-  border-radius: 22px;
-}
 .skeleton-line {
   width: 60%;
   height: 16px;
@@ -4297,9 +4283,6 @@ html:has(.merge-dialog[open]) {
   height: 112px;
   margin-inline: auto;
   border-radius: 50%;
-}
-.is-loading .contacts-header {
-  align-content: start;
 }
 .duplicates-main .skeleton-line {
   margin-block-start: 30px;
@@ -4367,37 +4350,6 @@ html:has(.merge-dialog[open]) {
     --d: min(100vw / 1280, 1.5px);
     --u: max(var(--d), 1px);
   }
-  .skeleton-disc {
-    width: calc(47.3 * var(--u));
-    height: calc(47.3 * var(--u));
-  }
-  .skeleton-search {
-    position: absolute;
-    inset-inline-start: calc(316 * var(--d));
-    width: calc(520 * var(--d));
-    height: calc(48 * var(--u));
-  }
-  .is-loading .contacts-header .skeleton-title {
-    display: none;
-  }
-  .skeleton-title {
-    width: calc(160 * var(--u));
-    height: calc(30 * var(--u));
-    margin: 0 0 calc(20 * var(--u));
-  }
-  .skeleton-row {
-    height: calc(66 * var(--u));
-    margin-block-end: calc(10 * var(--u));
-    border-radius: calc(22 * var(--u));
-  }
-  .contact-panel .skeleton-avatar {
-    width: calc(132 * var(--u));
-    height: calc(132 * var(--u));
-  }
-  .contact-panel .skeleton-line {
-    width: calc(260 * var(--u));
-    margin-block-start: calc(20 * var(--u));
-  }
   .skeleton-card {
     height: calc(150 * var(--u));
     border-radius: calc(24 * var(--u));
@@ -4406,6 +4358,317 @@ html:has(.merge-dialog[open]) {
     width: calc(88 * var(--u));
     height: calc(88 * var(--u));
     margin: 0;
+  }
+}
+/* Contacts list states: loading (shimmering rows and count chip, a spinner
+   in the desktop panel), the empty book and the error toast. --s is 1px on
+   phones and tablets and the desktop scale unit from 1024px. */
+.contacts-page {
+  --s: 1px;
+}
+:root {
+  --shimmer: #d8dfe6;
+  --shimmer-shine: #dde2e8;
+  --shimmer-avatar: #d3dae2;
+  --shimmer-chip: #dae0e7;
+  --spinner-track: #9dabbc;
+  --blank-fill: #fafcfd;
+  --toast-shadow: 0 16px 32px rgb(217 117 110 / 14%);
+}
+[data-theme='dark'] {
+  --shimmer: #212938;
+  --shimmer-shine: #2e3644;
+  --shimmer-avatar: #222c3b;
+  --shimmer-chip: #1f2836;
+  --spinner-track: #333e52;
+  --blank-fill: var(--photo-fill);
+  --toast-shadow: 0 16px 32px rgb(0 0 0 / 24%);
+}
+.shimmer {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+      90deg,
+      var(--shimmer) 35%,
+      var(--shimmer-shine) 50%,
+      var(--shimmer) 65%
+    )
+    0 0 / 300% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+[dir='ltr'] .shimmer {
+  animation-direction: reverse;
+}
+@keyframes shimmer {
+  to {
+    background-position: 100% 0;
+  }
+}
+.count-skeleton {
+  width: calc(50 * var(--s));
+  height: calc(20 * var(--s));
+  --shimmer: var(--shimmer-chip);
+}
+.contacts-skeleton {
+  display: grid;
+  gap: calc(20 * var(--s));
+  margin-block-start: calc(-14 * var(--s));
+}
+.row-skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(64 * var(--s) + 2px);
+  padding-inline: calc(15 * var(--s));
+  border: 1px solid var(--row-border);
+  border-radius: calc(24 * var(--s));
+  background: var(--row);
+  box-shadow: var(--row-shadow);
+}
+.row-skeleton-avatar {
+  width: calc(44 * var(--s));
+  height: calc(44 * var(--s));
+  border-radius: 50%;
+  background: var(--shimmer-avatar);
+}
+.row-skeleton-text {
+  display: grid;
+  justify-items: end;
+  gap: calc(8.5 * var(--s));
+}
+.row-skeleton-text :first-child {
+  width: calc(166 * var(--s));
+  height: calc(14 * var(--s));
+}
+.row-skeleton-text :last-child {
+  width: calc(102 * var(--s));
+  height: calc(11 * var(--s));
+}
+.contacts-page:has(.contacts-skeleton) .contacts-fab,
+.contacts-page:has(.contacts-blank) .contacts-fab {
+  display: none;
+}
+
+.contacts-blank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-block-start: 24px;
+  text-align: center;
+}
+.blank-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(132 * var(--s));
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--blank-fill);
+  color: var(--blue-d);
+}
+/* 45 dashes around a 3px ring. */
+.blank-avatar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#9ccbdf 0 5.04deg, transparent 0 8deg);
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 3 * var(--s)),
+    #000 calc(100% - 2.5 * var(--s))
+  );
+}
+.blank-avatar svg {
+  width: calc(52 * var(--s));
+  height: calc(52 * var(--s));
+  stroke-width: 1.4;
+}
+.contacts-blank h2 {
+  margin-block-start: 23px;
+  font-size: calc(22 * var(--s));
+  font-weight: 700;
+  line-height: 1.5;
+}
+.contacts-blank p {
+  max-width: calc(270 * var(--s));
+  margin-block-start: calc(9 * var(--s));
+  color: var(--ink2);
+  font-size: calc(14 * var(--s));
+  line-height: calc(26 * var(--s));
+}
+.blank-add {
+  gap: calc(10 * var(--s));
+  width: calc(200 * var(--s));
+  min-height: calc(52 * var(--s));
+  margin-block-start: 25px;
+  padding: 0;
+  font-size: calc(16 * var(--s));
+}
+.blank-add svg {
+  width: calc(20 * var(--s));
+  height: calc(20 * var(--s));
+}
+.contacts-blank .sphere {
+  display: none;
+}
+
+.error-toast {
+  position: fixed;
+  z-index: 4;
+  inset-inline: 20px;
+  top: calc(100 * var(--s));
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: calc(11.5 * var(--s));
+  padding: calc(14 * var(--s)) calc(16 * var(--s)) calc(13 * var(--s));
+  border-radius: calc(24 * var(--s));
+  background: var(--coral);
+  color: var(--coral-d);
+  box-shadow: var(--toast-shadow);
+}
+.error-icon {
+  display: grid;
+  place-items: center;
+  width: calc(38 * var(--s));
+  height: calc(38 * var(--s));
+  border-radius: calc(12 * var(--s));
+  background: rgb(255 255 255 / 50%);
+}
+.error-icon svg {
+  width: calc(20 * var(--s));
+  height: calc(20 * var(--s));
+}
+.error-toast p {
+  font-size: calc(12.2 * var(--s));
+  line-height: 1.5;
+  opacity: 0.85;
+}
+.error-toast .error-title {
+  margin-block: calc(3 * var(--s)) calc(3 * var(--s));
+  font-size: calc(14 * var(--s));
+  font-weight: 700;
+  opacity: 1;
+}
+.error-retry {
+  grid-column: 1 / -1;
+  justify-self: end;
+  margin-block-start: calc(11 * var(--s));
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: calc(12.5 * var(--s));
+  font-weight: 700;
+  line-height: 1.5;
+}
+.error-retry:disabled {
+  opacity: 0.6;
+}
+
+@media (min-width: 1024px) {
+  .contacts-page {
+    --s: var(--u);
+  }
+  .contacts-skeleton {
+    gap: calc(20.67 * var(--u));
+  }
+  .row-skeleton {
+    height: calc(63.33 * var(--u) + 2px);
+  }
+  .row-skeleton-text {
+    gap: calc(8.67 * var(--u));
+  }
+  .row-skeleton-text :first-child {
+    width: calc(254 * var(--u));
+  }
+  .row-skeleton-text :last-child {
+    width: calc(156 * var(--u));
+    height: calc(10.67 * var(--u));
+  }
+  .contact-panel.is-loading {
+    justify-content: center;
+  }
+  .panel-spinner {
+    width: calc(46 * var(--u));
+    height: calc(46 * var(--u));
+    border: calc(4 * var(--u)) solid var(--spinner-track);
+    border-block-start-color: var(--blue-d);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .contact-panel.is-loading p {
+    margin-block: calc(15.7 * var(--u)) calc(6.7 * var(--u));
+    color: var(--ink2);
+    font-size: calc(16 * var(--u));
+    line-height: 1.5;
+  }
+  .panel-decor .sphere-4 {
+    inset-inline-end: calc(424.7 * var(--d));
+    top: calc(574.7 * var(--u));
+    width: calc(18 * var(--u));
+    opacity: 0.45;
+  }
+  /* The empty book: one centred column instead of the list and panel. */
+  .contacts-page:has(.contacts-blank) .contacts-column {
+    position: static;
+  }
+  .contacts-page:has(.contacts-blank) .contacts-column > .contacts-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .contacts-page:has(.contacts-blank) .contacts-scroll {
+    mask-image: none;
+  }
+  .contacts-page:has(.contacts-blank) .contact-panel:not(.is-form) {
+    display: none;
+  }
+  .contacts-blank {
+    position: absolute;
+    inset: 0;
+    justify-content: center;
+    margin: 0;
+    pointer-events: none;
+  }
+  .contacts-blank > * {
+    pointer-events: auto;
+  }
+  .contacts-blank h2 {
+    margin-block-start: calc(21 * var(--u));
+  }
+  .blank-add {
+    margin-block-start: calc(26 * var(--u));
+  }
+  .contacts-blank .sphere {
+    display: block;
+  }
+  .contacts-blank .sphere-1 {
+    inset-inline-end: calc(600 * var(--d));
+    top: calc(126 * var(--u));
+    width: calc(26 * var(--u));
+  }
+  .contacts-blank .sphere-2 {
+    inset-inline-end: calc(470 * var(--d));
+    top: calc(690 * var(--u));
+    width: calc(18 * var(--u));
+  }
+  /* The form opened from the empty book takes the centre. */
+  .has-form .contacts-column:has(.contacts-blank) {
+    display: none;
+  }
+  .contacts-main:has(.contacts-blank) {
+    justify-content: center;
+  }
+  .error-toast {
+    position: absolute;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4418,7 +4681,9 @@ html:has(.merge-dialog[open]) {
   .merge-dialog[open],
   .settings-reveal,
   .settings-chevron,
-  .skeleton {
+  .skeleton,
+  .shimmer,
+  .panel-spinner {
     animation: none;
     transition: none;
   }
