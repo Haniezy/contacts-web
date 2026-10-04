@@ -2,6 +2,7 @@ import { Router, json, type RequestHandler } from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import { rateLimit } from 'express-rate-limit';
+import { rateLimitKey } from '../auth/client-ip.js';
 import { getDatabase } from '../database/client.js';
 import { getAuthConfig } from '../auth/config.js';
 import { requireAuth, type AuthPrincipal } from '../auth/middleware.js';
@@ -293,7 +294,7 @@ export function contactsRouter(
   });
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
+    limits: { fileSize: 4 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
     fileFilter: (_req, file, callback) => {
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype))
         callback(new ContactError(415, 'INVALID_IMAGE'));
@@ -307,6 +308,7 @@ export function contactsRouter(
       windowMs: 15 * 60 * 1000,
       limit: options.uploadLimit ?? 20,
       standardHeaders: 'draft-8',
+      keyGenerator: rateLimitKey,
       legacyHeaders: false,
       message: { error: 'TOO_MANY_REQUESTS' },
     }),

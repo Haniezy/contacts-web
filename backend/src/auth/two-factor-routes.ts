@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { parseCookie } from 'cookie';
 import { rateLimit } from 'express-rate-limit';
+import { rateLimitKey } from './client-ip.js';
 import { z } from 'zod';
 import { getDatabase } from '../database/client.js';
 import { getAuthConfig } from './config.js';
@@ -55,6 +56,7 @@ export function twoFactorRouter(options: AuthOptions) {
       windowMs: 15 * 60 * 1000,
       limit: options.twoFactorLimit ?? 20,
       standardHeaders: 'draft-8',
+      keyGenerator: rateLimitKey,
       legacyHeaders: false,
       message: { error: 'TOO_MANY_REQUESTS' },
     }),

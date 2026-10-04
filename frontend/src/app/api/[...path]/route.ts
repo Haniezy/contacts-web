@@ -25,7 +25,17 @@ const routes: [RegExp, Record<string, Body | null>][] = [
     { POST: 'multipart', DELETE: null },
   ],
 ];
-const limits = { json: 8192, multipart: 5 * 1024 * 1024 + 64 * 1024 };
+// Photos are capped at 4 MB, under the 4.5 MB request body limit of Vercel functions.
+const limits = { json: 8192, multipart: 4 * 1024 * 1024 + 64 * 1024 };
+
+// The visitor's address for the API's rate limits. Only where the host sets
+// X-Real-IP itself (Vercel) and INTERNAL_API_KEY is configured; the API
+// trusts X-Client-IP only together with that key.
+function visitor(request: NextRequest): Record<string, string> {
+  const key = process.env.INTERNAL_API_KEY;
+  const ip = request.headers.get('x-real-ip');
+  return key && ip ? { 'X-Internal-Key': key, 'X-Client-IP': ip } : {};
+}
 
 function route(path: string, method: string) {
   const methods = routes.find(([pattern]) => pattern.test(path))?.[1];
@@ -87,11 +97,14 @@ async function handle(
       {
         method: request.method,
         body,
-        headers: kind
-          ? { 'Content-Type': type, Origin: appOrigin }
-          : mutation
-            ? { Origin: appOrigin }
-            : {},
+        headers: {
+          ...(kind
+            ? { 'Content-Type': type, Origin: appOrigin }
+            : mutation
+              ? { Origin: appOrigin }
+              : {}),
+          ...visitor(request),
+        },
       },
       // Photo uploads are processed and stored before the backend answers.
       kind === 'multipart' ? 45000 : undefined,

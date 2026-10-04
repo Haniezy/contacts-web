@@ -1,6 +1,7 @@
 import { Router, json } from 'express';
 import cors from 'cors';
 import { rateLimit } from 'express-rate-limit';
+import { rateLimitKey } from './client-ip.js';
 import { z } from 'zod';
 import { Prisma } from '../generated/prisma/client.js';
 import { getDatabase } from '../database/client.js';
@@ -107,6 +108,7 @@ export function authRouter(
       windowMs,
       limit,
       standardHeaders: 'draft-8',
+      keyGenerator: rateLimitKey,
       legacyHeaders: false,
       message: { error: 'TOO_MANY_REQUESTS' },
     });

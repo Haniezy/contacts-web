@@ -4,6 +4,13 @@
 
 این نسخه شامل زیرساخت، دیتابیس، احراز هویت، ورود دومرحله‌ای و **فاز چهار: API مخاطبین** است. بک‌اند از طریق Prisma به PostgreSQL روی Neon متصل می‌شود و CRUD مخاطبین، جست‌وجو، صفحه‌بندی، ادغام تکراری‌ها و اتصال آپلود عکس به Cloudinary دارد. صفحه اصلی موقت است؛ رابط فرم‌ها در فاز فرانت اضافه می‌شود. راهنماها: [نیازمندی‌ها](docs/requirements.fa.md)، [دیتابیس](docs/database.fa.md)، [احراز هویت](docs/auth.fa.md)، [ورود دومرحله‌ای](docs/two-factor.fa.md) و [API مخاطبین](docs/contacts.fa.md).
 
+## نسخه production
+
+- **سایت:** https://contacts-web-rho.vercel.app
+- **API:** https://contacts-web-api-seven.vercel.app (بررسی سلامت: `/health` و `/ready`)
+
+سایت و API روی Vercel و دیتابیس روی Neon (branch `production`) است؛ هر push به `main` نسخه production را به‌روز می‌کند. جزئیات: [راهنمای استقرار](docs/deployment.fa.md).
+
 ## اجرای سریع با Docker
 
 پیش‌نیاز: Docker Engine یا Docker Desktop در حال اجرا، به‌همراه Docker Compose v2 یا جدیدتر. اجرای Docker باید برای کاربر فعلی مجاز باشد. اولین build به اینترنت برای دریافت image و بسته‌ها نیاز دارد.

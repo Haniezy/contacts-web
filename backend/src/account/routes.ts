@@ -2,6 +2,7 @@ import { Router, json } from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import { rateLimit } from 'express-rate-limit';
+import { rateLimitKey } from '../auth/client-ip.js';
 import { z } from 'zod';
 import type { Prisma } from '../generated/prisma/client.js';
 import { getDatabase } from '../database/client.js';
@@ -55,6 +56,7 @@ export function accountRouter(
       windowMs: 15 * 60 * 1000,
       limit,
       standardHeaders: 'draft-8',
+      keyGenerator: rateLimitKey,
       legacyHeaders: false,
       message: { error: 'TOO_MANY_REQUESTS' },
     });
@@ -155,7 +157,7 @@ export function accountRouter(
 
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
+    limits: { fileSize: 4 * 1024 * 1024, files: 1, fields: 0, parts: 1 },
     fileFilter: (_req, file, callback) => {
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype))
         callback(new ContactError(415, 'INVALID_IMAGE'));

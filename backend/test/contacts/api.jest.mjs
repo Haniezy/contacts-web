@@ -539,7 +539,7 @@ test('upload rejects spoofed MIME, SVG, missing image, extra fields and oversize
       contentType: 'image/svg+xml',
     })
     .expect(415);
-  await photo(c.id, 0, Buffer.alloc(5 * 1024 * 1024 + 1)).expect(413);
+  await photo(c.id, 0, Buffer.alloc(4 * 1024 * 1024 + 1)).expect(413);
   await api('post', `/${c.id}/photo`)
     .set('Origin', config.origin)
     .field('extra', 'value')

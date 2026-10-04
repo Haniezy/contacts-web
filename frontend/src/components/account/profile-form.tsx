@@ -23,7 +23,7 @@ type Fields = {
 type FieldErrors = Partial<Record<keyof Fields, string>>;
 
 const photoTypes = ['image/jpeg', 'image/png', 'image/webp'];
-const maxPhoto = 5 * 1024 * 1024;
+const maxPhoto = 4 * 1024 * 1024;
 
 // The API keeps first and last name apart; the form edits them as one.
 function splitName(name: string) {

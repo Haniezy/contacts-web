@@ -33,7 +33,7 @@ type Fields = {
 };
 
 const photoTypes = ['image/jpeg', 'image/png', 'image/webp'];
-const maxPhoto = 5 * 1024 * 1024;
+const maxPhoto = 4 * 1024 * 1024;
 
 function problems(fields: Fields, locale: string) {
   const errors: Partial<Record<keyof Fields, string>> = {};
