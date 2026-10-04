@@ -39,9 +39,7 @@
 ## تست
 
 ```bash
-npm --prefix backend run build
-npm --prefix frontend run build
-cd frontend
+npm run build
 npm run test:e2e
 ```
 

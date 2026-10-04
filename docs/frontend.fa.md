@@ -1,6 +1,6 @@
 # فاز ۵: زیرساخت فرانت، تم و زبان
 
-Next.js App Router موجود حفظ شده و Tailwind با پلاگین PostCSS فعال است. رنگ‌های مشترک در `frontend/src/app/globals.css` هم به صورت CSS variable و هم utilityهای Tailwind مثل `text-ink` و `bg-mint` در دسترس‌اند.
+Next.js App Router موجود حفظ شده و Tailwind با پلاگین PostCSS فعال است. رنگ‌های مشترک در `src/app/globals.css` هم به صورت CSS variable و هم utilityهای Tailwind مثل `text-ink` و `bg-mint` در دسترس‌اند.
 
 فونت Vazirmatn با وزن‌های ۴۰۰، ۵۰۰ و ۷۰۰ از بسته محلی Fontsource ارائه می‌شود؛ مرورگر برای فونت به Google Fonts وصل نمی‌شود. فارسی و انگلیسی هر دو همین فونت را دارند.
 
@@ -8,7 +8,7 @@ Next.js App Router موجود حفظ شده و Tailwind با پلاگین PostCS
 
 - `next-themes` مقدار روشن/تاریک را در localStorage با کلید `contacts-theme` نگه می‌دارد و پیش از نمایش صفحه، `data-theme` را تنظیم می‌کند.
 - پیش‌فرض فعلی تم روشن است؛ پیروی خودکار از تم سیستم فعال نیست. این انتخاب موقت تا تعیین ترجیح صاحب پروژه است.
-- `next-intl` پیام‌ها را از `frontend/messages/fa.json` و `en.json` می‌خواند. زبان پیش‌فرض فارسی است.
+- `next-intl` پیام‌ها را از `messages/fa.json` و `en.json` می‌خواند. زبان پیش‌فرض فارسی است.
 - تغییر زبان با Server Action در کوکی `contacts-locale` با عمر یک سال، HttpOnly و SameSite=Lax ذخیره می‌شود. در HTTPS کوکی Secure است. فقط `fa` و `en` پذیرفته می‌شوند.
 - سرور از همان کوکی، `lang` و `dir` روی HTML و عنوان صفحه را تولید می‌کند. مقدار کوکی نامعتبر به فارسی برمی‌گردد.
 - برای نمایش اعداد در اجزای بعدی از `useFormatter().number(value)` در next-intl استفاده شود؛ زبان فارسی به‌صورت پیش‌فرض ارقام فارسی تولید می‌کند. داده مخاطبین و شماره مورد استفاده در تماس یا API تغییر نمی‌کند.
@@ -24,11 +24,9 @@ Next.js App Router موجود حفظ شده و Tailwind با پلاگین PostCS
 
 ```bash
 # از فاز ۶ برای تست مرورگر، DATABASE_TEST_URL باید در محیط تنظیم باشد.
-npm --prefix backend run build
-npm --prefix frontend run lint
-npm --prefix frontend run typecheck
-npm --prefix frontend run build
-cd frontend
+npm run lint
+npm run typecheck
+npm run build
 npx playwright install chromium
 npm run test:e2e
 ```

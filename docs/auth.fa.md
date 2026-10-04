@@ -79,7 +79,7 @@ docker compose up --build --wait
 در فرانت برای تمام درخواست‌های احراز هویت از `credentials: 'include'` استفاده کنید:
 
 ```javascript
-const response = await fetch('http://localhost:4000/api/auth/me', {
+const response = await fetch('http://localhost:3000/api/auth/me', {
   credentials: 'include',
 });
 ```

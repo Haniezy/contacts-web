@@ -17,7 +17,7 @@ API Secret را در چت یا Git نفرستید و در فرانت قرار ن
 ۴. بعد از ذخیرهٔ فایل:
 
 ```bash
-docker compose up -d backend
+docker compose up -d --build app
 ```
 
 ۵. یک عکس JPEG، PNG یا WebP زیر ۵ MiB را برای مخاطبی که متعلق به حساب واردشده است، به `POST /api/contacts/:id/photo` ارسال کنید. قرارداد کامل در [راهنمای API](contacts.fa.md) است. با موفقیت آپلود، API لینک موقت تصویر را برمی‌گرداند. عکس در Cloudinary از نوع authenticated است؛ URL عمومی معمولی نباید آن را نمایش دهد.

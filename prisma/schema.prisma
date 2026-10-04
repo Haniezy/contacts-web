@@ -1,0 +1,91 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/server/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                       String            @id @default(uuid()) @db.Uuid
+  email                    String            @unique @db.VarChar(254)
+  firstName                String            @default("") @db.VarChar(100)
+  lastName                 String            @default("") @db.VarChar(100)
+  passwordHash             String            @db.Text
+  // AES-256-GCM encrypted; pending until enrollment has been confirmed.
+  twoFactorSecretEncrypted String?           @db.Text
+  twoFactorEnabled         Boolean           @default(false)
+  twoFactorSetupExpiresAt  DateTime?         @db.Timestamptz(3)
+  twoFactorSetupSessionId  String?           @db.Uuid
+  twoFactorSetupAttempts   Int               @default(0)
+  twoFactorLastStep        Int?
+  // Store hashes only. Never persist plaintext recovery codes.
+  recoveryCodeHashes       String[]          @default([])
+  // Cloudinary asset of the profile photo; never exposed, only signed URLs.
+  photoKey                 String?           @db.Text
+  createdAt                DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime          @updatedAt @db.Timestamptz(3)
+  contacts                 Contact[]
+  sessions                 AuthSession[]
+  loginChallenges          LoginChallenge[]
+  duplicateIgnores         DuplicateIgnore[]
+}
+
+model AuthSession {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt         DateTime @db.Timestamptz(3)
+  twoFactorVerified Boolean  @default(false)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LoginChallenge {
+  tokenHash String   @id @db.Char(64)
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @db.Timestamptz(3)
+  attempts  Int      @default(0)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Contact {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String    @db.VarChar(200)
+  phone     String    @db.VarChar(32)
+  photoUrl  String?   @db.Text
+  photoKey  String?   @db.Text
+  birthday  DateTime? @db.Date
+  reminder  String?   @db.Text
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+
+  // Both indexes also support userId-only lookups via their leading column.
+  @@index([userId, name])
+  @@index([userId, phone])
+}
+
+// A duplicate group (same phone or same name) the user chose to keep apart.
+// The group stays hidden while all of its members are listed here; a new
+// matching contact shows it again.
+model DuplicateIgnore {
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // "phone" or "name"; value is the normalized number or name.
+  by         String   @db.VarChar(5)
+  value      String   @db.VarChar(200)
+  contactIds String[] @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([userId, by, value])
+}

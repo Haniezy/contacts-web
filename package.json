@@ -1,33 +1,84 @@
 {
   "name": "contacts-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=24 <25"
   },
   "scripts": {
-    "setup": "npm ci && npm --prefix backend ci && npm --prefix frontend ci && npm run db:generate",
-    "dev:backend": "npm --prefix backend run dev",
-    "dev:frontend": "npm --prefix frontend run dev",
-    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
-    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "dev": "prisma generate && next dev --hostname 0.0.0.0",
+    "build": "prisma generate && next build",
+    "start": "next start --hostname 0.0.0.0",
+    "lint": "eslint .",
+    "typecheck": "prisma generate && next typegen && tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm --prefix backend test",
-    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "tsx --test tests/server/*.test.ts",
+    "test:db": "tsx --env-file-if-exists=.env --test tests/server/database.integration.ts",
+    "test:auth": "tsx --env-file-if-exists=.env --test tests/server/auth.integration.ts",
+    "test:2fa": "tsx --env-file-if-exists=.env --test tests/server/two-factor.integration.ts",
+    "test:account": "tsx --env-file-if-exists=.env --test tests/server/account.integration.ts",
+    "test:contacts": "tsx --env-file-if-exists=.env --test tests/server/contacts/*.test.mjs",
+    "test:e2e": "playwright test",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "smoke": "node --env-file-if-exists=.env scripts/smoke.mjs",
-    "db:generate": "npm --prefix backend run db:generate",
-    "db:validate": "npm --prefix backend run db:validate",
-    "db:migrate": "npm --prefix backend run db:migrate",
-    "db:status": "npm --prefix backend run db:status",
-    "db:seed": "npm --prefix backend run db:seed",
-    "test:db": "npm --prefix backend run test:db",
-    "test:auth": "npm --prefix backend run test:auth",
-    "test:2fa": "npm --prefix backend run test:2fa",
-    "test:contacts": "npm --prefix backend run test:contacts"
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:format": "prisma format",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:status": "prisma migrate status",
+    "db:seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@daypicker/persian": "10.0.2",
+    "@daypicker/react": "10.0.2",
+    "@fontsource/vazirmatn": "5.3.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "argon2": "0.45.1",
+    "cloudinary": "2.11.0",
+    "cookie": "2.0.1",
+    "dotenv": "18.0.4",
+    "jose": "6.2.12",
+    "next": "16.3.6",
+    "next-intl": "4.14.8",
+    "next-themes": "0.4.6",
+    "otplib": "13.5.0",
+    "qrcode": "1.5.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sharp": "0.35.5",
+    "zod": "4.6.5"
   },
   "devDependencies": {
-    "prettier": "3.9.9"
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.19.0",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.6",
+    "eslint-config-prettier": "10.1.8",
+    "expect": "30.5.2",
+    "jest-mock": "30.5.2",
+    "postcss": "8.5.28",
+    "prettier": "3.9.9",
+    "prisma": "7.10.0",
+    "supertest": "7.3.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.2"
+    },
+    "prisma": {
+      "mysql2": "3.24.4"
+    }
   }
 }

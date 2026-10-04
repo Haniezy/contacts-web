@@ -85,7 +85,7 @@ npm run db:status
 برای تغییر مدل‌ها در آینده، روی branch توسعه دیتابیس و پس از آماده‌کردن shadow database مستقل و تنظیم `datasource.shadowDatabaseUrl` در `prisma.config.ts`:
 
 ```bash
-npm --prefix backend run db:migrate:dev -- --name describe_change
+npm run db:migrate:dev -- --name describe_change
 ```
 
 هر فایل مایگریشن باید پیش از اعمال روی دیتابیس اصلی بازبینی و در Git ثبت شود. از `db push` یا `migrate reset` برای جایگزینی تاریخچه مایگریشن پروژه استفاده نکنید.

@@ -36,7 +36,7 @@
 
 ## محدوده فاز صفر
 
-- ساختار `frontend/` و `backend/`، Dockerfile هر سرویس و Compose.
+- ساختار `frontend/` و `backend/`، Dockerfile هر سرویس و Compose. (بعدها، به خواست صاحب پروژه، هر دو در یک پروژه Next.js ادغام شدند؛ README.)
 - تنظیمات نمونه محیط، Git ignore، ESLint، Prettier و راهنمای اجرا.
 - مسیر `/health` برای هر دو سرویس.
 - معیار پذیرش: اجرای هر دو سرویس با `docker compose up` و پاسخ موفق health-checkها.

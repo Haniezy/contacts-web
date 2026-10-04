@@ -1,7 +1,8 @@
 node_modules/
 .next/
-dist/
-backend/src/generated/
+src/server/generated/
+test-results/
+playwright-report/
 coverage/
 package-lock.json
 *.tsbuildinfo

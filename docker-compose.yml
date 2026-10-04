@@ -1,11 +1,13 @@
 services:
-  backend:
+  app:
     build:
-      context: ./backend
+      context: .
     init: true
     environment:
       NODE_ENV: production
-      PORT: 4000
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: '1'
       DATABASE_URL: ${DATABASE_URL:-}
       JWT_SECRET: ${JWT_SECRET:-}
       TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY:-}
@@ -13,30 +15,15 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
-      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
     ports:
-      - '127.0.0.1:${BACKEND_PORT:-4000}:4000'
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-    init: true
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-      NEXT_TELEMETRY_DISABLED: '1'
-      BACKEND_INTERNAL_URL: http://backend:4000
-      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
-    ports:
-      - '127.0.0.1:${FRONTEND_PORT:-3000}:3000'
+      - '127.0.0.1:${APP_PORT:-${FRONTEND_PORT:-3000}}:3000'
     restart: unless-stopped
 
   migrate:
     profiles: ['tools']
     build:
-      context: ./backend
+      context: .
       target: migrations
     init: true
     environment:

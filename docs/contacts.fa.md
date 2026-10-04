@@ -109,7 +109,7 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 ```
 
-پس از تغییر تنظیمات، `docker compose up -d backend` را اجرا کنید. هیچ کلیدی نباید به فرانت یا `NEXT_PUBLIC_*` برسد. unsigned upload preset لازم نیست؛ سرور درخواست آپلود را امضا می‌کند.
+پس از تغییر تنظیمات، `docker compose up -d --build app` را اجرا کنید. هیچ کلیدی نباید به فرانت یا `NEXT_PUBLIC_*` برسد. unsigned upload preset لازم نیست؛ سرور درخواست آپلود را امضا می‌کند.
 
 درخواست آپلود، `multipart/form-data` با یک فایل به نام `photo` و هدر `Origin` برابر `APP_ORIGIN` است. فرانت با `FormData` و `credentials: 'include'` درخواست می‌فرستد و Content-Type را دستی تعیین نمی‌کند. فقط JPEG، PNG و WebP ثابت تا ۵ MiB و ۲۰ میلیون پیکسل پذیرفته می‌شوند. تصویر decode می‌شود، metadata آن حذف و در ابعاد حداکثر ۱۰۲۴×۱۰۲۴ به WebP تبدیل می‌شود. SVG، تصویر متحرک و فایل جعلی رد می‌شوند. محدودیت آپلود ۲۰ درخواست در ۱۵ دقیقه برای هر IP و در حافظه هر نمونه است.
 

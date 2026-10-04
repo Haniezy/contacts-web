@@ -2,7 +2,7 @@ node_modules/
 .next/
 next-env.d.ts
 dist/
-backend/src/generated/
+src/server/generated/
 coverage/
 *.tsbuildinfo
 *.log
@@ -17,7 +17,8 @@ coverage/
 playwright-report/
 test-results/
 # Written by `next dev` when an AI coding agent runs it; not part of the app.
-frontend/AGENTS.md
-frontend/CLAUDE.md
+/AGENTS.md
+/CLAUDE.md
 .vercel/
 .vercel
+.env*
