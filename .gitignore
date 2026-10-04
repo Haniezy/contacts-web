@@ -16,3 +16,6 @@ coverage/
 .codex/
 playwright-report/
 test-results/
+# Written by `next dev` when an AI coding agent runs it; not part of the app.
+frontend/AGENTS.md
+frontend/CLAUDE.md
