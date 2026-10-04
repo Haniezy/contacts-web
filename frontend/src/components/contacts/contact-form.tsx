@@ -1,5 +1,12 @@
 'use client';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { api, ApiError, asciiDigits, displayDigits, upload } from '@/lib/api';
@@ -7,6 +14,11 @@ import { formatPhone, type Contact } from '@/lib/contacts';
 import { birthdayInput, parseBirthday } from '@/lib/jalali';
 import { Icon, type IconName } from '@/components/icon';
 import { Avatar } from './avatar';
+
+// The date picker package loads only when the calendar is first opened.
+const BirthdayCalendar = dynamic(() => import('./birthday-calendar'), {
+  ssr: false,
+});
 
 export type FormMode = 'new' | 'edit';
 type Photo =
@@ -83,6 +95,7 @@ export function ContactForm({
     {},
   );
   const [editingBirthday, setEditingBirthday] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [photo, setPhoto] = useState<Photo>({ kind: 'keep' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -240,6 +253,10 @@ export function ContactForm({
       value?: string;
       onFocus?: () => void;
       onBlur?: () => void;
+      // A control at the end of the line (in place of the icon) and content
+      // under the field, such as the date picker.
+      action?: ReactNode;
+      after?: ReactNode;
     },
   ) => (
     <div className="contact-field">
@@ -269,7 +286,9 @@ export function ContactForm({
           aria-describedby={shown(key) ? `contact-${key}-error` : undefined}
         />
         {options.icon && <Icon name={options.icon} />}
+        {options.action}
       </div>
+      {options.after}
       {shown(key) && (
         <p className="field-error" id={`contact-${key}-error`}>
           {shown(key)}
@@ -385,11 +404,42 @@ export function ContactForm({
           {field('birthday', t('birthday'), {
             placeholder: t('birthdayPlaceholder'),
             optional: true,
-            icon: 'calendar',
             maxLength: 20,
             value: birthdayShown,
             onFocus: () => setEditingBirthday(true),
             onBlur: () => setEditingBirthday(false),
+            action: (
+              <button
+                type="button"
+                className="calendar-toggle"
+                aria-label={t('pickBirthday')}
+                aria-expanded={calendarOpen}
+                onClick={() => setCalendarOpen((open) => !open)}
+              >
+                <Icon name="calendar" />
+              </button>
+            ),
+            after: calendarOpen && (
+              <BirthdayCalendar
+                locale={locale}
+                label={t('pickBirthday')}
+                selected={
+                  // Local midnight of the stored day.
+                  birthdayIso ? new Date(`${birthdayIso}T00:00`) : undefined
+                }
+                onSelect={(date) => {
+                  const iso = [
+                    date.getFullYear(),
+                    String(date.getMonth() + 1).padStart(2, '0'),
+                    String(date.getDate()).padStart(2, '0'),
+                  ].join('-');
+                  set('birthday')(birthdayInput(iso, locale));
+                  setTouched((current) => ({ ...current, birthday: true }));
+                  setCalendarOpen(false);
+                }}
+                onClose={() => setCalendarOpen(false)}
+              />
+            ),
           })}
           {field('reminder', t('reminder'), {
             placeholder: t('reminderPlaceholder'),

@@ -2673,6 +2673,50 @@ button:disabled {
   margin-inline-start: 12px;
   color: var(--blue-d);
 }
+/* Birthday: the calendar icon opens a date picker under the field. */
+.contact-field {
+  position: relative;
+}
+.calendar-toggle {
+  display: grid;
+  place-items: center;
+  margin: -6px;
+  padding: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--blue-d);
+}
+/* The package's own variables live on .rdp-root, so they are set there. */
+.birthday-calendar .rdp-root {
+  --rdp-accent-color: var(--blue-d);
+  --rdp-accent-background-color: var(--sky);
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-width: 38px;
+  --rdp-nav-height: 40px;
+}
+.birthday-calendar {
+  position: absolute;
+  z-index: 5;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  padding: 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: 20px;
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 14px;
+  box-shadow: 0 16px 40px rgb(30 60 80 / 18%);
+}
+.birthday-calendar .rdp-selected .rdp-day_button {
+  background: var(--blue-d);
+  color: #fff;
+}
+.birthday-calendar .rdp-chevron {
+  fill: var(--blue-d);
+}
 .contact-form .form-error {
   margin-block-start: 24px;
 }

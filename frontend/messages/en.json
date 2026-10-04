@@ -166,6 +166,7 @@
     "phoneLabel": "Phone number",
     "phonePlaceholder": "0912 000 0000",
     "birthdayPlaceholder": "dd / mm / yyyy",
+    "pickBirthday": "Pick from the calendar",
     "reminderPlaceholder": "Write a short note",
     "optional": "Optional",
     "saveNew": "Save contact",

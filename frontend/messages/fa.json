@@ -6,7 +6,7 @@
   },
   "Preferences": {
     "title": "ظاهر و زبان",
-    "theme": "پوسته",
+    "theme": "تم",
     "darkMode": "حالت تاریک",
     "language": "زبان",
     "error": "تغییر زبان انجام نشد. دوباره تلاش کنید."
@@ -166,6 +166,7 @@
     "phoneLabel": "شماره تلفن",
     "phonePlaceholder": "۰۹۱۲ ۰۰۰ ۰۰۰۰",
     "birthdayPlaceholder": "روز / ماه / سال",
+    "pickBirthday": "انتخاب از تقویم",
     "reminderPlaceholder": "یه یادداشت کوتاه بنویس",
     "optional": "اختیاری",
     "saveNew": "ذخیره مخاطب",

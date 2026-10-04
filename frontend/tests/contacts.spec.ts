@@ -378,3 +378,25 @@ test('a chosen photo is previewed and can be removed before saving', async ({
   await expect(page.getByRole('button', { name: 'افزودن عکس' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'حذف عکس' })).toHaveCount(0);
 });
+
+test('the calendar button picks a birthday', async ({ page }) => {
+  await page.goto('/contacts/new');
+  await page.getByRole('button', { name: 'انتخاب از تقویم' }).click();
+  const calendar = page.getByRole('dialog', { name: 'انتخاب از تقویم' });
+  // Jalali months in Persian, and nothing after today can be chosen.
+  await calendar
+    .getByRole('combobox', { name: 'سال را انتخاب کنید' })
+    .selectOption('1375');
+  await calendar
+    .getByRole('combobox', { name: 'ماه را انتخاب کنید' })
+    .selectOption({ label: 'مهر' });
+  await calendar.getByRole('button', { name: /۱۵-ام مهر ۱۳۷۵/ }).click();
+  await expect(calendar).toBeHidden();
+  await expect(page.getByLabel(/تاریخ تولد/)).toHaveValue('۱۵ مهر ۱۳۷۵');
+
+  // Escape closes it without changing the date.
+  await page.getByRole('button', { name: 'انتخاب از تقویم' }).click();
+  await page.keyboard.press('Escape');
+  await expect(calendar).toBeHidden();
+  await expect(page.getByLabel(/تاریخ تولد/)).toHaveValue('۱۵ مهر ۱۳۷۵');
+});
