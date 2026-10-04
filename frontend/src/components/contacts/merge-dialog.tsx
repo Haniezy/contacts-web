@@ -159,31 +159,45 @@ function MergeSheet({
         <Avatar contact={target} className="merge-avatar" />
       </header>
       <form method="post" onSubmit={submit} aria-busy={busy}>
-        {fields.map((field) => (
-          <fieldset key={field} className="merge-field">
-            <legend>{t(field)}</legend>
-            <div className="merge-options">
-              {contacts.map((contact, index) => (
-                <label key={contact.id} className="merge-option">
-                  <input
-                    type="radio"
-                    name={field}
-                    checked={choice[field] === index}
-                    onChange={() =>
-                      setChoice((current) => ({ ...current, [field]: index }))
-                    }
-                  />
-                  <span className="merge-check" aria-hidden="true">
-                    <Icon name="chevron" />
-                  </span>
-                  <bdi dir={field === 'phone' ? 'ltr' : undefined}>
-                    {shown(field, contact)}
-                  </bdi>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ))}
+        {fields.map((field) => {
+          // Versions with the same value are one option; a field where every
+          // version agrees is shown chosen and cannot be changed.
+          const options = contacts
+            .map((contact, index) => ({ index, text: shown(field, contact) }))
+            .filter(
+              (option, at, all) =>
+                all.findIndex((other) => other.text === option.text) === at,
+            );
+          const locked = options.length === 1;
+          return (
+            <fieldset key={field} className="merge-field" disabled={locked}>
+              <legend>{t(field)}</legend>
+              <div className="merge-options">
+                {options.map(({ index, text }) => (
+                  <label
+                    key={contacts[index].id}
+                    className={`merge-option${locked ? ' is-locked' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name={field}
+                      checked={locked || choice[field] === index}
+                      onChange={() =>
+                        setChoice((current) => ({ ...current, [field]: index }))
+                      }
+                    />
+                    <span className="merge-check" aria-hidden="true">
+                      <Icon name="chevron" />
+                    </span>
+                    <bdi dir={field === 'phone' ? 'ltr' : undefined}>
+                      {text}
+                    </bdi>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          );
+        })}
         {error && (
           <p role="alert" className="form-error">
             {t(error)}

@@ -145,6 +145,13 @@ test('contacts with the same name merge too, keeping the chosen number', async (
   await expect(group).toContainText('۰۹۳۶ ۱۱۱ ۰۰۰۰');
   await group.getByRole('button', { name: 'بررسی و ادغام' }).click();
   const dialog = page.getByRole('dialog', { name: 'ادغام مخاطب' });
+  // Neither version has a birthday: one fixed choice, nothing to pick.
+  const birthday = dialog
+    .getByRole('group', { name: 'تاریخ تولد' })
+    .getByRole('radio');
+  await expect(birthday).toHaveCount(1);
+  await expect(birthday).toBeChecked();
+  await expect(birthday).toBeDisabled();
   await dialog.locator('.merge-option', { hasText: 'سارا احمدی' }).click();
   await dialog.locator('.merge-option', { hasText: '۰۹۳۶ ۱۱۱ ۰۰۰۰' }).click();
   await dialog.getByRole('button', { name: 'ادغام نهایی' }).click();

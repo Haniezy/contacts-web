@@ -3118,6 +3118,10 @@ html:has(.merge-dialog[open]) {
   border-color: var(--mint-t);
   background: var(--mint);
 }
+/* Every version agrees: shown as chosen, nothing to pick. */
+.merge-option.is-locked {
+  cursor: default;
+}
 .merge-option:has(:focus-visible) {
   outline: 2px solid var(--sky-d);
   outline-offset: 2px;
