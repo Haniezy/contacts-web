@@ -243,9 +243,9 @@ export function SetupForm({
             >
               {t('continue')}
             </button>
-            <Link href={done} onClick={() => setEnrollment(null)}>
-              {t('skip')}
-            </Link>
+            {/* The QR secret goes with the auth layout once the next page
+                opens; clearing it on click would flash the password step. */}
+            <Link href={done}>{t('skip')}</Link>
           </div>
         </>
       ) : (
