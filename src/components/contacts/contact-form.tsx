@@ -34,12 +34,23 @@ type Fields = {
 
 const photoTypes = ['image/jpeg', 'image/png', 'image/webp'];
 const maxPhoto = 4 * 1024 * 1024;
+// What each field lets through as it is typed or pasted: the phone takes
+// digits, spaces and one leading +; the birthday digits and separators.
+const digit = '0-9۰-۹٠-٩';
+const allowed: Partial<Record<keyof Fields, (value: string) => string>> = {
+  phone: (value) =>
+    value
+      .replace(new RegExp(`[^${digit}\\s+]`, 'g'), '')
+      .replace(/(?!^)\+/g, ''),
+  birthday: (value) =>
+    value.replace(new RegExp(`[^${digit}/.\\-\\s]`, 'g'), ''),
+};
 
 function problems(fields: Fields, locale: string) {
   const errors: Partial<Record<keyof Fields, string>> = {};
   const name = fields.name.trim();
-  // Same rules as the API: printable text, 1–200 characters.
-  if (!name || name.length > 200 || /\p{Cc}/u.test(name))
+  // Same rules as the API: printable text, 2–28 characters.
+  if (name.length < 2 || name.length > 28 || /\p{Cc}/u.test(name))
     errors.name = 'nameInvalid';
   const phone = asciiDigits(fields.phone.trim());
   const digits = phone.replace(/\D/g, '');
@@ -113,7 +124,10 @@ export function ContactForm({
   const shown = (key: keyof Fields) =>
     touched[key] && errors[key] ? t(errors[key]) : undefined;
   const set = (key: keyof Fields) => (value: string) =>
-    setFields((current) => ({ ...current, [key]: value }));
+    setFields((current) => ({
+      ...current,
+      [key]: allowed[key]?.(value) ?? value,
+    }));
   const blur = (key: keyof Fields) => () =>
     setTouched((current) => ({ ...current, [key]: true }));
 
@@ -247,7 +261,7 @@ export function ContactForm({
       placeholder: string;
       optional?: boolean;
       icon?: IconName;
-      inputMode?: 'tel' | 'text';
+      inputMode?: 'tel' | 'numeric' | 'text';
       maxLength: number;
       autoComplete?: string;
       value?: string;
@@ -392,7 +406,7 @@ export function ContactForm({
         <div className="form-fields">
           {field('name', t('nameLabel'), {
             placeholder: t('namePlaceholder'),
-            maxLength: 200,
+            maxLength: 28,
             autoComplete: 'name',
           })}
           {field('phone', t('phoneLabel'), {
@@ -404,10 +418,16 @@ export function ContactForm({
           {field('birthday', t('birthday'), {
             placeholder: t('birthdayPlaceholder'),
             optional: true,
+            inputMode: 'numeric',
             maxLength: 20,
             value: birthdayShown,
             onFocus: () => setEditingBirthday(true),
-            onBlur: () => setEditingBirthday(false),
+            onBlur: () => {
+              setEditingBirthday(false);
+              // Show what was understood, e.g. ۱۳۸۳۲۳ becomes ۳/۲/۱۳۸۳.
+              if (birthdayIso)
+                set('birthday')(birthdayInput(birthdayIso, locale));
+            },
             action: (
               <button
                 type="button"

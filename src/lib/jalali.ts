@@ -80,30 +80,87 @@ export function toJalali(gy: number, gm: number, gd: number) {
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
-// Accepts d/m/y or y/m/d with any separator and Persian or Latin digits.
-// Persian dates are Jalali; English dates are Gregorian. Returns YYYY-MM-DD.
+// Accepts d/m/y or y/m/d with any separator and Persian or Latin digits,
+// and is lenient: digits typed without separators (۱۳۸۳۲۳ → ۱۳۸۳/۲/۳ or
+// ۰۳۰۲۱۳۸۳), two-digit years (۸۳ → ۱۳۸۳) and, in Persian, a Gregorian year.
+// Persian dates are Jalali; English dates are Gregorian. The first reading
+// that is a real date wins. Returns YYYY-MM-DD.
 export function parseBirthday(text: string, locale: string) {
   const parts = text
     .replace(/[۰-۹٠-٩]/g, (d) =>
       String(d.charCodeAt(0) - (d >= '۰' ? 1776 : 1632)),
     )
     .split(/\D+/)
-    .filter(Boolean)
-    .map(Number);
-  if (parts.length !== 3) return null;
-  const [y, m, d] = parts[0] > 31 ? parts : [parts[2], parts[1], parts[0]];
-  if (m < 1 || m > 12 || d < 1) return null;
-  let iso: string;
-  if (locale === 'fa') {
-    if (y < 1200 || y > 1500 || d > jalaliMonthLength(y, m)) return null;
-    const g = toGregorian(y, m, d);
-    iso = `${g.gy}-${pad(g.gm)}-${pad(g.gd)}`;
-  } else {
-    const date = new Date(Date.UTC(y, m - 1, d));
-    if (y < 1800 || date.getUTCMonth() !== m - 1) return null;
-    iso = `${y}-${pad(m)}-${pad(d)}`;
+    .filter(Boolean);
+  for (const [y, m, d] of readings(parts)) {
+    const iso = toIso(fullYear(y, locale), Number(m), Number(d), locale);
+    if (iso) return iso;
   }
-  return iso;
+  return null;
+}
+
+// Possible [year, month, day] splits, most likely first.
+function readings(parts: string[]): string[][] {
+  if (parts.length === 3)
+    return parts[0].length > 2 || Number(parts[0]) > 31
+      ? [parts]
+      : [[parts[2], parts[1], parts[0]]];
+  if (parts.length !== 1) return [];
+  const s = parts[0];
+  const cut = (...sizes: number[]) => {
+    const out: string[] = [];
+    let at = 0;
+    for (const size of sizes) out.push(s.slice(at, (at += size)));
+    return out;
+  };
+  // Four-digit years first (year first, then day/month/year), then
+  // two-digit years, day first like the field's own format.
+  const shapes: Record<number, [number[], 'ymd' | 'dmy'][]> = {
+    8: [
+      [[4, 2, 2], 'ymd'],
+      [[2, 2, 4], 'dmy'],
+    ],
+    7: [
+      [[4, 2, 1], 'ymd'],
+      [[4, 1, 2], 'ymd'],
+      [[2, 1, 4], 'dmy'],
+      [[1, 2, 4], 'dmy'],
+    ],
+    6: [
+      [[4, 1, 1], 'ymd'],
+      [[1, 1, 4], 'dmy'],
+      [[2, 2, 2], 'dmy'],
+      [[2, 2, 2], 'ymd'],
+    ],
+  };
+  return (shapes[s.length] ?? []).map(([sizes, order]) => {
+    const [a, b, c] = cut(...sizes);
+    return order === 'ymd' ? [a, b, c] : [c, b, a];
+  });
+}
+
+function fullYear(text: string, locale: string) {
+  const year = Number(text);
+  if (text.length > 2) return year;
+  const now = new Date();
+  const current =
+    locale === 'fa'
+      ? toJalali(now.getFullYear(), now.getMonth() + 1, now.getDate()).jy
+      : now.getFullYear();
+  const century = current - (current % 100);
+  return century + year <= current ? century + year : century - 100 + year;
+}
+
+function toIso(y: number, m: number, d: number, locale: string) {
+  if (m < 1 || m > 12 || d < 1) return null;
+  if (locale === 'fa' && y >= 1200 && y <= 1500) {
+    if (d > jalaliMonthLength(y, m)) return null;
+    const g = toGregorian(y, m, d);
+    return `${g.gy}-${pad(g.gm)}-${pad(g.gd)}`;
+  }
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (y < 1800 || y > 2200 || date.getUTCMonth() !== m - 1) return null;
+  return `${y}-${pad(m)}-${pad(d)}`;
 }
 
 // Editable day/month/year text for a stored date.

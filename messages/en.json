@@ -258,7 +258,7 @@
     "saving": "Saving…",
     "close": "Close",
     "back": "Back",
-    "nameInvalid": "Name must be 1 to 200 characters.",
+    "nameInvalid": "Name must be 2 to 28 characters.",
     "phoneInvalid": "Enter a valid number with 3 to 15 digits.",
     "birthdayInvalid": "Enter a valid date, like 06/10/1996.",
     "birthdayFuture": "Birthday can't be in the future.",

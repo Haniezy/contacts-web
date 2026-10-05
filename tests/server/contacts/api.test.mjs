@@ -199,7 +199,7 @@ test('mass assignment cannot transfer ownership, IDs or arbitrary photo URLs', a
     { photoKey: 'other/asset' },
   ])
     await api('post')
-      .send({ name: 'A', phone: '1234567', ...extra })
+      .send({ name: 'Al', phone: '1234567', ...extra })
       .expect(400);
   const c = await add();
   await api('patch', `/${c.id}`).send({ userId: users[1].id }).expect(400);
@@ -209,7 +209,9 @@ test('mass assignment cannot transfer ownership, IDs or arbitrary photo URLs', a
 test('validates names, phone numbers, real dates, optional fields and patch bodies', async () => {
   for (const data of [
     { name: '' },
-    { name: 'x'.repeat(201) },
+    { name: 'A' },
+    { name: ' A ' },
+    { name: 'x'.repeat(29) },
     { name: 'a\u0000b' },
     { phone: 'abc' },
     { phone: '++123' },
@@ -220,13 +222,13 @@ test('validates names, phone numbers, real dates, optional fields and patch bodi
     { reminder: 'x'.repeat(2001) },
   ])
     await api('post')
-      .send({ name: 'A', phone: '1234567', ...data })
+      .send({ name: 'Al', phone: '1234567', ...data })
       .expect(400);
   const c = await add();
   await api('patch', `/${c.id}`).send({}).expect(400);
   await api('get', '/bad-id').expect(400);
   await api('get', `/${randomUUID()}`).expect(404);
-  await api('patch', `/${randomUUID()}`).send({ name: 'A' }).expect(404);
+  await api('patch', `/${randomUUID()}`).send({ name: 'Al' }).expect(404);
 });
 
 test('search matches names, Arabic/Persian variants and formatted digits without leaking B', async () => {
@@ -278,13 +280,13 @@ test('alphabetical order, stable tie-breaks, bounded pages and accurate totals',
 });
 
 test('Persian letters sort alphabetically with ICU', async () => {
-  for (const name of ['چ', 'پ', 'ب', 'الف', 'ت']) await add({ name });
+  for (const name of ['چا', 'پا', 'با', 'الف', 'تا']) await add({ name });
   expect((await api('get')).body.contacts.map((c) => c.name)).toEqual([
     'الف',
-    'ب',
-    'پ',
-    'ت',
-    'چ',
+    'با',
+    'پا',
+    'تا',
+    'چا',
   ]);
 });
 
@@ -370,8 +372,8 @@ test('an ignored phone group stays hidden until a new member joins it', async ()
 test('the combined list shows phone groups, then name groups, each group once', async () => {
   await add({ name: 'سارا احمدی', phone: '09120000002' });
   await add({ name: 'سارا  احمدي', phone: '09360000002' });
-  await add({ name: 'X', phone: '09120000003' });
-  await add({ name: 'Y', phone: '+989120000003' });
+  await add({ name: 'Xi', phone: '09120000003' });
+  await add({ name: 'Yu', phone: '+989120000003' });
   // Same name and same number: one group, listed as a phone group.
   await add({ name: 'Same', phone: '09120000004' });
   await add({ name: 'Same', phone: '09120000004' });
@@ -603,7 +605,7 @@ test('blocks cross-origin JSON and multipart CSRF', async () => {
   const c = await add();
   await api('post')
     .set('Origin', 'https://evil.test')
-    .send({ name: 'A', phone: '123456' })
+    .send({ name: 'Al', phone: '123456' })
     .expect(403);
   await api('delete', `/${c.id}`)
     .set('Sec-Fetch-Site', 'cross-site')

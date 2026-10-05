@@ -16,8 +16,8 @@ export const normalizePhone = (value: string) =>
 const name = z
   .string()
   .trim()
-  .min(1)
-  .max(200)
+  .min(2)
+  .max(28)
   .refine((v) =>
     [...v].every(
       (char) => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127,

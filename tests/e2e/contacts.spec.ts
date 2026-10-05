@@ -149,16 +149,35 @@ test('one form creates and edits a contact', async ({ page, isMobile }) => {
 
   await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
   await expect(
-    page.getByText('نام باید بین ۱ تا ۲۰۰ کاراکتر باشه.'),
+    page.getByText('نام باید بین ۲ تا ۲۸ کاراکتر باشه.'),
   ).toBeVisible();
   await expect(
     page.getByText('شماره معتبر نیست؛ ۳ تا ۱۵ رقم وارد کن.'),
   ).toBeVisible();
   await expect(page.getByLabel('نام و نام خانوادگی')).toBeFocused();
 
-  await page.getByLabel('نام و نام خانوادگی').fill('نگار صالحی');
-  await page.getByLabel('شماره تلفن').fill('۰۹۱۲ ۱۱۱ ۲۲۲۲');
+  const name = page.getByLabel('نام و نام خانوادگی');
+  await name.fill('ن');
+  await name.blur();
+  await expect(
+    page.getByText('نام باید بین ۲ تا ۲۸ کاراکتر باشه.'),
+  ).toBeVisible();
+  // Typing stops at 28 characters.
+  await name.fill('');
+  await name.pressSequentially('ن'.repeat(30));
+  await expect(name).toHaveValue('ن'.repeat(28));
+  await name.fill('نگار صالحی');
+  // Letters never reach the phone or birthday fields.
+  const phone = page.getByLabel('شماره تلفن');
+  await phone.pressSequentially('۰۹۱۲abc ۱۱۱ ۲۲۲۲ب');
+  await expect(phone).toHaveValue('۰۹۱۲ ۱۱۱ ۲۲۲۲');
   const birthday = page.getByLabel(/تاریخ تولد/);
+  await birthday.pressSequentially('ab۱۳۸۳۲۳');
+  await birthday.blur();
+  // Digits without separators are read as a date and tidied on blur.
+  await expect(birthday).toHaveValue('۳ اردیبهشت ۱۳۸۳');
+  await birthday.focus();
+  await expect(birthday).toHaveValue('۳/۲/۱۳۸۳');
   await birthday.fill('۱/۱/۱۳۷۰');
   await birthday.blur();
   await expect(birthday).toHaveValue('۱ فروردین ۱۳۷۰');
