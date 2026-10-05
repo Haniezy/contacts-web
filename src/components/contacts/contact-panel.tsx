@@ -10,14 +10,10 @@ import { CallLink, ShareButton, SmsLink } from './contact-actions';
 // Desktop side panel: the selected contact, or the empty state.
 export function ContactPanel({
   contact,
-  duplicates,
-  onNew,
   onEdit,
   onDelete,
 }: {
   contact: Contact | null;
-  duplicates: number;
-  onNew: () => void;
   onEdit: (contact: Contact) => void;
   onDelete: (contact: Contact) => void;
 }) {
@@ -103,47 +99,13 @@ export function ContactPanel({
           </div>
         </>
       ) : (
-        <>
-          <div className="panel-hero panel-empty">
-            <span className="panel-user">
-              <Icon name="user" />
-            </span>
-            <h2>{t('selectTitle')}</h2>
-            <p>{t('selectHelp')}</p>
-            <Link
-              href="/contacts/new"
-              prefetch={false}
-              className="button-primary"
-              onClick={(event) => {
-                event.preventDefault();
-                onNew();
-              }}
-            >
-              <Icon name="plus" />
-              {t('addContact')}
-            </Link>
-          </div>
-          {duplicates > 0 && (
-            <div className="duplicates-card">
-              <span className="info-icon info-merge">
-                <Icon name="users" />
-              </span>
-              <div>
-                <p className="duplicates-title">
-                  {t('duplicatesFound', { count: duplicates })}
-                </p>
-                <p>{t('duplicatesHelp')}</p>
-              </div>
-              <Link
-                href="/contacts/duplicates"
-                prefetch={false}
-                className="text-link"
-              >
-                {t('review')}
-              </Link>
-            </div>
-          )}
-        </>
+        <div className="panel-hero panel-empty">
+          <span className="panel-user">
+            <Icon name="user" />
+          </span>
+          <h2>{t('selectTitle')}</h2>
+          <p>{t('selectHelp')}</p>
+        </div>
       )}
     </aside>
   );

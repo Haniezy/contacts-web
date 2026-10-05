@@ -41,7 +41,14 @@ export function initial(name: string) {
   return /\p{L}/u.test(letter) ? letter : '#';
 }
 
-// The API already sorts alphabetically, so equal initials are adjacent.
+// A lone «ه» looks like the digit «۵»; a zero-width joiner shows its
+// initial form (هـ) instead. Display only: grouping keeps the plain letter.
+export function showInitial(letter: string) {
+  return letter === 'ه' ? 'ه\u200d' : letter;
+}
+
+// The API sorts by script (the page's own first) and then alphabetically,
+// so equal initials are adjacent.
 export function groupByInitial(contacts: Contact[]) {
   const groups: { letter: string; contacts: Contact[] }[] = [];
   for (const contact of contacts) {

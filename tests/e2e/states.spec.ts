@@ -27,8 +27,8 @@ test('an empty book invites the first contact, which replaces the empty state', 
       'با دکمه‌ی پایین اولین مخاطبت رو اضافه کن تا دفترچه‌ت شکل بگیره',
     ),
   ).toBeVisible();
-  // No floating button and, on desktop, neither list title nor side panel.
-  await expect(page.locator('.contacts-fab')).toBeHidden();
+  // The header's add button stays; desktop shows no side panel.
+  await expect(page.locator('.contacts-add')).toBeVisible();
   await expect(page.locator('.contact-panel')).toBeHidden();
   if (isMobile)
     await expect(page.locator('.count-chip').first()).toHaveText('۰ نفر');
@@ -42,7 +42,7 @@ test('an empty book invites the first contact, which replaces the empty state', 
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(page.getByRole('button', { name: 'نگار صالحی' })).toBeVisible();
   await expect(empty).toHaveCount(0);
-  await expect(page.locator('.contacts-fab')).toBeVisible();
+  await expect(page.locator('.contacts-add')).toBeVisible();
   await expect(page.locator('.count-chip').first()).toHaveText('۱ نفر');
 });
 

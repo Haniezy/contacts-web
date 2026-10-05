@@ -12,7 +12,7 @@ import { PreferenceIcon } from '@/components/preferences/icons';
 export type AccountUser = {
   name: string;
   email: string;
-  initial: string;
+  firstName: string;
   photoUrl: string | null;
 };
 
@@ -21,7 +21,7 @@ export function UserAvatar({
   user,
   className = '',
 }: {
-  user: Pick<AccountUser, 'initial' | 'photoUrl'>;
+  user: Pick<AccountUser, 'photoUrl'>;
   className?: string;
 }) {
   return (
@@ -31,7 +31,8 @@ export function UserAvatar({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={user.photoUrl} alt="" decoding="async" />
       ) : (
-        user.initial
+        // No photo: a person icon (a lone first letter read badly, e.g. «ه»).
+        <Icon name="user" />
       )}
     </span>
   );
@@ -95,6 +96,7 @@ export function AccountMenu({
         <div className="menu-user">
           <UserAvatar user={user} />
           <div>
+            <p className="menu-hello">{t('hello')}</p>
             <p className="menu-name">
               <bdi>{user.name}</bdi>
             </p>
@@ -104,14 +106,14 @@ export function AccountMenu({
           </div>
         </div>
         <ul className="menu-items">
-          <li className="only-mobile">
+          <li>
             <span className="menu-icon icon-theme">
               <PreferenceIcon name="sun" />
             </span>
             <span className="menu-text">{p('theme')}</span>
             <ThemeSwitch />
           </li>
-          <li className="only-mobile">
+          <li>
             <span className="menu-icon icon-language">
               <PreferenceIcon name="globe" />
             </span>

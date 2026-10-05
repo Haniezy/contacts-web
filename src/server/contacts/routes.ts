@@ -1,3 +1,5 @@
+import { parseCookie } from 'cookie';
+import { localeCookie } from '../../i18n/config';
 import { Router, json, rateLimit, type Handler } from '../http';
 import { getDatabase } from '../database/client';
 import { getAuthConfig } from '../auth/config';
@@ -120,7 +122,11 @@ export function contactsRouter(
       return;
     }
     const userId = owner(res.locals);
-    const result = await listContacts(db(), userId, query.data);
+    const locale =
+      parseCookie(req.headers.cookie ?? '')[localeCookie] === 'en'
+        ? 'en'
+        : 'fa';
+    const result = await listContacts(db(), userId, query.data, locale);
     res.json({
       ...result,
       contacts: await Promise.all(

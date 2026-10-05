@@ -26,8 +26,9 @@ export function accountUser(
   const shown = name || user.email.split('@')[0];
   return {
     name: shown,
+    // The header shows just the first name.
+    firstName: user.firstName.trim() || shown.split(' ')[0],
     email: user.email,
-    initial: [...shown][0] ?? '?',
     photoUrl: user.photoUrl,
   };
 }

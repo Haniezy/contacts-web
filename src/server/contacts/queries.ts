@@ -16,6 +16,9 @@ const phoneDigits = Prisma.sql`regexp_replace(translate("phone", '۰۱۲۳۴۵۶
 // Duplicates compare Iranian numbers in national form, so +98 912…, 0098 912…,
 // 0912… and 912… are one number. Other numbers compare digit for digit.
 const phoneKey = Prisma.sql`regexp_replace(regexp_replace(${phoneDigits}, '^(0098|98|0)([1-9][0-9]{9})$', '0\\2'), '^(9[0-9]{9})$', '0\\1')`;
+// The first letter's script: Persian/Arabic letters (not digits), Latin.
+const arabicFirst = '^\\s*[\u0621-\u064A\u066E-\u06D3\u06FA-\u06FF]';
+const latinFirst = '^\\s*[A-Za-z\u00C0-\u024F]';
 const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "photoKey", "birthday", "reminder", "createdAt", "updatedAt"`;
 type PublicContact = Pick<Contact, keyof typeof contactSelect>;
 
@@ -23,8 +26,13 @@ export async function listContacts(
   db: PrismaClient,
   userId: string,
   query: { q: string; page: number; pageSize: number },
+  // Names in the page's own script come first, then the other script, then
+  // names starting with a digit or symbol (the # group).
+  locale: 'fa' | 'en' = 'fa',
 ) {
   const { q, page, pageSize } = query;
+  const script = Prisma.sql`CASE WHEN "name" ~ ${arabicFirst} THEN ${locale === 'fa' ? 0 : 1}::int
+    WHEN "name" ~ ${latinFirst} THEN ${locale === 'fa' ? 1 : 0}::int ELSE 2 END`;
   const name = normalizeName(q);
   const phone = /^[+0-9\s().-]+$/.test(digits(q)) ? normalizePhone(q) : '';
   const filter = Prisma.sql`"userId" = ${userId}::uuid AND
@@ -33,7 +41,7 @@ export async function listContacts(
   // single database round trip.
   const rows = await db.$queryRaw<(PublicContact & { total: bigint })[]>(
     Prisma.sql`SELECT ${columns}, count(*) OVER() AS total FROM "Contact" WHERE ${filter}
-      ORDER BY "name" COLLATE "contacts_alphabetic", "id" LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`,
+      ORDER BY ${script}, "name" COLLATE "contacts_alphabetic", "id" LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}`,
   );
   const total = rows.length
     ? Number(rows[0].total)

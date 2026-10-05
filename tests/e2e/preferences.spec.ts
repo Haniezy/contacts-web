@@ -1,18 +1,16 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
-// Desktop shows the switches in the header; mobile keeps them in the menu.
+// The switches live in the menu: the drawer on mobile, the account
+// dropdown on desktop.
 async function preferences(page: Page) {
   // Wait for the contacts header.
   await page.locator('.contacts-search').waitFor();
-  const menu = page.getByRole('button', { name: 'منو' });
-  const english = page.getByRole('button', { name: 'Menu' });
-  for (const button of [menu, english])
-    if (await button.isVisible()) {
-      await button.click();
-      return page.getByRole('dialog');
-    }
-  return page.locator('.header-preferences');
+  await page
+    .getByRole('button', { name: /^(منو|Menu|حساب کاربری|Account)$/ })
+    .filter({ visible: true })
+    .click();
+  return page.getByRole('dialog');
 }
 
 test.beforeEach(async ({ context, account }) => {

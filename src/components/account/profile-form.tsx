@@ -235,7 +235,6 @@ export function ProfileForm({
             ) : (
               <UserAvatar
                 user={{
-                  initial: user.initial,
                   photoUrl: photo.kind === 'keep' ? user.photoUrl : null,
                 }}
                 className="profile-avatar"

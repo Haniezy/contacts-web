@@ -10,19 +10,18 @@ import {
 } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { api, ApiError } from '@/lib/api';
 import {
   duplicateCountPath,
   groupByInitial,
+  showInitial,
   pageSize,
   type Contact,
   type ContactPage,
   type DuplicatePage,
 } from '@/lib/contacts';
 import { Icon } from '@/components/icon';
-import { ThemeSwitch } from '@/components/preferences/theme-switch';
-import { LanguageSwitch } from '@/components/preferences/language-switch';
 import { ContactRow } from './contact-row';
 import { ContactPanel } from './contact-panel';
 import { AccountMenu, UserAvatar, type AccountUser } from './account-menu';
@@ -102,6 +101,26 @@ export function ContactsApp({
       ),
     [],
   );
+
+  // The header stays on top; it casts a shadow once content runs under it.
+  const [headerStuck, setHeaderStuck] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setHeaderStuck(scrollY > 4);
+    addEventListener('scroll', onScroll, { passive: true });
+    return () => removeEventListener('scroll', onScroll);
+  }, []);
+
+  // The API orders the page's own script first, so a language change
+  // reloads the first page in the new order.
+  const locale = useLocale();
+  const listedLocale = useRef(locale);
+  useEffect(() => {
+    if (listedLocale.current === locale) return;
+    listedLocale.current = locale;
+    load(shownQuery, 1)
+      .then(setData)
+      .catch(() => setFailed(true));
+  }, [locale, load, shownQuery]);
 
   // Take over the streamed first page, unless a search already replaced it.
   const takeOver = useCallback((first: InitialContacts) => {
@@ -340,7 +359,7 @@ export function ContactsApp({
         <span className="contacts-circle" />
         <span className="contacts-mint" />
       </div>
-      <header className="contacts-header">
+      <header className={`contacts-header${headerStuck ? ' is-stuck' : ''}`}>
         <Link href="/contacts" className="contacts-logo">
           <span>
             <Icon name="book" />
@@ -363,6 +382,13 @@ export function ContactsApp({
             enterKeyHint="search"
           />
         </form>
+        {addLink(
+          'contacts-add',
+          <>
+            <Icon name="plus" />
+            <span className="contacts-add-label">{t('addContact')}</span>
+          </>,
+        )}
         <button
           type="button"
           className="menu-button"
@@ -371,11 +397,10 @@ export function ContactsApp({
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(true)}
         >
+          <UserAvatar user={user} />
           <Icon name="menu" />
         </button>
         <div className="header-preferences">
-          <ThemeSwitch />
-          <LanguageSwitch />
           <button
             type="button"
             className="account-button"
@@ -384,8 +409,12 @@ export function ContactsApp({
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
           >
-            <Icon name="chevron" />
             <UserAvatar user={user} />
+            <span className="account-name">
+              <bdi>{user.firstName}</bdi>
+            </span>
+            <span className="account-divider" aria-hidden="true" />
+            <Icon name="menu" />
           </button>
         </div>
         <div className="contacts-title">
@@ -399,6 +428,27 @@ export function ContactsApp({
             <h1 id="contacts-title">{t('title')}</h1>
             {count}
           </div>
+          {/* Duplicates as a compact banner above the list, on every size. */}
+          {loaded(null, (page, first) =>
+            page && page.pagination.total > 0 && (duplicates ?? first) > 0 ? (
+              <Link
+                href="/contacts/duplicates"
+                prefetch={false}
+                className="duplicates-banner"
+              >
+                <span className="banner-icon">
+                  <Icon name="users" />
+                </span>
+                <span className="banner-text">
+                  {t('duplicatesFound', { count: duplicates ?? first })}
+                </span>
+                <span className="banner-action">
+                  {t('review')}
+                  <Icon name="chevron" className="banner-chevron" />
+                </span>
+              </Link>
+            ) : null,
+          )}
           <div className="contacts-scroll">
             {loaded(
               <>
@@ -442,7 +492,9 @@ export function ContactsApp({
                 ) : (
                   groupByInitial(page.contacts).map((group) => (
                     <section key={group.letter} className="contact-group">
-                      <h2 className="letter-chip">{group.letter}</h2>
+                      <h2 className="letter-chip">
+                        {showInitial(group.letter)}
+                      </h2>
                       <ul>
                         {group.contacts.map((contact) => (
                           <ContactRow
@@ -472,7 +524,6 @@ export function ContactsApp({
               </p>
             )}
           </div>
-          {addLink('contacts-fab', <Icon name="plus" />, t('addContact'))}
         </section>
         {form ? (
           <aside className="contact-panel is-form">
@@ -494,11 +545,9 @@ export function ContactsApp({
               <span className="panel-spinner" />
               <p aria-hidden="true">{t('loading')}</p>
             </aside>,
-            (_, first) => (
+            () => (
               <ContactPanel
                 contact={selected}
-                duplicates={duplicates ?? first}
-                onNew={() => openForm({ mode: 'new' })}
                 onEdit={(contact) => openForm({ mode: 'edit', contact })}
                 onDelete={setDeleting}
               />

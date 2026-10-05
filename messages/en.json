@@ -227,7 +227,6 @@
     "selectTitle": "Select a contact",
     "selectHelp": "Click any contact to see their details, or create a new one.",
     "duplicatesFound": "{count, plural, one {# duplicate group found} other {# duplicate groups found}}",
-    "duplicatesHelp": "You can merge them together",
     "review": "Review",
     "birthday": "Birthday",
     "reminder": "Reminder",
@@ -268,7 +267,8 @@
     "photoFailed": "Contact saved, but the photo wasn't. Press Save again.",
     "photoUnavailable": "Photo storage is unavailable right now; the contact was saved without a photo.",
     "saveFailed": "Couldn't save. Please try again.",
-    "notFound": "This contact wasn't found."
+    "notFound": "This contact wasn't found.",
+    "hello": "Hello,"
   },
   "Duplicates": {
     "title": "Duplicate contacts",

@@ -88,6 +88,42 @@ test('list is grouped alphabetically, searchable, and rows open their actions', 
   );
 });
 
+test('mixed names: the page language script first, then the other, then #; numbers under names', async ({
+  page,
+  context,
+  account,
+}) => {
+  fixture({
+    action: 'contacts',
+    email: account.email,
+    contacts: [
+      { name: 'Hanie', phone: '09120000001' },
+      { name: 'Hanie', phone: '09120000002' },
+      { name: '۱۲۳ تاکسی', phone: '09120000003' },
+      { name: '#دفتر', phone: '09120000004' },
+      { name: 'هانیه', phone: '09120000005' },
+    ],
+  });
+  await page.goto('/contacts');
+  const chips = page.locator('.letter-chip');
+  await expect(chips).toHaveText(['آ', 'ب', 'س', 'ه\u200d', 'H', '#']);
+  // Same-named contacts are told apart by the number under the name.
+  // (Equal names are ordered by id, so either may come first.)
+  const phones = page
+    .locator('.contact-row', { hasText: 'Hanie' })
+    .locator('.row-phone');
+  await expect(phones).toHaveCount(2);
+  expect((await phones.allTextContents()).sort()).toEqual([
+    '۰۹۱۲ ۰۰۰ ۰۰۰۱',
+    '۰۹۱۲ ۰۰۰ ۰۰۰۲',
+  ]);
+  await context.addCookies([
+    { name: 'contacts-locale', value: 'en', domain: '127.0.0.1', path: '/' },
+  ]);
+  await page.reload();
+  await expect(chips).toHaveText(['H', 'آ', 'ب', 'س', 'ه\u200d', '#']);
+});
+
 test('delete asks for confirmation and removes the contact for real', async ({
   page,
 }) => {
@@ -111,13 +147,16 @@ test('delete asks for confirmation and removes the contact for real', async ({
   await expect(page.getByRole('button', { name: 'آرش محمدی' })).toHaveCount(0);
 });
 
-test('duplicates are counted in the menu and the empty panel', async ({
+test('duplicates are counted in the menu and the banner above the list', async ({
   page,
   isMobile,
 }) => {
   await page.goto('/contacts');
-  if (!isMobile)
-    await expect(page.getByText('۱ گروه تکراری پیدا شد')).toBeVisible();
+  const banner = page.locator('.duplicates-banner');
+  await expect(banner).toContainText('۱ گروه تکراری پیدا شد');
+  await expect(banner).toHaveAttribute('href', '/contacts/duplicates');
+  // The empty panel no longer repeats the header's add button.
+  await expect(page.locator('.panel-empty a')).toHaveCount(0);
   await page
     .getByRole('button', { name: isMobile ? 'منو' : 'حساب کاربری' })
     .click();
@@ -151,12 +190,12 @@ test('deleting through the BFF is owner-scoped and needs a trusted origin', asyn
 
 test('one form creates and edits a contact', async ({ page, isMobile }) => {
   await page.goto('/contacts');
-  await page.locator('.contacts-fab').click();
+  await page.locator('.contacts-add').click();
   await expect(page).toHaveURL(/\/contacts\/new$/);
   await expect(page.getByRole('heading', { name: 'مخاطب جدید' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'افزودن عکس' })).toBeVisible();
   // Mobile shows the form as a page; desktop keeps the list beside it.
-  await expect(page.locator('.contacts-fab')).toBeVisible({
+  await expect(page.locator('.contacts-add')).toBeVisible({
     visible: !isMobile,
   });
 
@@ -235,13 +274,13 @@ test('cancel, close and back leave without saving', async ({
   isMobile,
 }) => {
   await page.goto('/contacts');
-  await page.locator('.contacts-fab').click();
+  await page.locator('.contacts-add').click();
   await page.getByLabel('نام و نام خانوادگی').fill('ذخیره نشه');
   await page.getByRole('button', { name: 'انصراف' }).click();
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(page.locator('.contact-form')).toHaveCount(0);
 
-  await page.locator('.contacts-fab').click();
+  await page.locator('.contacts-add').click();
   await page.goBack();
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(page.locator('.contact-form')).toHaveCount(0);

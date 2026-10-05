@@ -1,4 +1,4 @@
-import { avatarTone, initial, type Contact } from '@/lib/contacts';
+import { avatarTone, initial, showInitial, type Contact } from '@/lib/contacts';
 
 export function Avatar({
   contact,
@@ -24,7 +24,7 @@ export function Avatar({
       className={`avatar avatar-${avatarTone(contact.id)} ${className}`}
       aria-hidden="true"
     >
-      {initial(contact.name)}
+      {showInitial(initial(contact.name))}
     </span>
   );
 }

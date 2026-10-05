@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Icon } from '@/components/icon';
-import type { Contact } from '@/lib/contacts';
+import { displayDigits } from '@/lib/api';
+import { formatPhone, type Contact } from '@/lib/contacts';
 import { Avatar } from './avatar';
 import { CallLink, ShareButton, SmsLink } from './contact-actions';
 
@@ -24,6 +25,7 @@ export function ContactRow({
   onDelete: () => void;
 }) {
   const t = useTranslations('Contacts');
+  const locale = useLocale();
   const actionsId = `actions-${contact.id}`;
   return (
     <li
@@ -53,7 +55,18 @@ export function ContactRow({
           aria-controls={actionsId}
           onClick={onToggle}
         >
-          <bdi>{contact.name}</bdi>
+          {/* Name and number line up with the page, whatever their own
+              direction; the number tells same-named contacts apart. */}
+          <span className="row-text">
+            <span className="row-name">
+              <bdi>{contact.name}</bdi>
+            </span>
+            <span className="row-phone">
+              <bdi dir="ltr">
+                {displayDigits(formatPhone(contact.phone), locale)}
+              </bdi>
+            </span>
+          </span>
           <Icon name="chevron" />
         </button>
       </div>

@@ -1674,7 +1674,7 @@ button:disabled {
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
-  padding-block-end: 120px;
+  padding-block-end: 48px;
   overflow-x: clip;
 }
 .contacts-decor {
@@ -1707,13 +1707,19 @@ button:disabled {
   opacity: 1;
 }
 .contacts-header {
+  /* Phones, as the artboard: menu and search, then the title line, which
+     also carries the add button at its far end. */
   display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-areas: 'menu search' 'title title';
-  grid-template-rows: auto 1fr;
-  column-gap: 12px;
-  min-height: 173px;
-  padding: 56px 18px 0;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'menu search search' 'title title add';
+  align-items: center;
+  gap: 16px 12px;
+  padding: 56px 18px 18px;
+  /* Stays on top while the page scrolls. */
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  transition: box-shadow 250ms ease;
   border-end-start-radius: 30px;
   border-end-end-radius: 30px;
   background: var(--glass);
@@ -1765,26 +1771,72 @@ button:disabled {
   border-color: var(--blue-d);
 }
 .menu-button {
+  /* A capsule: the account's avatar, then the menu lines. */
   grid-area: menu;
-  display: grid;
-  place-items: center;
-  width: 48px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   height: 48px;
+  padding-inline: 5px 11px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 999px;
   background: var(--chip);
   color: var(--blue-d);
   box-shadow: var(--disc-shadow);
+}
+.menu-button .user-avatar {
+  width: 38px;
+  height: 38px;
+  box-shadow: none;
+}
+.menu-button > svg {
+  width: 22px;
+  height: 22px;
 }
 .contacts-title {
   display: flex;
   align-items: center;
   gap: 11px;
 }
+.contacts-header.is-stuck {
+  box-shadow: 0 10px 30px rgb(63 134 165 / 12%);
+}
+[data-theme='dark'] .contacts-header.is-stuck {
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .contacts-header {
+    transition: none;
+  }
+}
 .contacts-header .contacts-title {
   grid-area: title;
-  padding-inline-start: 5px;
-  margin-block-start: -2.8px;
+  min-width: 0;
+  padding-inline-start: 4px;
+}
+.contacts-add {
+  grid-area: add;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #93cde2, #68aecb);
+  color: #fff;
+  box-shadow: var(--button-shadow);
+}
+.contacts-add svg {
+  width: 22px;
+  height: 22px;
+}
+/* Phones show the plus alone; the label stays for screen readers. */
+.contacts-add-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .contacts-title h1 {
   font-size: 22px;
@@ -1805,7 +1857,7 @@ button:disabled {
   padding: 33px 16px 0;
 }
 .contact-group + .contact-group {
-  margin-block-start: 24px;
+  margin-block-start: 14px;
 }
 .letter-chip {
   display: grid;
@@ -1904,11 +1956,77 @@ button:disabled {
   font-weight: 500;
   text-align: start;
 }
-.row-toggle bdi {
+.row-text {
+  display: grid;
   flex: 1;
+  min-width: 0;
+}
+.row-name,
+.row-phone {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.row-name {
+  line-height: 1.45;
+}
+.row-phone {
+  color: var(--ink2-strong);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+/* The duplicates banner above the list. */
+.duplicates-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-end: 16px;
+  padding-block: 9px;
+  padding-inline: 9px 14px;
+  border: 1px solid var(--row-border);
+  border-radius: 18px;
+  background: var(--row);
+  color: var(--ink);
+  box-shadow: var(--row-shadow);
+}
+.banner-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--lilac);
+  color: var(--lilac-d);
+}
+.banner-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.banner-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.banner-action {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--blue-strong);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* The down chevron turned to point onward: left in Persian, right in English. */
+.banner-chevron {
+  width: 18px;
+  height: 18px;
+  transform: rotate(-90deg);
+}
+[dir='rtl'] .banner-chevron {
+  transform: rotate(90deg);
 }
 .row-toggle svg {
   flex-shrink: 0;
@@ -2064,31 +2182,12 @@ button:disabled {
   background: var(--coral);
   color: var(--coral-d);
 }
-.contacts-fab {
-  position: fixed;
-  z-index: 3;
-  inset-inline-end: 24px;
-  bottom: 30px;
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #93cde2, #68aecb);
-  color: #fff;
-  box-shadow: var(--button-shadow);
-}
-.contacts-fab svg {
-  width: 34px;
-  height: 34px;
-  stroke-width: 1.6;
-}
 .contacts-fade {
   position: fixed;
   z-index: 2;
   inset-inline: 0;
   bottom: 0;
-  height: 140px;
+  height: 48px;
   background: linear-gradient(transparent, var(--page-end));
   pointer-events: none;
 }
@@ -2141,11 +2240,22 @@ button:disabled {
   padding: 64px 22px 31px;
 }
 .menu-user {
+  /* A greeting card at the top of the menu. */
   display: flex;
   align-items: center;
   gap: 13px;
-  padding-block-end: 20px;
-  border-block-end: 2px dashed var(--blue-l);
+  padding: 14px;
+  border-radius: 22px;
+  background: var(--mint);
+}
+.menu-hello,
+.menu-user .menu-email {
+  color: var(--slate-d);
+}
+.menu-hello {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 .user-avatar {
   display: grid;
@@ -2160,9 +2270,20 @@ button:disabled {
   font-weight: 700;
   box-shadow: 0 6px 14px rgb(62 156 124 / 22%);
 }
+/* No photo: the person icon fills about half the circle. */
+.user-avatar > svg {
+  width: 50%;
+  height: 50%;
+  stroke-width: 2;
+}
 .menu-name {
+  display: -webkit-box;
+  overflow: hidden;
   font-size: 16px;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .menu-user > div {
   min-width: 0;
@@ -2344,21 +2465,11 @@ button:disabled {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     height: 100dvh;
-    min-height: calc(640 * var(--u));
+    /* Short enough to fit common laptop screens; below it the page scrolls
+       under the sticky header. */
+    min-height: calc(560 * var(--u));
     padding: 0;
     overflow: clip;
-  }
-  /* Translucent header bar over the circle. */
-  .contacts-decor::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    height: calc(84.67 * var(--d));
-    border-end-start-radius: calc(28 * var(--u));
-    border-end-end-radius: calc(28 * var(--u));
-    background: var(--glass);
-    backdrop-filter: blur(20px);
   }
   .contacts-circle {
     inset-inline-end: calc(-349 * var(--d));
@@ -2372,23 +2483,60 @@ button:disabled {
     width: calc(450 * var(--d));
     height: calc(450 * var(--d));
   }
+  /* Desktop, as the artboard: the search starts 316px in and is 520px
+     wide; the add button joins the account button at the far end. */
+  /* The translucent bar over the circle is the header itself, so it stays
+     put with it. */
   .contacts-header {
-    position: relative;
-    display: flex;
+    position: sticky;
+    display: grid;
+    grid-template-columns:
+      calc(256 * var(--d)) minmax(0, calc(520 * var(--d)))
+      1fr auto auto;
+    grid-template-areas: 'logo search . add preferences';
     align-items: center;
-    justify-content: space-between;
+    column-gap: calc(16 * var(--d));
     height: calc(84.67 * var(--d));
     min-height: 0;
     padding: 0 calc(44 * var(--d));
-    border-radius: 0;
-    background: none;
-    backdrop-filter: none;
+    border-radius: 0 0 calc(28 * var(--u)) calc(28 * var(--u));
   }
   .menu-button,
   .contacts-header .contacts-title {
     display: none;
   }
+  .row-phone {
+    font-size: calc(12 * var(--u));
+  }
+  .duplicates-banner {
+    gap: calc(12 * var(--u));
+    /* The list below keeps its own top margin. */
+    margin-block: calc(12 * var(--u)) 0;
+    padding-block: calc(9 * var(--u));
+    padding-inline: calc(9 * var(--u)) calc(14 * var(--u));
+    border-radius: calc(18 * var(--u));
+  }
+  .banner-icon {
+    width: calc(36 * var(--u));
+    height: calc(36 * var(--u));
+    border-radius: calc(12 * var(--u));
+  }
+  .banner-icon svg {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+  }
+  .banner-text {
+    font-size: calc(14 * var(--u));
+  }
+  .duplicates-banner + .contacts-scroll {
+    margin-block-start: calc(10 * var(--u));
+  }
+  .banner-action {
+    font-size: calc(13 * var(--u));
+  }
   .contacts-logo {
+    grid-area: logo;
+    justify-self: start;
     display: flex;
     align-items: center;
     gap: calc(14 * var(--u));
@@ -2410,39 +2558,75 @@ button:disabled {
     height: calc(24 * var(--u));
   }
   .contacts-search {
-    position: absolute;
-    inset-inline-start: calc(316 * var(--d));
-    width: calc(520 * var(--d));
     height: calc(48 * var(--u));
+  }
+  .contacts-add {
+    display: flex;
+    gap: calc(8 * var(--u));
+    width: auto;
+    height: calc(48 * var(--u));
+    padding-inline: calc(16 * var(--u)) calc(22 * var(--u));
+    border-radius: 999px;
+    font-size: calc(15 * var(--u));
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .contacts-add svg {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
+  }
+  .contacts-add-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
   }
   .contacts-search input {
     font-size: calc(14 * var(--u));
   }
   .header-preferences {
+    grid-area: preferences;
+    justify-self: end;
     display: flex;
     align-items: center;
     gap: calc(22 * var(--u));
   }
+  /* Avatar, first name, a hairline, then the menu lines. */
   .account-button {
     display: flex;
     align-items: center;
-    gap: calc(8 * var(--u));
+    gap: calc(10 * var(--u));
     height: calc(49 * var(--u));
-    padding-inline: calc(8 * var(--u)) calc(14 * var(--u));
+    padding-inline: calc(5 * var(--u)) calc(14 * var(--u));
     border: 0;
     border-radius: 999px;
     background: var(--chip);
-    color: var(--muted);
+    color: var(--blue-d);
     box-shadow: var(--disc-shadow);
   }
   .account-button .user-avatar {
-    width: calc(40 * var(--u));
-    height: calc(40 * var(--u));
-    font-size: calc(18 * var(--u));
+    width: calc(39 * var(--u));
+    height: calc(39 * var(--u));
+    box-shadow: none;
   }
-  .account-button svg {
-    width: calc(18 * var(--u));
-    height: calc(18 * var(--u));
+  .account-name {
+    max-width: calc(120 * var(--u));
+    overflow: hidden;
+    color: var(--ink);
+    font-size: calc(14 * var(--u));
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .account-divider {
+    width: 1px;
+    height: calc(22 * var(--u));
+    background: var(--slate);
+  }
+  .account-button > svg {
+    width: calc(20 * var(--u));
+    height: calc(20 * var(--u));
   }
   .contacts-main {
     display: flex;
@@ -2485,7 +2669,7 @@ button:disabled {
     display: none;
   }
   .contact-group + .contact-group {
-    margin-block-start: calc(24.7 * var(--u));
+    margin-block-start: calc(14 * var(--u));
   }
   .letter-chip {
     min-width: calc(30 * var(--u));
@@ -2529,17 +2713,6 @@ button:disabled {
     width: calc(20 * var(--u));
     height: calc(20 * var(--u));
   }
-  .contacts-fab {
-    position: absolute;
-    inset-inline-end: calc(14 * var(--d));
-    bottom: calc(6 * var(--d));
-    width: calc(64 * var(--u));
-    height: calc(64 * var(--u));
-  }
-  .contacts-fab svg {
-    width: calc(34 * var(--u));
-    height: calc(34 * var(--u));
-  }
   .contacts-fade {
     display: none;
   }
@@ -2559,7 +2732,13 @@ button:disabled {
     border-radius: calc(28 * var(--u));
     background: var(--panel);
     backdrop-filter: blur(16px);
+    scrollbar-color: var(--blue-l) transparent;
     scrollbar-width: thin;
+  }
+  /* Empty panel: a smaller oval that ends above the title. */
+  .contact-panel:has(.panel-empty) .panel-mint {
+    top: calc(14 * var(--u));
+    height: calc(180 * var(--u));
   }
   .panel-decor,
   .form-decor {
@@ -2655,8 +2834,7 @@ button:disabled {
     width: 100%;
     margin-block-start: calc(54.2 * var(--u));
   }
-  .info-card,
-  .duplicates-card {
+  .info-card {
     display: flex;
     align-items: center;
     gap: calc(14 * var(--u));
@@ -2708,8 +2886,7 @@ button:disabled {
     padding-block-start: calc(28 * var(--u));
   }
   .panel-buttons .button-primary,
-  .button-danger,
-  .panel-empty .button-primary {
+  .button-danger {
     gap: calc(10 * var(--u));
     min-height: calc(56 * var(--u));
     padding-inline: calc(32 * var(--u));
@@ -2731,31 +2908,30 @@ button:disabled {
     font-size: calc(15 * var(--u));
     font-weight: 700;
   }
-  .panel-buttons svg,
-  .panel-empty .button-primary svg {
+  .panel-buttons svg {
     width: calc(20 * var(--u));
     height: calc(20 * var(--u));
   }
   .panel-empty {
-    margin-block-start: calc(36 * var(--u));
+    margin-block-start: calc(24 * var(--u));
   }
   .panel-user {
     display: grid;
     place-items: center;
-    width: calc(128 * var(--u));
-    height: calc(128 * var(--u));
+    width: calc(104 * var(--u));
+    height: calc(104 * var(--u));
     border-radius: 50%;
     background: #fff;
     color: var(--blue-d);
     box-shadow: 0 14px 30px rgb(95 168 198 / 16%);
   }
   .panel-user svg {
-    width: calc(64 * var(--u));
-    height: calc(64 * var(--u));
+    width: calc(52 * var(--u));
+    height: calc(52 * var(--u));
     stroke-width: 1.4;
   }
   .panel-empty h2 {
-    margin-block-start: calc(54 * var(--u));
+    margin-block-start: calc(40 * var(--u));
     font-size: calc(27 * var(--u));
   }
   .panel-empty p {
@@ -2764,30 +2940,6 @@ button:disabled {
     color: var(--ink2);
     font-size: calc(15 * var(--u));
     line-height: 2;
-  }
-  .panel-empty .button-primary {
-    min-width: calc(220 * var(--u));
-  }
-  .duplicates-card {
-    width: 100%;
-    min-height: calc(75 * var(--u));
-    margin-block-start: auto;
-    padding-block: calc(12 * var(--u));
-    padding-inline: calc(18 * var(--u));
-  }
-  .duplicates-card > div {
-    flex: 1;
-  }
-  .duplicates-title {
-    font-size: calc(16 * var(--u));
-    font-weight: 500;
-  }
-  .duplicates-card p:last-child {
-    color: var(--ink2);
-    font-size: calc(12 * var(--u));
-  }
-  .duplicates-card .text-link {
-    font-size: calc(14 * var(--u));
   }
 
   /* Dropdown menu */
@@ -2809,9 +2961,6 @@ button:disabled {
   .menu-sheet {
     height: auto;
     padding: calc(16 * var(--u)) calc(20 * var(--u)) calc(18 * var(--u));
-  }
-  .menu-items .only-mobile {
-    display: none;
   }
   .menu-user .user-avatar {
     width: calc(50 * var(--u));
@@ -4771,9 +4920,6 @@ html:has(.merge-dialog[open]) {
   .merge-dialog {
     overflow-x: clip;
   }
-  .contacts-fab {
-    inset-inline-end: calc((100vw - 600px) / 2 + 24px);
-  }
   .error-toast {
     inset-inline: calc((100vw - 600px) / 2 + 20px);
   }
@@ -4974,10 +5120,6 @@ html:has(.merge-dialog[open]) {
 .row-skeleton-text :last-child {
   width: calc(102 * var(--s));
   height: calc(11 * var(--s));
-}
-.contacts-page:has(.contacts-skeleton) .contacts-fab,
-.contacts-page:has(.contacts-blank) .contacts-fab {
-  display: none;
 }
 
 .contacts-blank {
