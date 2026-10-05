@@ -59,7 +59,12 @@ test('list is grouped alphabetically, searchable, and rows open their actions', 
     'href',
     'sms:09123456789',
   );
+  // Without the side panel, the reminder shows as a note under the actions.
+  const note = row.locator('.row-reminder');
   if (isMobile) {
+    await expect(note).toBeVisible();
+    await expect(note).toContainText('یادآوری');
+    await expect(note).toContainText('پنجشنبه زنگ بزن');
     await expect(
       page.getByRole('link', { name: 'جزئیات بهار رضایی' }),
     ).toHaveAttribute('href', /\/contacts\/[0-9a-f-]{36}$/);
@@ -70,9 +75,17 @@ test('list is grouped alphabetically, searchable, and rows open their actions', 
     ).toBeVisible();
     await expect(panel.getByText('۱۵ مهر ۱۳۷۵')).toBeVisible();
     await expect(panel.getByText('۰۹۱۲ ۳۴۵ ۶۷۸۹')).toBeVisible();
+    await expect(note).toBeHidden();
   }
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  // A contact without a reminder has no note.
+  const other = page.getByRole('button', { name: 'آرش محمدی' });
+  await other.click();
+  await expect(other).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.contact-row.is-open .row-reminder')).toHaveCount(
+    0,
+  );
 });
 
 test('delete asks for confirmation and removes the contact for real', async ({

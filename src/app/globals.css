@@ -1956,6 +1956,86 @@ button:disabled {
   width: 20px;
   height: 20px;
 }
+/* The contact's reminder as a note under the actions (phones and tablets):
+   it drops in after the buttons and its bell rings once. */
+.row-actions > div {
+  flex-wrap: wrap;
+}
+.row-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  margin-block-start: 16px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--amber);
+  box-shadow: 0 8px 18px rgb(232 169 74 / 14%);
+}
+[data-theme='dark'] .row-reminder {
+  box-shadow: none;
+}
+.contact-row.is-open .row-reminder {
+  animation: note-in 420ms 120ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+.reminder-bell {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--chip);
+  color: var(--amber-d);
+}
+.reminder-bell svg {
+  width: 18px;
+  height: 18px;
+  transform-origin: 50% 10%;
+}
+.contact-row.is-open .reminder-bell svg {
+  animation: bell-ring 800ms 450ms ease-in-out;
+}
+.reminder-body {
+  display: grid;
+  min-width: 0;
+}
+.reminder-label {
+  color: var(--slate-d);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.reminder-body bdi {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) rotate(-1.5deg);
+  }
+}
+@keyframes bell-ring {
+  20% {
+    transform: rotate(16deg);
+  }
+  40% {
+    transform: rotate(-13deg);
+  }
+  60% {
+    transform: rotate(8deg);
+  }
+  80% {
+    transform: rotate(-4deg);
+  }
+}
 .row-actions .action-label {
   position: absolute;
   width: 1px;
@@ -2436,6 +2516,10 @@ button:disabled {
   }
   .row-actions > div {
     padding-inline: calc(36.3 * var(--d));
+  }
+  /* Desktop shows the reminder in the side panel instead. */
+  .row-reminder {
+    display: none;
   }
   .action {
     width: calc(50 * var(--u));
@@ -5121,6 +5205,8 @@ html:has(.merge-dialog[open]) {
 @media (prefers-reduced-motion: reduce) {
   .row-actions,
   .row-actions > div,
+  .row-reminder,
+  .reminder-bell svg,
   .row-toggle svg,
   .contact-row,
   .account-menu[open],

@@ -82,6 +82,19 @@ export function ContactRow({
             <Icon name="trash" />
             <span className="action-label">{t('delete')}</span>
           </button>
+          {/* Phones have no side panel, so the reminder rides along under
+              the actions like a note. Desktop hides it. */}
+          {contact.reminder && (
+            <p className="row-reminder">
+              <span className="reminder-bell" aria-hidden="true">
+                <Icon name="bell" />
+              </span>
+              <span className="reminder-body">
+                <span className="reminder-label">{t('reminder')}</span>
+                <bdi>{contact.reminder}</bdi>
+              </span>
+            </p>
+          )}
         </div>
       </div>
     </li>
