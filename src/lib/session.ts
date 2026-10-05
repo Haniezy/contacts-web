@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { backendFetch } from './backend';
+import { loginPath } from './next-path';
 
 export const getUser = cache(async () => {
   const cookie = (await cookies()).toString();
@@ -32,8 +33,8 @@ export function accountUser(
     photoUrl: user.photoUrl,
   };
 }
-export async function requireUser() {
+export async function requireUser(next?: string) {
   const user = await getUser();
-  if (!user) redirect('/login');
+  if (!user) redirect(loginPath(next));
   return user;
 }

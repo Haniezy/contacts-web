@@ -142,6 +142,38 @@ test('a signed-in visitor gets one button into the book on the landing page', as
   ).toBeVisible();
 });
 
+test('a contact link opened while signed out returns to that contact after login', async ({
+  page,
+  context,
+  account,
+}) => {
+  fixture({
+    action: 'contacts',
+    email: account.email,
+    contacts: [{ name: 'بهار رضایی', phone: '09123456789' }],
+  });
+  const session = {
+    name: 'contacts_session',
+    value: account.token,
+    domain: '127.0.0.1',
+    path: '/',
+  };
+  await context.addCookies([session]);
+  const { contacts } = await (await page.request.get('/api/contacts')).json();
+  const path = `/contacts/${contacts[0].id}`;
+  await context.clearCookies();
+  await page.goto(path);
+  await expect(page).toHaveURL(`/login?${new URLSearchParams({ next: path })}`);
+  await page.getByLabel('ایمیل', { exact: true }).fill(account.email);
+  await page.getByLabel('رمز عبور', { exact: true }).fill(account.password);
+  await page.getByRole('button', { name: 'ورود', exact: true }).click();
+  await expect(page).toHaveURL(path);
+  await expect(page.getByRole('heading', { name: 'بهار رضایی' })).toBeVisible();
+  // Only the app's own pages are accepted as a place to return to.
+  await page.goto('/login?next=//evil.example');
+  await expect(page).toHaveURL(/\/contacts$/);
+});
+
 test('login and signup lead back to the landing page', async ({ page }) => {
   for (const path of ['/login', '/signup']) {
     await page.goto(path);

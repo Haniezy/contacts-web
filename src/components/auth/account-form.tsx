@@ -8,7 +8,14 @@ import { emailSuggestion } from '@/lib/email';
 import { Field } from './field';
 import { useEnrollment, type Enrollment } from './enrollment-context';
 
-export function AccountForm({ signup = false }: { signup?: boolean }) {
+export function AccountForm({
+  signup = false,
+  next = null,
+}: {
+  signup?: boolean;
+  // Where login returns to (already checked by nextPath).
+  next?: string | null;
+}) {
   const t = useTranslations('Auth');
   const e = useTranslations('Errors');
   const router = useRouter();
@@ -95,7 +102,13 @@ export function AccountForm({ signup = false }: { signup?: boolean }) {
         router.replace('/2fa/setup');
       } else {
         form.reset();
-        router.replace(result.twoFactorRequired ? '/2fa' : '/contacts');
+        router.replace(
+          result.twoFactorRequired
+            ? next
+              ? `/2fa?${new URLSearchParams({ next })}`
+              : '/2fa'
+            : (next ?? '/contacts'),
+        );
       }
       router.refresh();
     } catch (err) {

@@ -7,7 +7,7 @@ import { api, errorKey, asciiDigits } from '@/lib/api';
 import { CodeInput } from './code-input';
 import { Field } from './field';
 import { Icon } from '@/components/icon';
-export function VerifyForm() {
+export function VerifyForm({ next = null }: { next?: string | null }) {
   const t = useTranslations('Auth');
   const e = useTranslations('Errors');
   const router = useRouter();
@@ -37,7 +37,7 @@ export function VerifyForm() {
         'auth/2fa/verify',
         recovery ? { recoveryCode: cleaned } : { code },
       );
-      router.replace('/contacts');
+      router.replace(next ?? '/contacts');
       router.refresh();
     } catch (err) {
       setError(errorKey(err));
