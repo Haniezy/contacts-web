@@ -4924,6 +4924,45 @@ html:has(.merge-dialog[open]) {
     inset-inline: calc((100vw - 600px) / 2 + 20px);
   }
 }
+/* "Link copied" note after sharing on a computer. */
+.copy-toast {
+  position: fixed;
+  z-index: 6;
+  bottom: 28px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--chip);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 12px 30px rgb(40 60 80 / 22%);
+  transform: translateX(-50%);
+  animation: toast-in 250ms ease-out;
+}
+.copy-toast.is-failed {
+  background: var(--coral);
+  color: var(--ink);
+}
+.copy-toast svg {
+  width: 18px;
+  height: 18px;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .copy-toast {
+    animation: none;
+  }
+}
 /* Loading placeholders and the not-found / error screens. */
 :root {
   --skeleton: rgb(255 255 255 / 75%);

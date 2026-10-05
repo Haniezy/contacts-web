@@ -330,6 +330,12 @@ test('the details page shows one owned contact and its actions', async ({
     'sms:09123456789',
   );
 
+  // Touch screens open the share sheet with the name, number and link;
+  // computers copy the link, which opens just this contact.
+  const address = page.url();
+  const touch = await page.evaluate(
+    () => matchMedia('(pointer: coarse)').matches,
+  );
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'share', {
       configurable: true,
@@ -339,23 +345,29 @@ test('the details page shows one owned contact and its actions', async ({
     });
   });
   await page.getByRole('button', { name: 'اشتراک' }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as { __shared?: unknown }).__shared),
-    )
-    .toEqual({ title: 'بهار رضایی', text: 'بهار رضایی\n09123456789' });
-
-  await page.evaluate(() => {
-    Object.defineProperty(navigator, 'share', {
-      configurable: true,
-      value: undefined,
-    });
-  });
-  await page.getByRole('button', { name: 'اشتراک' }).click();
-  await expect
-    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .toBe('بهار رضایی\n09123456789');
-  await expect(page.getByRole('status')).toHaveText('اطلاعات مخاطب کپی شد.');
+  if (touch) {
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as { __shared?: unknown }).__shared),
+      )
+      .toEqual({
+        title: 'بهار رضایی',
+        text: 'بهار رضایی\n09123456789',
+        url: address,
+      });
+  } else {
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(address);
+    await expect(page.locator('.copy-toast')).toHaveText('لینک مخاطب کپی شد.');
+    // The copied link, opened in a new tab, shows this contact.
+    const tab = await page.context().newPage();
+    await tab.goto(await page.evaluate(() => navigator.clipboard.readText()));
+    await expect(
+      tab.getByRole('heading', { name: 'بهار رضایی' }),
+    ).toBeVisible();
+    await tab.close();
+  }
 
   await page.getByRole('link', { name: 'ویرایش مخاطب' }).click();
   await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}\/edit$/);

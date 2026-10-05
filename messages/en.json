@@ -237,7 +237,7 @@
     "deleteHelp": "This contact will be removed from your book for good.",
     "cancel": "Cancel",
     "deleteFailed": "Couldn't delete. Please try again.",
-    "copied": "Contact details copied.",
+    "copied": "Contact link copied.",
     "loading": "Loading…",
     "newTitle": "New contact",
     "editTitle": "Edit contact",
@@ -268,7 +268,8 @@
     "photoUnavailable": "Photo storage is unavailable right now; the contact was saved without a photo.",
     "saveFailed": "Couldn't save. Please try again.",
     "notFound": "This contact wasn't found.",
-    "hello": "Hello,"
+    "hello": "Hello,",
+    "copyFailed": "Couldn't copy; try again."
   },
   "Duplicates": {
     "title": "Duplicate contacts",
