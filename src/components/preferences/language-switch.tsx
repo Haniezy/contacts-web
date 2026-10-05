@@ -1,21 +1,26 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useOptimistic, useState, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { setLocale } from '@/i18n/actions';
 import type { Locale } from '@/i18n/config';
 
+// One button, like the theme switch: a click anywhere flips the language.
+// It is named after the language it switches to.
 export function LanguageSwitch() {
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const t = useTranslations('Preferences');
   const [pending, startTransition] = useTransition();
+  const [shown, setShown] = useOptimistic(locale);
   const [error, setError] = useState(false);
-  function change(value: Locale) {
-    if (value === locale) return;
+  const next: Locale = locale === 'fa' ? 'en' : 'fa';
+  function change() {
     setError(false);
     startTransition(async () => {
+      // The knob slides at once; it slides back if the change fails.
+      setShown(next);
       try {
-        await setLocale(value);
+        await setLocale(next);
       } catch {
         setError(true);
       }
@@ -23,34 +28,32 @@ export function LanguageSwitch() {
   }
   return (
     <div>
-      <div
-        className="language-switch"
-        role="group"
-        aria-label={t('language')}
+      <button
+        type="button"
+        className={`language-switch is-${shown}`}
+        lang={next}
+        aria-label={next === 'en' ? 'English' : 'فارسی'}
         aria-busy={pending}
+        disabled={pending}
         dir="ltr"
+        onClick={change}
       >
-        <button
-          type="button"
+        <span className="language-knob" aria-hidden="true" />
+        <span
+          className={`language-option${shown === 'en' ? ' is-active' : ''}`}
           lang="en"
-          aria-label="English"
-          aria-pressed={locale === 'en'}
-          disabled={pending}
-          onClick={() => change('en')}
+          aria-hidden="true"
         >
           EN
-        </button>
-        <button
-          type="button"
+        </span>
+        <span
+          className={`language-option${shown === 'fa' ? ' is-active' : ''}`}
           lang="fa"
-          aria-label="فارسی"
-          aria-pressed={locale === 'fa'}
-          disabled={pending}
-          onClick={() => change('fa')}
+          aria-hidden="true"
         >
           فارسی
-        </button>
-      </div>
+        </span>
+      </button>
       {error && (
         <p role="alert" className="text-sm text-ink2">
           {t('error')}

@@ -119,6 +119,53 @@ test('login and signup lead back to the landing page', async ({ page }) => {
   }
 });
 
+test('landing sections: FAQ opens one answer at a time; footer switches theme and language with one click', async ({
+  page,
+}) => {
+  await page.goto('/');
+  for (const name of [
+    'هر چیزی که یه دفترچه تلفن لازم داره',
+    'امنیت و حریم خصوصی',
+    'سوالات متداول',
+    'درباره دفترچه',
+  ])
+    await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
+  const first = page.getByRole('button', { name: 'دفترچه چیه؟' });
+  const second = page.getByRole('button', {
+    name: 'روی گوشی هم کار می‌کنه؟',
+  });
+  await first.click();
+  await expect(first).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('region', { name: 'دفترچه چیه؟' })).toHaveCSS(
+    'opacity',
+    '1',
+  );
+  await second.click();
+  await expect(second).toHaveAttribute('aria-expanded', 'true');
+  await expect(first).toHaveAttribute('aria-expanded', 'false');
+  await second.click();
+  await expect(second).toHaveAttribute('aria-expanded', 'false');
+  const footer = page.locator('footer');
+  await expect(footer.getByText('نسخه‌ی ۱.۰.۰')).toBeVisible();
+  await expect(footer.getByRole('link')).toHaveCount(0);
+  await expect(
+    page.getByRole('link', { name: /@gmail\.com$/ }),
+  ).toHaveAttribute('href', /^mailto:/);
+  const html = page.locator('html');
+  const toggle = footer.getByRole('switch');
+  await expect(toggle).toBeEnabled();
+  await toggle.click();
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  // Clicking the side already showing the language still flips it.
+  await footer.locator('.language-option.is-active').click();
+  await expect(html).toHaveAttribute('lang', 'en');
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Frequently asked questions' }),
+  ).toBeVisible();
+  await footer.getByRole('button', { name: 'فارسی', exact: true }).click();
+  await expect(html).toHaveAttribute('lang', 'fa');
+});
+
 test('route protection checks forged sessions; BFF blocks cross-origin changes; forms validate', async ({
   page,
   context,

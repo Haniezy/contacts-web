@@ -113,7 +113,90 @@
     "preview": "Contacts website preview",
     "captionLogin": "Secure sign-in with two-factor authentication",
     "captionContacts": "Sorted contacts and fast search",
-    "captionDetail": "Birthdays and a note for every contact"
+    "captionDetail": "Birthdays and a note for every contact",
+    "featuresTitle": "Everything a phonebook needs",
+    "featuresSubtitle": "Simple for every day, complete for when your contacts add up.",
+    "features": {
+      "anywhere": {
+        "title": "Always with you",
+        "text": "Your contacts live in your account, so a lost or new phone loses nothing. Sign in from any phone, tablet or computer."
+      },
+      "search": {
+        "title": "Fast search",
+        "text": "Find anyone in seconds by part of a name or number. The list is always in alphabetical order."
+      },
+      "duplicates": {
+        "title": "No duplicate contacts",
+        "text": "The same number in any format, like 0912 and +98912, and matching names are found so you can merge or ignore them."
+      },
+      "birthday": {
+        "title": "Birthdays and notes",
+        "text": "Keep a birthday and a short note for every contact so nothing slips your mind."
+      },
+      "actions": {
+        "title": "One tap to reach them",
+        "text": "Call, text or share any contact straight from its row in the list."
+      },
+      "preferences": {
+        "title": "Persian and English, light and dark",
+        "text": "A right-to-left and left-to-right interface, with the light or dark theme you prefer."
+      }
+    },
+    "securityTitle": "Security and privacy",
+    "securitySubtitle": "Your contacts are personal, so they stay yours alone.",
+    "security": {
+      "private": {
+        "title": "Only for you",
+        "text": "Each account can reach only its own contacts; nobody else sees them."
+      },
+      "twoFactor": {
+        "title": "Two-factor authentication",
+        "text": "Turn it on with an authenticator app; from then on nobody can sign in without the six-digit code."
+      },
+      "sessions": {
+        "title": "Sign out everywhere",
+        "text": "Signed in somewhere and forgot to sign out? End every session from Settings with one button."
+      },
+      "delete": {
+        "title": "Delete your account",
+        "text": "Delete your account whenever you like; all your contacts and data are erased for good."
+      }
+    },
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "what": {
+        "q": "What is Contacts?",
+        "a": "A personal online phonebook that keeps your contacts in your account, keeps them in order and finds duplicates for you."
+      },
+      "devices": {
+        "q": "Does it work on my phone?",
+        "a": "Yes. There is nothing to install; it runs in the browser on phones, tablets and computers and is designed for every screen size."
+      },
+      "newPhone": {
+        "q": "What happens to my contacts if I change phones?",
+        "a": "Your contacts are stored in your account, not on the phone. Just sign in on the new one."
+      },
+      "duplicates": {
+        "q": "How are duplicate contacts found?",
+        "a": "Contacts with the same number, even written differently like 0912, +98912 and 0098912, or with the same name are shown together. You can merge or ignore them."
+      },
+      "twoFactor": {
+        "q": "Is two-factor authentication required?",
+        "a": "No. You can skip it when you sign up and turn it on from Settings at any time. We recommend turning it on."
+      },
+      "birthday": {
+        "q": "Are birthdays Persian or Gregorian?",
+        "a": "Birthdays use the Persian (Jalali) calendar in the Persian version and the Gregorian calendar in the English version."
+      },
+      "deleteAccount": {
+        "q": "Can I delete my account?",
+        "a": "Yes, from Settings. After you confirm your password, plus your code if two-factor authentication is on, your account and all your contacts are erased for good."
+      }
+    },
+    "aboutTitle": "About Contacts",
+    "aboutText1": "Contacts was built for one simple job: keeping your contacts in one place, in order and within reach. No clutter, no duplicates and no worrying about losing your phone.",
+    "aboutText2": "The interface was designed for Persian and right-to-left from the start, with the Jalali calendar and Iranian phone numbers, and it comes in English too.",
+    "contactPrompt": "Have a suggestion or a problem? Write to us:"
   },
   "Contacts": {
     "title": "Contacts",

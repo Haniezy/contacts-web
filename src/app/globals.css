@@ -163,8 +163,9 @@ button:disabled {
   direction: ltr;
   position: relative;
   flex-shrink: 0;
-  width: 72px;
-  height: 40px;
+  /* Same height as the language switch beside it, everywhere. */
+  width: 60px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -176,14 +177,18 @@ button:disabled {
   position: absolute;
   inset-inline-start: 4px;
   top: 4px;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: #fff;
   color: #e8a94a;
   box-shadow: 0 4px 10px rgb(63 134 165 / 20%);
-  transform: translateX(32px);
+  transform: translateX(28px);
   transition: transform 200ms ease-in-out;
+}
+.theme-knob svg {
+  width: 16px;
+  height: 16px;
 }
 .moon-icon {
   display: none;
@@ -198,31 +203,55 @@ button:disabled {
   transform: translateX(0);
   color: #56627a;
 }
+/* EN always on the left and فارسی on the right; the knob slides under the
+   current language like the theme switch's knob. */
 .language-switch {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   padding: 4px;
+  border: 0;
   border-radius: 999px;
   background: var(--segment-track);
 }
-.language-switch button {
-  min-width: 54px;
-  min-height: 36px;
-  padding-inline: 12px;
-  border: 0;
+.language-knob {
+  position: absolute;
+  inset-block: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
   border-radius: 999px;
-  color: var(--ink2-strong);
-  font-weight: 700;
-}
-.language-switch button[aria-pressed='true'] {
-  color: var(--blue-d);
   background: var(--segment-active);
   box-shadow: 0 4px 10px rgb(63 134 165 / 15%);
+  transition: transform 200ms ease-in-out;
+}
+.language-switch.is-fa .language-knob {
+  transform: translateX(100%);
+}
+.language-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  min-height: 24px;
+  padding-inline: 8px;
+  color: var(--ink2-strong);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color 200ms ease-in-out;
+}
+.language-option.is-active {
+  color: var(--blue-d);
 }
 [dir='ltr'] .directional-icon {
   transform: scaleX(-1);
 }
 @media (prefers-reduced-motion: reduce) {
-  .theme-knob {
+  .theme-knob,
+  .language-knob,
+  .language-option,
+  .faq-chevron,
+  .faq-reveal {
     transition: none;
   }
 }
@@ -1130,7 +1159,8 @@ button:disabled {
 .landing-preview {
   position: absolute;
   inset-inline: 0;
-  top: 336px;
+  /* Clear of the buttons even when the active phone rises and grows. */
+  top: 376px;
   bottom: 0;
   z-index: 1;
 }
@@ -1252,6 +1282,8 @@ button:disabled {
   }
   .landing h1 {
     margin-block-start: 14px;
+    font-size: 24px;
+    text-wrap: balance;
   }
   .landing-subtitle {
     font-size: 14px;
@@ -1263,7 +1295,8 @@ button:disabled {
   .landing-actions a {
     flex: 1;
     min-width: 0;
-    max-width: 200px;
+    max-width: 150px;
+    min-height: 46px;
     padding-inline: 16px;
   }
   .landing-preview {
@@ -1300,6 +1333,310 @@ button:disabled {
   .preview-dots button {
     animation: none;
     transition: none;
+  }
+}
+
+/* Landing sections below the hero. No artboard: built from the settings
+   cards (row surface, tinted icon tiles) on the page's end colour, which the
+   hero's fade already blends into. */
+.landing {
+  /* Keeps the hero's gradient now that the page scrolls past it. */
+  background: linear-gradient(135deg, var(--page-start), var(--page-end));
+}
+.landing-more,
+.landing-footer {
+  /* Small text sits on the page's end colour, darker than the cards the
+     shared ink2/blue tokens were tuned for; these keep it at AA contrast. */
+  --landing-text: #56627a;
+  --landing-link: #2e6f8c;
+  background: var(--page-end);
+}
+[data-theme='dark'] :is(.landing-more, .landing-footer) {
+  --landing-text: var(--ink2);
+  --landing-link: var(--blue-d);
+}
+.landing-more {
+  padding: 24px 20px 0;
+}
+.landing-section {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-block-start: 72px;
+  text-align: center;
+}
+.landing-section h2 {
+  font-size: clamp(24px, 2.5vw, 34px);
+  font-weight: 700;
+  line-height: 1.5;
+}
+.landing-lead {
+  margin-block-start: 8px;
+  color: var(--landing-text);
+  font-size: 17px;
+  line-height: 1.7;
+}
+.feature-grid,
+.security-grid {
+  display: grid;
+  gap: 24px;
+  margin-block-start: 40px;
+  text-align: start;
+}
+.feature-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+.security-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+.landing-card,
+.faq-item,
+.landing-section.about-card {
+  border: 1px solid var(--row-border);
+  background: var(--row);
+  box-shadow: var(--row-shadow);
+}
+.landing-card {
+  padding: 24px;
+  border-radius: 24px;
+}
+.landing-card h3 {
+  margin-block-start: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.landing-card p {
+  margin-block-start: 6px;
+  color: var(--landing-text);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.security-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.security-card h3 {
+  margin-block-start: 0;
+}
+.landing-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+.landing-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.tint-mint {
+  background: var(--mint);
+  color: var(--mint-t);
+}
+.tint-sky {
+  background: var(--sky);
+  color: var(--sky-d);
+}
+.tint-lilac {
+  background: var(--lilac);
+  color: var(--lilac-d);
+}
+.tint-coral {
+  background: var(--coral);
+  color: var(--coral-d);
+}
+.tint-amber {
+  background: var(--amber);
+  color: var(--amber-d);
+}
+.tint-slate {
+  background: var(--slate);
+  color: var(--slate-d);
+}
+.faq-list {
+  display: grid;
+  gap: 12px;
+  max-width: 800px;
+  margin: 40px auto 0;
+  text-align: start;
+}
+.faq-item {
+  border-radius: 20px;
+}
+.faq-item button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 22px;
+  border: 0;
+  border-radius: 20px;
+  background: none;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: start;
+}
+.faq-chevron {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--ink2);
+  transition: transform 300ms ease;
+}
+.faq-item.is-open .faq-chevron {
+  transform: rotate(180deg);
+}
+.faq-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 300ms ease,
+    opacity 300ms ease;
+}
+.faq-item.is-open .faq-reveal {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.faq-reveal > div {
+  overflow: hidden;
+}
+.faq-item p {
+  padding: 0 22px 18px;
+  color: var(--landing-text);
+  font-size: 15px;
+  line-height: 1.9;
+}
+.landing-section.about-card {
+  max-width: 800px;
+  margin-block-start: 72px;
+  padding: 40px 48px;
+  border-radius: 28px;
+}
+.about-card p {
+  margin-block-start: 12px;
+  color: var(--landing-text);
+  font-size: 16px;
+  line-height: 2;
+}
+.about-card .about-contact {
+  margin-block-start: 20px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.about-contact a {
+  color: var(--landing-link);
+  font-weight: 700;
+  text-decoration: none;
+}
+.about-contact a:hover {
+  text-decoration: underline;
+}
+.landing-footer {
+  padding: 72px 20px 32px;
+}
+.landing-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px 32px;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-block-start: 28px;
+  border-block-start: 1px solid var(--blue-l);
+}
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.footer-version {
+  color: var(--landing-text);
+  font-size: 13px;
+}
+.footer-preferences {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 1023px) {
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* On portrait tablets the full-height hero ended far below its phones,
+   leaving an empty band above the sections: stop it under the phones. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .landing {
+    max-height: calc(376px + 23.75vw * 1720 / 812 + 48px);
+  }
+}
+@media (max-width: 767px) {
+  .landing-more {
+    padding-block-start: 0;
+  }
+  .landing-section {
+    padding-block-start: 56px;
+  }
+  .landing-lead {
+    font-size: 14px;
+  }
+  .feature-grid,
+  .security-grid {
+    gap: 16px;
+    margin-block-start: 28px;
+  }
+  .security-grid {
+    grid-template-columns: 1fr;
+  }
+  .landing-card {
+    padding: 20px;
+  }
+  .landing-card h3 {
+    font-size: 16px;
+  }
+  .landing-card p,
+  .faq-item p {
+    font-size: 13px;
+  }
+  .faq-list {
+    margin-block-start: 28px;
+  }
+  .faq-item button {
+    padding: 16px 18px;
+    font-size: 14px;
+  }
+  .faq-item p {
+    padding: 0 18px 16px;
+  }
+  .landing-section.about-card {
+    margin-block-start: 56px;
+    padding: 28px 22px;
+  }
+  .about-card p {
+    font-size: 14px;
+  }
+  .landing-footer {
+    padding-block-start: 56px;
+  }
+  .landing-footer-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+  .footer-brand {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+@media (max-width: 599px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1837,29 +2174,6 @@ button:disabled {
 .menu-logout .menu-text {
   color: var(--coral-d);
 }
-/* Compact switches used in the menu and the desktop header */
-.account-menu .theme-switch,
-.header-preferences .theme-switch {
-  width: 66px;
-  height: 34px;
-}
-.account-menu .theme-knob,
-.header-preferences .theme-knob {
-  width: 26px;
-  height: 26px;
-}
-.account-menu .theme-knob svg,
-.header-preferences .theme-knob svg {
-  width: 18px;
-  height: 18px;
-}
-.account-menu .language-switch button,
-.header-preferences .language-switch button {
-  min-width: 48px;
-  min-height: 28px;
-  padding-inline: 8px;
-  font-size: 13px;
-}
 
 /* Delete confirmation */
 .delete-dialog {
@@ -2092,10 +2406,6 @@ button:disabled {
   }
   .contact-group + .contact-group {
     margin-block-start: calc(24.7 * var(--u));
-  }
-  .header-preferences .language-switch button {
-    min-width: calc(47 * var(--u));
-    min-height: calc(25.4 * var(--u));
   }
   .letter-chip {
     min-width: calc(30 * var(--u));

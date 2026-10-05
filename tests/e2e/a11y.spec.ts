@@ -15,7 +15,7 @@ const designColours = [
   '.menu-logout',
   '.merge-cancel',
   '.button-mint',
-  '.language-switch [aria-pressed="true"]',
+  '.language-option.is-active',
   '.theme-switch',
   '.error-toast',
 ];

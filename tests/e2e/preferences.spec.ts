@@ -47,7 +47,7 @@ test('theme and language persist, retain physical knob positions and translate t
   await expect(toggle).toBeEnabled();
   await expect(scope.locator('.theme-knob')).toHaveCSS(
     'transform',
-    'matrix(1, 0, 0, 1, 32, 0)',
+    'matrix(1, 0, 0, 1, 28, 0)',
   );
   await toggle.click();
   await expect(toggle).toBeChecked();
@@ -68,13 +68,15 @@ test('theme and language persist, retain physical knob positions and translate t
   scope = await preferences(page);
   toggle = scope.getByRole('switch');
   await expect(toggle).toBeChecked();
+  // One button: in English it offers Persian, with the knob under EN.
+  await expect(scope.locator('.language-option.is-active')).toHaveText('EN');
   await expect(
     scope.getByRole('button', { name: 'English', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  ).toHaveCount(0);
   await toggle.click();
   await expect(scope.locator('.theme-knob')).toHaveCSS(
     'transform',
-    'matrix(1, 0, 0, 1, 32, 0)',
+    'matrix(1, 0, 0, 1, 28, 0)',
   );
   await scope.getByRole('button', { name: 'فارسی', exact: true }).click();
   await expect(html).toHaveAttribute('dir', 'rtl');
