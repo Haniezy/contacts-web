@@ -6,8 +6,17 @@ import {
   LandingFooter,
   LandingSections,
 } from '@/components/auth/landing-sections';
+import { getUser } from '@/lib/session';
 import app from '../../package.json';
-export default function Home() {
+
+export default async function Home() {
+  // A signed-in visitor gets one button into the book instead of login and
+  // signup. If the session can't be checked, show the signed-out page.
+  const user = await getUser().catch(() => null);
+  return <Landing signedIn={user !== null} />;
+}
+
+function Landing({ signedIn }: { signedIn: boolean }) {
   const t = useTranslations('Landing');
   const a = useTranslations('Auth');
   return (
@@ -31,12 +40,20 @@ export default function Home() {
             <h1>{t('title')}</h1>
             <p className="landing-subtitle">{t('subtitle')}</p>
             <div className="landing-actions">
-              <Link href="/signup" className="button-primary">
-                {a('createAccount')}
-              </Link>
-              <Link href="/login" className="button-secondary">
-                {a('login')}
-              </Link>
+              {signedIn ? (
+                <Link href="/contacts" className="button-primary">
+                  {t('openBook')}
+                </Link>
+              ) : (
+                <>
+                  <Link href="/signup" className="button-primary">
+                    {a('createAccount')}
+                  </Link>
+                  <Link href="/login" className="button-secondary">
+                    {a('login')}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
           <LandingPreview />

@@ -111,6 +111,37 @@ test('landing → signup → QR → verification → recovery codes → contacts
   }
 });
 
+test('a signed-in visitor gets one button into the book on the landing page', async ({
+  page,
+  context,
+  account,
+}) => {
+  await context.addCookies([
+    {
+      name: 'contacts_session',
+      value: account.token,
+      domain: '127.0.0.1',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/');
+  const actions = page.locator('.landing-actions');
+  await expect(actions.getByRole('link')).toHaveCount(1);
+  await actions.getByRole('link', { name: 'ورود به دفترچه' }).click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await logout(page);
+  await expect(page).toHaveURL(/\/login$/);
+  await page.goto('/');
+  await expect(
+    actions.getByRole('link', { name: 'ساخت حساب', exact: true }),
+  ).toBeVisible();
+  await expect(
+    actions.getByRole('link', { name: 'ورود', exact: true }),
+  ).toBeVisible();
+});
+
 test('login and signup lead back to the landing page', async ({ page }) => {
   for (const path of ['/login', '/signup']) {
     await page.goto(path);

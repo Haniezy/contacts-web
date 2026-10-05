@@ -196,7 +196,8 @@
     "aboutTitle": "About Contacts",
     "aboutText1": "Contacts was built for one simple job: keeping your contacts in one place, in order and within reach. No clutter, no duplicates and no worrying about losing your phone.",
     "aboutText2": "The interface was designed for Persian and right-to-left from the start, with the Jalali calendar and Iranian phone numbers, and it comes in English too.",
-    "contactPrompt": "Have a suggestion or a problem? Write to us:"
+    "contactPrompt": "Have a suggestion or a problem? Write to us:",
+    "openBook": "Go to my contacts"
   },
   "Contacts": {
     "title": "Contacts",
