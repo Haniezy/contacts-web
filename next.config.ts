@@ -8,6 +8,21 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['argon2', 'sharp'],
   turbopack: { root: __dirname },
   outputFileTracingRoot: __dirname,
+  // The service worker is checked on every visit, so a new version of the
+  // installed app arrives at once.
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default createNextIntlPlugin()(nextConfig);

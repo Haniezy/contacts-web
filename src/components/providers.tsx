@@ -1,6 +1,7 @@
 'use client';
 
 import { ThemeProvider } from 'next-themes';
+import { Pwa } from './pwa';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       storageKey="contacts-theme"
     >
       {children}
+      <Pwa />
     </ThemeProvider>
   );
 }

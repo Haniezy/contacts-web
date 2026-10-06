@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
 import { api, ApiError } from '@/lib/api';
+import { forgetOfflineData } from '@/lib/offline';
 import { Icon } from '@/components/icon';
 import { ThemeSwitch } from '@/components/preferences/theme-switch';
 import { LanguageSwitch } from '@/components/preferences/language-switch';
 import { PreferenceIcon } from '@/components/preferences/icons';
+import { InstallMenuItem } from './install-sheet';
 
 export type AccountUser = {
   name: string;
@@ -77,6 +79,8 @@ export function AccountMenu({
         return;
       }
     }
+    // Nothing of this account stays on the device for offline use.
+    await forgetOfflineData();
     router.replace('/login');
     router.refresh();
   }
@@ -151,6 +155,7 @@ export function AccountMenu({
               <span className="menu-text">{t('settings')}</span>
             </Link>
           </li>
+          <InstallMenuItem />
         </ul>
         <div className="menu-footer">
           <button

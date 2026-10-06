@@ -1,5 +1,9 @@
 import { expect, fixture, test } from './fixtures';
 
+// These tests fail requests with page.route, which a service worker's own
+// fetches would skip; offline behaviour has its own tests (pwa.spec.ts).
+test.use({ serviceWorkers: 'block' });
+
 test.beforeEach(async ({ context, account }) => {
   await context.addCookies([
     {

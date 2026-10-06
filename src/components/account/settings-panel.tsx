@@ -7,6 +7,7 @@ import { api, ApiError, asciiDigits, displayDigits } from '@/lib/api';
 import { Icon } from '@/components/icon';
 import { Field } from '@/components/auth/field';
 import { DeviceList } from './device-list';
+import { forgetOfflineData } from '@/lib/offline';
 
 export function SettingsPanel({
   twoFactor: initialTwoFactor,
@@ -30,6 +31,7 @@ export function SettingsPanel({
     setFailed(false);
     try {
       await api('account/logout-all', {});
+      await forgetOfflineData();
       location.replace('/login');
     } catch (error) {
       if (error instanceof ApiError && error.status === 401)
@@ -215,6 +217,7 @@ function SecondFactorDialog({
       } else {
         await api('account/delete', body);
         // Nothing of this account is left; start over from the landing page.
+        await forgetOfflineData();
         location.replace('/');
       }
     } catch (err) {
