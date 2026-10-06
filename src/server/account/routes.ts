@@ -192,6 +192,45 @@ export function accountRouter(
     res.json({ user: await presentUser(result.user, photos) });
   });
 
+  // The account's signed-in devices for Settings: still valid sessions,
+  // this one first, then the most recently used.
+  router.get('/sessions', async (_req, res) => {
+    const { user, sessionId } = principal(res.locals);
+    const sessions = await database().authSession.findMany({
+      where: { userId: user.id, expiresAt: { gt: new Date() } },
+      select: { id: true, userAgent: true, createdAt: true, lastSeenAt: true },
+    });
+    const used = (s: (typeof sessions)[number]) =>
+      (s.lastSeenAt ?? s.createdAt).getTime();
+    res.json({
+      sessions: sessions
+        .map((s) => ({ ...s, current: s.id === sessionId }))
+        .sort(
+          (a, b) => Number(b.current) - Number(a.current) || used(b) - used(a),
+        ),
+    });
+  });
+
+  // Signs out one device. Only the account's own sessions; ending this one
+  // also clears the cookie, like logging out.
+  router.delete('/sessions/:id', async (req, res) => {
+    const { user, sessionId } = principal(res.locals);
+    const id = req.params.id as string;
+    if (!z.uuid().safeParse(id).success) {
+      res.status(400).json({ error: 'INVALID_ID' });
+      return;
+    }
+    const { count } = await database().authSession.deleteMany({
+      where: { id, userId: user.id },
+    });
+    if (!count) {
+      res.status(404).json({ error: 'NOT_FOUND' });
+      return;
+    }
+    if (id === sessionId) res.clearCookie(cookieName, cookieOptions(config()));
+    res.status(204).end();
+  });
+
   // Ends every session, this one included.
   router.post('/logout-all', async (_req, res) => {
     const id = principal(res.locals).user.id;

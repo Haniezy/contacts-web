@@ -4294,6 +4294,72 @@ html:has(.merge-dialog[open]) {
   font-size: 13px;
   line-height: 1.6;
 }
+/* Signed-in devices inside the sign-out card. */
+.device-list {
+  display: grid;
+  gap: 10px;
+  margin-block: 4px 14px;
+}
+.device-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--segment-track);
+}
+.device-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--chip);
+  color: var(--sky-d);
+}
+.device-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.device-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.device-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.device-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-reveal .device-time {
+  color: var(--ink2-strong);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.device-signout {
+  flex-shrink: 0;
+  min-height: 34px;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--coral);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.device-signout:disabled {
+  opacity: 0.6;
+}
 .settings-reveal .form-error {
   margin-block-start: 10px;
 }

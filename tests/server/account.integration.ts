@@ -212,6 +212,62 @@ test('profile, password, photo, 2FA off, sign out everywhere and account deletio
       },
     );
 
+    await t.test(
+      'the device list shows each session and signs one out',
+      async () => {
+        const phone = await login();
+        const ua =
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+        // A request from the phone records its browser and time.
+        const seen = await fetch(`${base}/auth/me`, {
+          headers: { Cookie: phone, 'User-Agent': ua },
+        });
+        assert.equal(seen.status, 200);
+        const list = await request('GET', 'account/sessions', a);
+        assert.equal(list.status, 200);
+        const { sessions } = (await list.json()) as {
+          sessions: {
+            id: string;
+            userAgent: string | null;
+            lastSeenAt: string | null;
+            current: boolean;
+          }[];
+        };
+        assert.equal(sessions[0].current, true);
+        assert.equal(sessions.filter((s) => s.current).length, 1);
+        const other = sessions.find((s) => s.userAgent === ua);
+        assert.ok(other && other.lastSeenAt && !other.current);
+        // Only the account's own sessions, by a valid id, from this site.
+        assert.equal(
+          (await request('DELETE', `account/sessions/${randomUUID()}`, a))
+            .status,
+          404,
+        );
+        assert.equal(
+          (await request('DELETE', 'account/sessions/not-an-id', a)).status,
+          400,
+        );
+        assert.equal(
+          (
+            await request(
+              'DELETE',
+              `account/sessions/${other.id}`,
+              a,
+              undefined,
+              'https://evil.example',
+            )
+          ).status,
+          403,
+        );
+        assert.equal(
+          (await request('DELETE', `account/sessions/${other.id}`, a)).status,
+          204,
+        );
+        assert.equal((await me(phone)).status, 401);
+        assert.equal((await me(a)).status, 200);
+      },
+    );
+
     await t.test('signing out everywhere ends every session', async () => {
       const other = await login();
       const response = await request('POST', 'account/logout-all', a, {});

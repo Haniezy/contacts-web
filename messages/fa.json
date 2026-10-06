@@ -353,7 +353,18 @@
     "currentHint": "رمز فعلیت رو بنویس",
     "samePassword": "رمز جدید باید با رمز فعلی فرق داشته باشه.",
     "savePassword": "ذخیره رمز جدید",
-    "passwordChanged": "رمز عبور عوض شد و از بقیه‌ی دستگاه‌ها خارج شدی."
+    "passwordChanged": "رمز عبور عوض شد و از بقیه‌ی دستگاه‌ها خارج شدی.",
+    "devices": "دستگاه‌های واردشده",
+    "thisDevice": "این دستگاه",
+    "activeNow": "الان فعال",
+    "lastActive": "آخرین فعالیت {time}",
+    "signedIn": "ورود {date}",
+    "deviceOn": "{browser} روی {system}",
+    "unknownDevice": "دستگاه ناشناس",
+    "signOutDevice": "خروج",
+    "signOutDeviceLabel": "خروج از {device}",
+    "devicesFailed": "فهرست دستگاه‌ها بارگذاری نشد.",
+    "devicesLoading": "در حال بارگذاری دستگاه‌ها…"
   },
   "Shared": {
     "note": "این مخاطب با دفترچه برات فرستاده شده.",

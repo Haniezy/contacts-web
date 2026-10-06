@@ -17,6 +17,9 @@ export interface AuthPrincipal {
   };
 }
 
+// How often "last active" is written; within it requests write nothing.
+const seenInterval = 5 * 60 * 1000;
+
 export function requireAuth(
   database = getDatabase,
   config = getAuthConfig,
@@ -42,6 +45,8 @@ export function requireAuth(
         userId: true,
         expiresAt: true,
         twoFactorVerified: true,
+        userAgent: true,
+        lastSeenAt: true,
         user: {
           select: {
             id: true,
@@ -62,6 +67,19 @@ export function requireAuth(
     ) {
       return unauthorized();
     }
+    // Remember the device for Settings' device list. Pages rendered on the
+    // server carry no user-agent, so they only refresh the time.
+    const userAgent = request.headers['user-agent']?.slice(0, 512) || undefined;
+    const now = new Date();
+    if (
+      (userAgent && userAgent !== session.userAgent) ||
+      !session.lastSeenAt ||
+      now.getTime() - session.lastSeenAt.getTime() > seenInterval
+    )
+      await database().authSession.update({
+        where: { id: claims.jti },
+        data: { lastSeenAt: now, ...(userAgent ? { userAgent } : {}) },
+      });
     response.locals.auth = {
       sessionId: claims.jti,
       user: {

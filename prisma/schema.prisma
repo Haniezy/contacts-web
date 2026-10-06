@@ -35,12 +35,17 @@ model User {
 }
 
 model AuthSession {
-  id                String   @id @default(uuid()) @db.Uuid
-  userId            String   @db.Uuid
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt         DateTime @default(now()) @db.Timestamptz(3)
-  expiresAt         DateTime @db.Timestamptz(3)
-  twoFactorVerified Boolean  @default(false)
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  expiresAt         DateTime  @db.Timestamptz(3)
+  twoFactorVerified Boolean   @default(false)
+  // Shown in Settings so the user can tell their devices apart: the
+  // browser's user-agent and when the session was last used (updated at
+  // most every few minutes).
+  userAgent         String?   @db.VarChar(512)
+  lastSeenAt        DateTime? @db.Timestamptz(3)
 
   @@index([userId])
   @@index([expiresAt])

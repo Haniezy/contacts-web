@@ -353,7 +353,18 @@
     "currentHint": "Type your current password",
     "samePassword": "The new password must be different from the current one.",
     "savePassword": "Save new password",
-    "passwordChanged": "Password changed, and you were signed out on other devices."
+    "passwordChanged": "Password changed, and you were signed out on other devices.",
+    "devices": "Signed-in devices",
+    "thisDevice": "This device",
+    "activeNow": "Active now",
+    "lastActive": "Last active {time}",
+    "signedIn": "Signed in {date}",
+    "deviceOn": "{browser} on {system}",
+    "unknownDevice": "Unknown device",
+    "signOutDevice": "Sign out",
+    "signOutDeviceLabel": "Sign out {device}",
+    "devicesFailed": "Couldn't load your devices.",
+    "devicesLoading": "Loading devices…"
   },
   "Shared": {
     "note": "This contact was sent to you with Contacts.",

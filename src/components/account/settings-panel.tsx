@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { api, ApiError, asciiDigits, displayDigits } from '@/lib/api';
 import { Icon } from '@/components/icon';
 import { Field } from '@/components/auth/field';
+import { DeviceList } from './device-list';
 
 export function SettingsPanel({
   twoFactor: initialTwoFactor,
@@ -97,6 +98,7 @@ export function SettingsPanel({
           </button>
           <div className="settings-reveal" id="logout-all" inert={!open}>
             <div>
+              <DeviceList open={open} />
               <p>{t('logoutAllNote')}</p>
               {failed && (
                 <p role="alert" className="form-error">

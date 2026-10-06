@@ -269,3 +269,49 @@ test('a new profile photo is moved and zoomed in the crop window before saving',
     ]),
   ).toEqual([512, 512]);
 });
+
+test('settings list the signed-in devices and sign one out', async ({
+  page,
+  browser,
+  account,
+}) => {
+  // A second, separate browser (like a private window) on the same account.
+  const other = await browser.newContext({
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  });
+  const phone = await other.newPage();
+  await login(phone, account.email, account.password);
+  await expect(phone).toHaveURL(/\/contacts$/);
+
+  await page.goto('/settings');
+  await page.getByRole('button', { name: /خروج از همه‌ی دستگاه‌ها/ }).click();
+  const devices = page.getByRole('list', { name: 'دستگاه‌های واردشده' });
+  const rows = devices.getByRole('listitem');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText('این دستگاه');
+  await expect(rows.first()).toContainText('الان فعال');
+  const iphone = rows.filter({ hasText: 'Safari روی iOS' });
+  await expect(iphone).toHaveCount(1);
+  // Only other devices get their own sign-out button.
+  await expect(rows.first().getByRole('button')).toHaveCount(0);
+  await iphone.getByRole('button', { name: 'خروج از Safari روی iOS' }).click();
+  await expect(rows).toHaveCount(1);
+
+  // With the card still open, a new sign-in elsewhere shows up when this
+  // tab comes back into focus, without reloading the page.
+  const third = await browser.newContext();
+  const laptop = await third.newPage();
+  await login(laptop, account.email, account.password);
+  await expect(laptop).toHaveURL(/\/contacts$/);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(rows).toHaveCount(2);
+  await third.close();
+
+  // That browser is signed out; this one is not.
+  await phone.goto('/contacts');
+  await expect(phone).toHaveURL(/\/login$/);
+  await page.reload();
+  await expect(page).toHaveURL(/\/settings$/);
+  await other.close();
+});
