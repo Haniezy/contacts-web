@@ -269,7 +269,9 @@
     "saveFailed": "Couldn't save. Please try again.",
     "notFound": "This contact wasn't found.",
     "hello": "Hello,",
-    "copyFailed": "Couldn't copy; try again."
+    "copyFailed": "Couldn't copy; try again.",
+    "numberCopied": "Number copied.",
+    "copyNumber": "Copy number"
   },
   "Duplicates": {
     "title": "Duplicate contacts",
@@ -343,5 +345,9 @@
     "deleteForever": "Delete forever",
     "wrongPassword": "The password is incorrect.",
     "failed": "Something went wrong. Try again."
+  },
+  "Shared": {
+    "note": "This contact was sent to you with Contacts.",
+    "cta": "Make your own phonebook"
   }
 }

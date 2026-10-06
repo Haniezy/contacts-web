@@ -2174,6 +2174,10 @@ button:disabled {
   background: var(--lilac);
   color: var(--lilac-d);
 }
+.action-copy {
+  background: var(--mint);
+  color: var(--mint-t);
+}
 .action-edit {
   background: var(--chip);
   color: var(--slate-d);
@@ -4923,6 +4927,41 @@ html:has(.merge-dialog[open]) {
   .error-toast {
     inset-inline: calc((100vw - 600px) / 2 + 20px);
   }
+}
+/* A shared contact's public page (/s/<code>): the details card without
+   account controls, the logo leading home, and a short note at the end. */
+.shared-page .details-header {
+  align-items: center;
+}
+.shared-page .contacts-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 700;
+}
+.shared-page .contacts-logo span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--mint);
+  color: var(--mint-t);
+}
+.shared-page .details-card {
+  min-height: 0;
+  align-self: flex-start;
+}
+.shared-note {
+  margin-block-start: 36px;
+  color: var(--ink2-strong);
+  font-size: 13px;
+  text-align: center;
+}
+.shared-note .text-link {
+  font-weight: 700;
 }
 /* "Link copied" note after sharing on a computer. */
 .copy-toast {

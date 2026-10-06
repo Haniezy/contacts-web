@@ -711,3 +711,28 @@ test('private photo URLs are generated only for the owner in detail, list and du
     expect(item).not.toHaveProperty('photoKey');
   }
 });
+
+test('a public share link shows only the name, number and photo, without signing in', async () => {
+  const c = await add({
+    name: 'بهار رضایی',
+    phone: '09123456789',
+    birthday: '1996-10-06',
+    reminder: 'پنجشنبه زنگ بزن',
+  });
+  expect(c.shareToken).toMatch(/^[0-9a-f]{32}$/);
+  // Every contact gets its own code.
+  expect((await add()).shareToken).not.toBe(c.shareToken);
+  const shared = await request(app.listener)
+    .get(`/api/share/${c.shareToken}`)
+    .expect(200);
+  expect(shared.headers['cache-control']).toBe('no-store');
+  expect(shared.body).toEqual({
+    contact: { name: 'بهار رضایی', phone: '09123456789', photoUrl: null },
+  });
+  // Unknown or malformed codes, and the contact's own id, find nothing.
+  for (const token of ['0'.repeat(32), 'not-a-code', c.id])
+    await request(app.listener).get(`/api/share/${token}`).expect(404);
+  // Deleting the contact ends its link.
+  await api('delete', `/${c.id}`).set('Origin', config.origin).expect(204);
+  await request(app.listener).get(`/api/share/${c.shareToken}`).expect(404);
+});

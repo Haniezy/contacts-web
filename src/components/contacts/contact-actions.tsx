@@ -25,22 +25,58 @@ export function SmsLink({ phone }: { phone: string }) {
   );
 }
 
-// Phones (touch screens with a share sheet): the system sheet with the
-// name, number and the contact's link, so a contact can still be sent to
-// someone. Elsewhere the link is copied; pasting it in a new tab opens just
-// this contact (after signing in, if needed).
-export function ShareButton({ contact }: { contact: Contact }) {
+type Note = 'copied' | 'numberCopied' | 'copyFailed';
+
+// Copies text and briefly shows a note at the bottom of the page.
+function useCopy() {
   const t = useTranslations('Contacts');
-  const [note, setNote] = useState<'copied' | 'copyFailed' | null>(null);
+  const [note, setNote] = useState<Note | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
-  function show(next: 'copied' | 'copyFailed') {
-    setNote(next);
+  async function copy(text: string, done: Note) {
+    let shown: Note = done;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      shown = 'copyFailed';
+    }
+    setNote(shown);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setNote(null), 2500);
   }
+  const status = (
+    <>
+      <span className="sr-only" role="status">
+        {note ? t(note) : ''}
+      </span>
+      {note &&
+        createPortal(
+          <p
+            className={`copy-toast${note === 'copyFailed' ? ' is-failed' : ''}`}
+            aria-hidden="true"
+          >
+            <Icon name={note === 'copyFailed' ? 'alert' : 'copy'} />
+            {t(note)}
+          </p>,
+          document.body,
+        )}
+    </>
+  );
+  return { copy, status };
+}
+
+// The contact's public link (/s/<code>): anyone who gets it sees the name,
+// number and photo without signing in. Touch screens with a share sheet
+// send it with the name and number; elsewhere the link is copied.
+export function ShareButton({
+  contact,
+}: {
+  contact: Pick<Contact, 'name' | 'phone' | 'shareToken'>;
+}) {
+  const t = useTranslations('Contacts');
+  const { copy, status } = useCopy();
   async function share() {
-    const url = `${location.origin}/contacts/${contact.id}`;
+    const url = `${location.origin}/s/${contact.shareToken}`;
     if (navigator.share && matchMedia('(pointer: coarse)').matches) {
       try {
         await navigator.share({
@@ -53,31 +89,30 @@ export function ShareButton({ contact }: { contact: Contact }) {
       }
       return;
     }
-    try {
-      await navigator.clipboard.writeText(url);
-      show('copied');
-    } catch {
-      show('copyFailed');
-    }
+    await copy(url, 'copied');
   }
   return (
     <button type="button" className="action action-share" onClick={share}>
       <Icon name="share" />
       <span className="action-label">{t('share')}</span>
-      <span className="sr-only" role="status">
-        {note ? t(note) : ''}
-      </span>
-      {note &&
-        createPortal(
-          <p
-            className={`copy-toast${note === 'copyFailed' ? ' is-failed' : ''}`}
-            aria-hidden="true"
-          >
-            <Icon name={note === 'copied' ? 'copy' : 'alert'} />
-            {t(note)}
-          </p>,
-          document.body,
-        )}
+      {status}
+    </button>
+  );
+}
+
+// On the shared page: copy the number (calling is no use on a computer).
+export function CopyNumberButton({ phone }: { phone: string }) {
+  const t = useTranslations('Contacts');
+  const { copy, status } = useCopy();
+  return (
+    <button
+      type="button"
+      className="action action-copy"
+      onClick={() => copy(phone, 'numberCopied')}
+    >
+      <Icon name="copy" />
+      <span className="action-label">{t('copyNumber')}</span>
+      {status}
     </button>
   );
 }

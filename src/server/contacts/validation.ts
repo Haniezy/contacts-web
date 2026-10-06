@@ -105,6 +105,7 @@ export const contactSelect = {
   photoKey: true,
   birthday: true,
   reminder: true,
+  shareToken: true,
   createdAt: true,
   updatedAt: true,
 } as const;

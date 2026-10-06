@@ -8,6 +8,7 @@ import { checkDatabase } from './database/client';
 import { authRouter, type AuthOptions } from './auth/routes';
 import { contactsRouter, type ContactOptions } from './contacts/routes';
 import { accountRouter } from './account/routes';
+import { shareRouter } from './contacts/share-routes';
 import { ContactError } from './contacts/photos';
 import { BodyError, Req, Res, Router, UploadError } from './http';
 
@@ -46,6 +47,8 @@ export function createApp(
   router.use('/api/auth', authRouter(authOptions, contactOptions.photos));
   router.use('/api/contacts', contactsRouter(authOptions, contactOptions));
   router.use('/api/account', accountRouter(authOptions, contactOptions));
+  // Public, no sign-in: a shared contact's name, number and photo.
+  router.use('/api/share', shareRouter(authOptions, contactOptions));
 
   async function handle(request: Request) {
     const req = new Req(request);

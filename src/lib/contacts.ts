@@ -5,6 +5,8 @@ export type Contact = {
   photoUrl: string | null;
   birthday: string | null;
   reminder: string | null;
+  // Code of the contact's public link, /s/<shareToken>.
+  shareToken: string;
 };
 export type ContactPage = {
   contacts: Contact[];

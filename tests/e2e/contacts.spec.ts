@@ -330,9 +330,11 @@ test('the details page shows one owned contact and its actions', async ({
     'sms:09123456789',
   );
 
-  // Touch screens open the share sheet with the name, number and link;
-  // computers copy the link, which opens just this contact.
-  const address = page.url();
+  // Share sends the contact's public link (/s/<code>): touch screens through
+  // the share sheet with the name and number, computers by copying it.
+  const publicLink = new RegExp(
+    `^${new URL(page.url()).origin}/s/[0-9a-f]{32}$`,
+  );
   const touch = await page.evaluate(
     () => matchMedia('(pointer: coarse)').matches,
   );
@@ -345,29 +347,44 @@ test('the details page shows one owned contact and its actions', async ({
     });
   });
   await page.getByRole('button', { name: 'اشتراک' }).click();
+  type Shared = { title?: string; text?: string; url?: string };
+  const sent = () =>
+    page.evaluate(() => (window as { __shared?: Shared }).__shared);
+  let shared: string;
   if (touch) {
     await expect
-      .poll(() =>
-        page.evaluate(() => (window as { __shared?: unknown }).__shared),
-      )
-      .toEqual({
-        title: 'بهار رضایی',
-        text: 'بهار رضایی\n09123456789',
-        url: address,
-      });
+      .poll(async () => (await sent())?.url ?? '')
+      .toMatch(publicLink);
+    expect(await sent()).toMatchObject({
+      title: 'بهار رضایی',
+      text: 'بهار رضایی\n09123456789',
+    });
+    shared = (await sent())!.url!;
   } else {
     await expect
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toBe(address);
+      .toMatch(publicLink);
     await expect(page.locator('.copy-toast')).toHaveText('لینک مخاطب کپی شد.');
-    // The copied link, opened in a new tab, shows this contact.
-    const tab = await page.context().newPage();
-    await tab.goto(await page.evaluate(() => navigator.clipboard.readText()));
-    await expect(
-      tab.getByRole('heading', { name: 'بهار رضایی' }),
-    ).toBeVisible();
-    await tab.close();
+    shared = await page.evaluate(() => navigator.clipboard.readText());
   }
+  // Someone else, never signed in, opens the link: the card, no login, and
+  // nothing private (no reminder, no birthday, no edit or delete).
+  const stranger = await page.context().browser()!.newContext();
+  const visitor = await stranger.newPage();
+  await visitor.goto(shared);
+  await expect(visitor).toHaveURL(publicLink);
+  await expect(
+    visitor.getByRole('heading', { name: 'بهار رضایی' }),
+  ).toBeVisible();
+  await expect(visitor.getByText('۰۹۱۲ ۳۴۵ ۶۷۸۹')).toBeVisible();
+  await expect(visitor.getByRole('link', { name: 'تماس' })).toHaveAttribute(
+    'href',
+    'tel:09123456789',
+  );
+  await expect(visitor.getByText('پنجشنبه زنگ بزن')).toHaveCount(0);
+  await expect(visitor.getByText('۱۵ مهر ۱۳۷۵')).toHaveCount(0);
+  await expect(visitor.getByRole('link', { name: /ویرایش/ })).toHaveCount(0);
+  await stranger.close();
 
   await page.getByRole('link', { name: 'ویرایش مخاطب' }).click();
   await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}\/edit$/);

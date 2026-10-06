@@ -19,7 +19,7 @@ const phoneKey = Prisma.sql`regexp_replace(regexp_replace(${phoneDigits}, '^(009
 // The first letter's script: Persian/Arabic letters (not digits), Latin.
 const arabicFirst = '^\\s*[\u0621-\u064A\u066E-\u06D3\u06FA-\u06FF]';
 const latinFirst = '^\\s*[A-Za-z\u00C0-\u024F]';
-const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "photoKey", "birthday", "reminder", "createdAt", "updatedAt"`;
+const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "photoKey", "birthday", "reminder", "shareToken", "createdAt", "updatedAt"`;
 type PublicContact = Pick<Contact, keyof typeof contactSelect>;
 
 export async function listContacts(
