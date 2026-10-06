@@ -306,7 +306,7 @@
     "passwordSection": "Change password",
     "currentPassword": "Current password",
     "newPassword": "New password",
-    "newPasswordHint": "At least 8 characters",
+    "newPasswordHint": "6 to 16 characters",
     "confirmPassword": "Repeat new password",
     "confirmHint": "Type the password again",
     "currentRequired": "Enter your current password to change it.",
@@ -344,10 +344,22 @@
     "deleteVerifyHelpCode": "Enter your password and the 6-digit code from your authenticator app to delete your account permanently.",
     "deleteForever": "Delete forever",
     "wrongPassword": "The password is incorrect.",
-    "failed": "Something went wrong. Try again."
+    "failed": "Something went wrong. Try again.",
+    "currentHint": "Type your current password",
+    "samePassword": "The new password must be different from the current one.",
+    "savePassword": "Save new password",
+    "passwordChanged": "Password changed, and you were signed out on other devices."
   },
   "Shared": {
     "note": "This contact was sent to you with Contacts.",
     "cta": "Make your own phonebook"
+  },
+  "Cropper": {
+    "title": "Adjust photo",
+    "help": "Drag the photo to move it and use the slider to zoom.",
+    "area": "Photo preview; move it with the arrow keys and zoom with + and -",
+    "zoom": "Zoom",
+    "confirm": "Done",
+    "cancel": "Cancel"
   }
 }

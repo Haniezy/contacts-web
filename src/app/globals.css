@@ -4106,6 +4106,54 @@ html:has(.merge-dialog[open]) {
   height: 1px;
   background: var(--line);
 }
+/* The password section under the profile form: a closed row with a
+   "change password" button, or its own small form with save and cancel. */
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.password-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--mint);
+  color: var(--mint-t);
+}
+.password-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.password-dots {
+  flex: 1;
+  color: var(--ink2-strong);
+  font-size: 18px;
+  letter-spacing: 3px;
+}
+.password-open {
+  min-height: 44px;
+  padding-inline: 18px;
+  font-size: 14px;
+}
+.password-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-block-start: 24px;
+}
+.password-actions .button-primary {
+  min-height: 48px;
+  padding-inline: 24px;
+  font-size: 15px;
+}
+.password-done:not(:empty) {
+  margin-block-start: 12px;
+  color: var(--ink2-strong);
+  font-size: 13px;
+}
 .password-fields .password-toggle {
   bottom: 0;
   margin-inline-end: -2px;
@@ -4433,11 +4481,11 @@ html:has(.merge-dialog[open]) {
     grid-template-columns: 1fr 1fr;
     gap: 0 calc(44.7 * var(--d));
   }
-  .field-currentPassword {
+  .field-current {
     grid-column: 1 / -1;
   }
-  .field-newPassword label,
-  .field-confirmPassword label {
+  .field-next label,
+  .field-confirm label {
     padding-block-start: 0;
   }
   .password-fields .password-toggle {
@@ -4962,6 +5010,100 @@ html:has(.merge-dialog[open]) {
 }
 .shared-note .text-link {
   font-weight: 700;
+}
+/* Photo crop window: the photo moves and zooms inside a circle. */
+.crop-dialog {
+  width: min(340px, calc(100% - 40px));
+  margin: auto;
+  padding: 24px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--sheet);
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 30px 60px rgb(40 60 80 / 18%);
+}
+.crop-dialog[open] {
+  animation: dialog-in 200ms ease-out;
+}
+.crop-dialog::backdrop {
+  background: var(--scrim);
+  backdrop-filter: blur(4px);
+}
+.crop-dialog h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.crop-dialog > p {
+  margin-block: 4px 16px;
+  color: var(--ink2-strong);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.crop-area {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--slate);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.crop-area:active {
+  cursor: grabbing;
+}
+.crop-area img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  pointer-events: none;
+}
+/* Dims everything outside the circle that will be kept. */
+.crop-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgb(255 255 255 / 85%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 200px rgb(20 28 40 / 50%);
+  pointer-events: none;
+}
+.crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block-start: 18px;
+  color: var(--blue-d);
+}
+.crop-zoom > span[aria-hidden] {
+  width: 16px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.crop-zoom input {
+  flex: 1;
+  accent-color: var(--blue-d);
+}
+.crop-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-block-start: 20px;
+}
+.crop-actions .button-primary {
+  min-height: 46px;
+  min-width: 130px;
+  font-size: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crop-dialog[open] {
+    animation: none;
+  }
 }
 /* "Link copied" note after sharing on a computer. */
 .copy-toast {

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import sharp from 'sharp';
 import { expect, fixture, openMenu, test } from './fixtures';
 
 test.beforeEach(async ({ context, account }) => {
@@ -21,7 +22,7 @@ async function login(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'ورود', exact: true }).click();
 }
 
-test('the menu opens the profile, which changes the name and the password', async ({
+test('the menu opens the profile, whose save changes only the name', async ({
   page,
   account,
 }) => {
@@ -32,31 +33,10 @@ test('the menu opens the profile, which changes the name and the password', asyn
   const email = page.getByLabel(/ایمیل/);
   await expect(email).toHaveValue(account.email);
   await expect(email).toHaveAttribute('readonly', '');
+  // No password fields until the user asks to change it.
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
 
   await page.getByLabel('نام و نام خانوادگی').fill('نگار  صالحی');
-  const current = page.getByLabel('رمز عبور فعلی', { exact: true });
-  const next = page.getByLabel('رمز عبور جدید', { exact: true });
-  const repeat = page.getByLabel('تکرار رمز جدید', { exact: true });
-  await current.fill('wrong password');
-  await next.fill('short');
-  await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
-  await expect(
-    page.getByText('رمز عبور باید بین ۶ تا ۱۶ کاراکتر باشه.'),
-  ).toBeVisible();
-  await expect(page.getByText('تکرار رمز عبور با رمز یکی نیست.')).toBeVisible();
-  // The eye button shows what was typed.
-  await page
-    .locator('.field-newPassword')
-    .getByRole('button', { name: 'نمایش رمز عبور' })
-    .click();
-  await expect(next).toHaveAttribute('type', 'text');
-
-  const password = 'Changed test 45!';
-  await next.fill(password);
-  await repeat.fill(password);
-  await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
-  await expect(page.getByText('رمز عبور فعلی درست نیست.')).toBeVisible();
-  await current.fill(account.password);
   await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
   await expect(page).toHaveURL(/\/contacts$/);
   await expect((await openMenu(page)).getByText('نگار صالحی')).toBeVisible();
@@ -64,8 +44,84 @@ test('the menu opens the profile, which changes the name and the password', asyn
     firstName: 'نگار',
     lastName: 'صالحی',
   });
+});
 
-  await page.getByRole('button', { name: 'خروج', exact: true }).click();
+test('the password changes only through its own form, which checks the current password', async ({
+  page,
+  account,
+}) => {
+  await page.goto('/profile');
+  const open = page.getByRole('button', { name: 'تغییر رمز عبور' });
+  const current = page.getByLabel('رمز عبور فعلی', { exact: true });
+  const next = page.getByLabel('رمز عبور جدید', { exact: true });
+  const repeat = page.getByLabel('تکرار رمز جدید', { exact: true });
+  const save = page.getByRole('button', { name: 'ذخیره رمز جدید' });
+
+  // Cancel works at any point, straight from a field, with no error.
+  await open.click();
+  await expect(current).toBeFocused();
+  await page.getByRole('button', { name: 'انصراف', exact: true }).click();
+  await expect(current).toHaveCount(0);
+  await expect(page.locator('.field-error')).toHaveCount(0);
+  // Moving between fields shows no errors either: they belong to saving.
+  await open.click();
+  await current.press('Tab');
+  await expect(page.locator('.field-error')).toHaveCount(0);
+  await page.getByRole('button', { name: 'انصراف', exact: true }).click();
+  // Cancel closes the form and forgets what was typed.
+  await open.click();
+  await expect(current).toBeFocused();
+  await next.fill('something');
+  await page.getByRole('button', { name: 'انصراف', exact: true }).click();
+  await expect(next).toHaveCount(0);
+  await open.click();
+  await expect(next).toHaveValue('');
+
+  // Every rule shows at once: current required, 6–16, matching repeat.
+  await next.fill('short');
+  await save.click();
+  await expect(page.locator('#password-current-error')).toBeVisible();
+  await expect(
+    page.getByText('رمز عبور باید بین ۶ تا ۱۶ کاراکتر باشه.'),
+  ).toBeVisible();
+  await expect(page.getByText('تکرار رمز عبور با رمز یکی نیست.')).toBeVisible();
+  // The eye button shows what was typed.
+  await page
+    .locator('.field-next')
+    .getByRole('button', { name: 'نمایش رمز عبور' })
+    .click();
+  await expect(next).toHaveAttribute('type', 'text');
+  // The new password must differ from the current one.
+  await current.fill('Same pass 12');
+  await next.fill('Same pass 12');
+  await repeat.fill('Same pass 12');
+  await save.click();
+  await expect(
+    page.getByText('رمز جدید باید با رمز فعلی فرق داشته باشه.'),
+  ).toBeVisible();
+
+  // A wrong current password changes nothing.
+  const password = 'Changed test 45!';
+  await current.fill('wrong password');
+  await next.fill(password);
+  await repeat.fill(password);
+  await save.click();
+  await expect(page.getByText('رمز عبور فعلی درست نیست.')).toBeVisible();
+  await expect(current).toBeFocused();
+
+  await current.fill(account.password);
+  await save.click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'رمز عبور عوض شد' }),
+  ).toBeVisible();
+  await expect(next).toHaveCount(0);
+
+  await page.goto('/contacts');
+  await (
+    await openMenu(page)
+  )
+    .getByRole('button', { name: 'خروج', exact: true })
+    .click();
   await login(page, account.email, account.password);
   await expect(page.getByRole('alert')).toBeVisible();
   await login(page, account.email, password);
@@ -136,4 +192,58 @@ test('settings turn 2FA on and off, sign out everywhere and delete the account',
   await expect(page).toHaveURL(/\/$/);
   await login(page, account.email, account.password);
   await expect(page.getByText('ایمیل یا رمز عبور درست نیست.')).toBeVisible();
+});
+
+test('a new profile photo is moved and zoomed in the crop window before saving', async ({
+  page,
+}) => {
+  await page.goto('/profile');
+  const input = page.locator('.profile-photo input[type="file"]');
+  // A wide photo, so there is room to move it sideways.
+  const photo = {
+    name: 'wide.png',
+    mimeType: 'image/png',
+    buffer: await sharp({
+      create: { width: 900, height: 450, channels: 3, background: '#4a90a4' },
+    })
+      .png()
+      .toBuffer(),
+  };
+  const dialog = page.getByRole('dialog', { name: 'تنظیم عکس' });
+  const preview = page.locator('.profile-photo .photo-current img');
+
+  // Cancel keeps the old photo.
+  await input.setInputFiles(photo);
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'انصراف' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(preview).toHaveCount(0);
+
+  await input.setInputFiles(photo);
+  const image = dialog.locator('.crop-area img');
+  await expect(image).toBeVisible();
+  const before = await image.evaluate((el) => el.style.transform);
+  const area = dialog.locator('.crop-area');
+  const box = (await area.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2);
+  await page.mouse.up();
+  await expect
+    .poll(() => image.evaluate((el) => el.style.transform))
+    .not.toBe(before);
+  // The keyboard moves it too, and the slider zooms.
+  await area.focus();
+  await page.keyboard.press('ArrowLeft');
+  await dialog.getByRole('slider', { name: 'بزرگ‌نمایی' }).fill('2');
+  await dialog.getByRole('button', { name: 'تأیید' }).click();
+  await expect(dialog).toBeHidden();
+  // Only the circle's square is kept: a 512 × 512 image.
+  await expect(preview).toHaveAttribute('src', /^blob:/);
+  expect(
+    await preview.evaluate((el: HTMLImageElement) => [
+      el.naturalWidth,
+      el.naturalHeight,
+    ]),
+  ).toEqual([512, 512]);
 });
