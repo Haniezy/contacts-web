@@ -500,3 +500,59 @@ test('the calendar button picks a birthday', async ({ page }) => {
   await expect(calendar).toBeHidden();
   await expect(page.getByLabel(/تاریخ تولد/)).toHaveValue('۱۵ مهر ۱۳۷۵');
 });
+
+test('a number already in the book is named, and saving it asks first', async ({
+  page,
+}) => {
+  await page.goto('/contacts');
+  await page.locator('.contacts-add').click();
+  const note = page.locator('.phone-match');
+  const save = page.getByRole('button', { name: 'ذخیره مخاطب' });
+  const confirm = page.getByRole('dialog', { name: 'این شماره تکراریه' });
+  await page.getByLabel('نام و نام خانوادگی').fill('بهار جدید');
+  // بهار رضایی is 09123456789; the international form is the same number.
+  const phone = page.getByLabel('شماره تلفن');
+  await phone.fill('+98 912 345 6789');
+  await expect(note).toContainText(
+    'این شماره قبلاً برای «بهار رضایی» ثبت شده.',
+  );
+  await phone.fill('09129990000');
+  await expect(note).toHaveCount(0);
+
+  // Saved straight away, before the note could appear: it still asks.
+  await phone.fill('09123456789');
+  await save.click();
+  await expect(confirm).toBeVisible();
+  await expect(confirm).toContainText(
+    '«بهار رضایی» هم همین شماره رو داره. مطمئنی می‌خوای ذخیره‌اش کنی؟',
+  );
+  // The safe choice has focus, so Enter cannot save by accident.
+  await expect(confirm.getByRole('button', { name: 'برگرد' })).toBeFocused();
+  // "Go back" keeps the form as it was.
+  await confirm.getByRole('button', { name: 'برگرد' }).click();
+  await expect(confirm).toBeHidden();
+  await expect(page).toHaveURL(/\/contacts\/new$/);
+  await expect(phone).toHaveValue('09123456789');
+  // The second time, "yes" saves.
+  await save.click();
+  await confirm.getByRole('button', { name: 'بله، ذخیره کن' }).click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await expect(page.getByRole('button', { name: /بهار جدید/ })).toBeVisible();
+
+  // Editing without changing the number never asks, even with a twin.
+  await page
+    .getByRole('button', { name: /سارا احمدی/ })
+    .first()
+    .click();
+  await page
+    .locator('.contact-row.is-open')
+    .getByRole('link', { name: 'ویرایش' })
+    .click();
+  await expect(note).toContainText('«سارا احمدی»');
+  await page.getByLabel('نام و نام خانوادگی').fill('سارا احمدی‌نژاد');
+  await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: /سارا احمدی‌نژاد/ }),
+  ).toBeVisible();
+});

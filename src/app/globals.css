@@ -5201,6 +5201,37 @@ html:has(.merge-dialog[open]) {
   width: 18px;
   height: 18px;
 }
+/* "Save a taken number anyway?": the delete window's layout, amber. */
+.duplicate-confirm .delete-badge {
+  background: var(--amber);
+  color: var(--amber-d);
+}
+.duplicate-confirm .delete-actions .button-primary {
+  height: 52px;
+  min-height: 0;
+  padding-inline: 12px;
+  font-size: 16px;
+}
+/* Under the phone field: this number is already in the book. */
+.phone-match {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-block-start: 8px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--amber);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+.phone-match svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-block-start: 2px;
+  color: var(--amber-d);
+}
 /* Photo crop window: the photo moves and zooms inside a circle. */
 .crop-dialog {
   width: min(340px, calc(100% - 40px));

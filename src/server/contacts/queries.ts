@@ -19,6 +19,28 @@ const phoneKey = Prisma.sql`regexp_replace(regexp_replace(${phoneDigits}, '^(009
 // The first letter's script: Persian/Arabic letters (not digits), Latin.
 const arabicFirst = '^\\s*[\u0621-\u064A\u066E-\u06D3\u06FA-\u06FF]';
 const latinFirst = '^\\s*[A-Za-z\u00C0-\u024F]';
+// The same national form as phoneKey, for a number not yet saved.
+export const phoneMatchKey = (digitsOnly: string) =>
+  digitsOnly
+    .replace(/^(0098|98|0)([1-9][0-9]{9})$/, '0$2')
+    .replace(/^(9[0-9]{9})$/, '0$1');
+
+// Contacts already saved with this number (by the duplicates rule, so
+// +98 912…, 0098 912…, 0912… and 912… all match), the edited one aside.
+export async function contactsWithPhone(
+  db: PrismaClient,
+  userId: string,
+  digitsOnly: string,
+  except?: string,
+) {
+  return db.$queryRaw<{ id: string; name: string; phone: string }[]>(
+    Prisma.sql`SELECT "id", "name", "phone" FROM "Contact"
+      WHERE "userId" = ${userId}::uuid AND ${phoneKey} = ${phoneMatchKey(digitsOnly)}
+        AND (${except ?? null}::uuid IS NULL OR "id" <> ${except ?? null}::uuid)
+      ORDER BY "name" COLLATE "contacts_alphabetic", "id" LIMIT 3`,
+  );
+}
+
 const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "photoKey", "birthday", "reminder", "shareToken", "createdAt", "updatedAt"`;
 type PublicContact = Pick<Contact, keyof typeof contactSelect>;
 

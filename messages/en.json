@@ -276,7 +276,13 @@
     "hello": "Hello,",
     "copyFailed": "Couldn't copy; try again.",
     "numberCopied": "Number copied.",
-    "copyNumber": "Copy number"
+    "copyNumber": "Copy number",
+    "phoneTaken": "This number is already saved for <names></names>.",
+    "nameSeparator": ", ",
+    "saveAnywayTitle": "This number is taken",
+    "saveAnywayHelp": "<names></names> already has this number. Save it anyway?",
+    "saveAnyway": "Yes, save",
+    "saveAnywayBack": "Go back"
   },
   "Duplicates": {
     "title": "Duplicate contacts",

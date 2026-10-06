@@ -12,11 +12,17 @@ import {
   idSchema,
   listQuery,
   duplicateQuery,
+  matchQuery,
   mergeBody,
   ignoreBody,
   contactSelect,
 } from './validation';
-import { listContacts, duplicateContacts, ignoreDuplicates } from './queries';
+import {
+  contactsWithPhone,
+  listContacts,
+  duplicateContacts,
+  ignoreDuplicates,
+} from './queries';
 import {
   cloudinaryPhotos,
   presentContact,
@@ -134,6 +140,19 @@ export function contactsRouter(
       ),
     });
   });
+  // Before saving: is this number already in the book? (At most three.)
+  router.get('/match', async (req, res) => {
+    const query = matchQuery.safeParse(req.query);
+    if (!query.success) {
+      res.status(400).json({ error: 'INVALID_QUERY' });
+      return;
+    }
+    const { phone, except } = query.data;
+    res.json({
+      contacts: await contactsWithPhone(db(), owner(res.locals), phone, except),
+    });
+  });
+
   router.get('/duplicates', async (req, res) => {
     const query = duplicateQuery.safeParse(req.query);
     if (!query.success) {

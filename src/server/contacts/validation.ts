@@ -79,6 +79,17 @@ export const duplicateQuery = z
     pageSize,
   })
   .strict();
+// "Is this number already in the book?" while a contact is being typed.
+export const matchQuery = z
+  .object({
+    phone: z
+      .string()
+      .max(32)
+      .transform(normalizePhone)
+      .pipe(z.string().regex(/^[0-9]{3,15}$/)),
+    except: idSchema.optional(),
+  })
+  .strict();
 export const mergeBody = z
   .object({
     targetId: idSchema,

@@ -276,7 +276,13 @@
     "hello": "سلام،",
     "copyFailed": "کپی نشد؛ دوباره امتحان کن.",
     "numberCopied": "شماره کپی شد.",
-    "copyNumber": "کپی شماره"
+    "copyNumber": "کپی شماره",
+    "phoneTaken": "این شماره قبلاً برای <names></names> ثبت شده.",
+    "nameSeparator": "، ",
+    "saveAnywayTitle": "این شماره تکراریه",
+    "saveAnywayHelp": "<names></names> هم همین شماره رو داره. مطمئنی می‌خوای ذخیره‌اش کنی؟",
+    "saveAnyway": "بله، ذخیره کن",
+    "saveAnywayBack": "برگرد"
   },
   "Duplicates": {
     "title": "مخاطبین تکراری",

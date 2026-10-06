@@ -736,3 +736,31 @@ test('a public share link shows only the name, number and photo, without signing
   await api('delete', `/${c.id}`).set('Origin', config.origin).expect(204);
   await request(app.listener).get(`/api/share/${c.shareToken}`).expect(404);
 });
+
+test('the match check finds a saved number in any Iranian form, own contacts only', async () => {
+  const arash = await add({ name: 'آرش محمدی', phone: '09121112233' });
+  await add({ name: 'غریبه', phone: '09121112233' }, 1);
+  const match = async (query) =>
+    (await api('get', `/match?${new URLSearchParams(query)}`).expect(200)).body
+      .contacts;
+  for (const phone of [
+    '09121112233',
+    '+989121112233',
+    '00989121112233',
+    '9121112233',
+    '۰۹۱۲ ۱۱۱ ۲۲۳۳',
+  ])
+    expect(await match({ phone })).toEqual([
+      { id: arash.id, name: 'آرش محمدی', phone: '09121112233' },
+    ]);
+  // The contact being edited does not match itself; other numbers match nothing.
+  expect(await match({ phone: '09121112233', except: arash.id })).toEqual([]);
+  expect(await match({ phone: '09129999999' })).toEqual([]);
+  for (const query of [
+    { phone: '12' },
+    { phone: 'abc' },
+    { phone: '0912', except: 'x' },
+    { q: '1' },
+  ])
+    await api('get', `/match?${new URLSearchParams(query)}`).expect(400);
+});

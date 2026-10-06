@@ -14,6 +14,7 @@ import { formatPhone, type Contact } from '@/lib/contacts';
 import { birthdayInput, parseBirthday } from '@/lib/jalali';
 import { Icon, type IconName } from '@/components/icon';
 import { Avatar } from './avatar';
+import { DuplicateConfirm } from './duplicate-confirm';
 
 // The date picker package loads only when the calendar is first opened.
 const BirthdayCalendar = dynamic(() => import('./birthday-calendar'), {
@@ -121,6 +122,51 @@ export function ContactForm({
   );
 
   const errors = problems(fields, locale);
+
+  // Is this number already in the book? Asked shortly after typing stops,
+  // only for a valid number; the contact being edited is left out.
+  const [matches, setMatches] = useState<Pick<Contact, 'id' | 'name'>[]>([]);
+  // Save waits for that check (the button stays as it is, just disabled).
+  const [checking, setChecking] = useState(false);
+  // Save was pressed with a taken number: the confirm window is open.
+  const [confirming, setConfirming] = useState<
+    Pick<Contact, 'id' | 'name'>[] | null
+  >(null);
+  const phoneToCheck = errors.phone ? '' : asciiDigits(fields.phone.trim());
+  const quotes = locale === 'fa' ? ['«', '»'] : ['“', '”'];
+  const ownerNames = (owners: Pick<Contact, 'id' | 'name'>[]) => (
+    <>
+      {owners.map((owner, i) => (
+        <span key={owner.id}>
+          {i > 0 && t('nameSeparator')}
+          {quotes[0]}
+          <bdi>{owner.name}</bdi>
+          {quotes[1]}
+        </span>
+      ))}
+    </>
+  );
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      if (!phoneToCheck) return setMatches([]);
+      const query = new URLSearchParams({ phone: phoneToCheck });
+      if (saved) query.set('except', saved.id);
+      api<{ contacts: Pick<Contact, 'id' | 'name'>[] }>(
+        `contacts/match?${query}`,
+        undefined,
+        { signal: controller.signal },
+      )
+        .then(({ contacts }) => setMatches(contacts))
+        .catch(() => {
+          // A missed check only means no note.
+        });
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [phoneToCheck, saved]);
   const shown = (key: keyof Fields) =>
     touched[key] && errors[key] ? t(errors[key]) : undefined;
   const set = (key: keyof Fields) => (value: string) =>
@@ -155,7 +201,7 @@ export function ContactForm({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || checking) return;
     setTouched({ name: true, phone: true, birthday: true, reminder: true });
     const first = (['name', 'phone', 'birthday', 'reminder'] as const).find(
       (key) => errors[key],
@@ -166,6 +212,39 @@ export function ContactForm({
         ?.focus();
       return;
     }
+    // A number already in the book asks first. Checked again here, so a
+    // quick save cannot slip past the note under the field.
+    setChecking(true);
+    const owners = await phoneOwners();
+    setChecking(false);
+    if (owners.length) {
+      setMatches(owners);
+      setConfirming(owners);
+      return;
+    }
+    await save();
+  }
+
+  // Others saved with this number. Not asked when editing without changing
+  // the number, and a failed check never stops saving.
+  async function phoneOwners() {
+    const phone = asciiDigits(fields.phone.trim());
+    if (saved && phone.replace(/\D/g, '') === saved.phone.replace(/\D/g, ''))
+      return [];
+    try {
+      const query = new URLSearchParams({ phone });
+      if (saved) query.set('except', saved.id);
+      return (
+        await api<{ contacts: Pick<Contact, 'id' | 'name'>[] }>(
+          `contacts/match?${query}`,
+        )
+      ).contacts;
+    } catch {
+      return [];
+    }
+  }
+
+  async function save() {
     setBusy(true);
     setError('');
     const values = {
@@ -414,6 +493,14 @@ export function ContactForm({
             inputMode: 'tel',
             maxLength: 32,
             autoComplete: 'tel',
+            after: matches.length > 0 && (
+              <p className="phone-match" role="status">
+                <Icon name="users" />
+                <span>
+                  {t.rich('phoneTaken', { names: () => ownerNames(matches) })}
+                </span>
+              </p>
+            ),
           })}
           {field('birthday', t('birthday'), {
             placeholder: t('birthdayPlaceholder'),
@@ -476,7 +563,7 @@ export function ContactForm({
         <div className="form-actions">
           <button
             className="button-primary"
-            disabled={busy}
+            disabled={busy || checking}
             // Keep focus in the field: its blur error would move this
             // button away mid-click. Submitting validates every field.
             onMouseDown={(event) => event.preventDefault()}
@@ -488,6 +575,17 @@ export function ContactForm({
           </button>
         </div>
       </form>
+      {confirming && (
+        <DuplicateConfirm
+          names={ownerNames(confirming)}
+          busy={busy}
+          onSave={async () => {
+            await save();
+            setConfirming(null);
+          }}
+          onBack={() => setConfirming(null)}
+        />
+      )}
     </div>
   );
 }
