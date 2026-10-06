@@ -723,6 +723,14 @@ button:disabled {
   color: var(--ink2);
   font-size: 13px;
 }
+/* What the key is for, under its label. */
+.manual-hint {
+  max-width: 300px;
+  margin-inline: auto;
+  color: var(--ink2-strong);
+  font-size: 11.5px;
+  line-height: 1.7;
+}
 .secret-code {
   display: flex;
   align-items: center;
@@ -1032,6 +1040,11 @@ button:disabled {
   .manual-label {
     margin: 0;
     font-size: calc(13 * var(--u));
+  }
+  .manual-hint {
+    max-width: calc(260 * var(--u));
+    margin-inline: 0;
+    font-size: calc(11.5 * var(--u));
   }
   .secret-code {
     min-height: calc(42 * var(--u));

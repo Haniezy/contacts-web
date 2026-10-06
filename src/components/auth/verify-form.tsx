@@ -72,7 +72,12 @@ export function VerifyForm({ next = null }: { next?: string | null }) {
             maxLength={35}
           />
         ) : (
-          <CodeInput value={code} onChange={setCode} invalid={!!error} />
+          <CodeInput
+            value={code}
+            onChange={setCode}
+            invalid={!!error}
+            onPastedKey={() => setError('pastedKey')}
+          />
         )}
         {error && (
           <p role="alert" className="form-error">

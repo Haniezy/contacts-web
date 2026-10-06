@@ -145,10 +145,32 @@ test('settings turn 2FA on and off, sign out everywhere and delete the account',
   const secret = (
     await page.locator('.secret-code code').innerText()
   ).replaceAll(' ', '');
+  // The key is explained as something for the authenticator app.
+  await expect(
+    page.getByText('اسکن نمی‌شه؟ این کلید رو توی اپ احراز هویت وارد کن'),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'ادامه', exact: true }).click();
-  await page
-    .getByRole('textbox', { name: 'رقم ۱', exact: true })
-    .fill(fixture<string>({ action: 'totp', secret }));
+  await expect(
+    page.getByText('کد ۶ رقمی‌ای که الان توی اپ احراز هویت می‌بینی رو وارد کن'),
+  ).toBeVisible();
+  // Pasting the key itself into the code boxes explains the mix-up instead
+  // of filling them with the key's digits.
+  const first = page.getByRole('textbox', { name: 'رقم ۱', exact: true });
+  await first.evaluate(
+    (input, key) => {
+      const data = new DataTransfer();
+      data.setData('text', key);
+      input.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: data, bubbles: true }),
+      );
+    },
+    secret.match(/.{1,4}/g)!.join(' '),
+  );
+  await expect(page.locator('.form-error')).toContainText(
+    'این کلید راه‌اندازیه، نه کد.',
+  );
+  await expect(first).toHaveValue('');
+  await first.fill(fixture<string>({ action: 'totp', secret }));
   await page.getByRole('button', { name: 'تایید و فعال‌سازی' }).click();
   await expect(page.locator('.recovery-codes li')).toHaveCount(10);
   await page.getByRole('checkbox').check();

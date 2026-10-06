@@ -31,6 +31,12 @@ test('landing → signup → QR → verification → recovery codes → contacts
     const secret = (
       await page.locator('.secret-code code').innerText()
     ).replaceAll(' ', '');
+    // Copying the setup key says so on that button only.
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.getByRole('button', { name: 'کپی کلید راه‌اندازی' }).click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(secret);
     expect(fixture({ action: 'names', email })).toEqual({
       firstName: 'سارا',
       lastName: 'احمدی',
@@ -44,6 +50,18 @@ test('landing → signup → QR → verification → recovery codes → contacts
       .getByRole('button', { name: 'تایید و فعال‌سازی', exact: true })
       .click();
     await expect(page.locator('.recovery-codes li')).toHaveCount(10);
+    // The codes' copy button starts fresh (not "copied" from the key) and
+    // says so once it has copied all ten.
+    const copyCodes = page.getByRole('button', {
+      name: /کپی کدها|کدها کپی شد/,
+    });
+    await expect(copyCodes).toHaveText('کپی کدها');
+    await copyCodes.click();
+    await expect(copyCodes).toHaveText('کدها کپی شد');
+    expect(
+      (await page.evaluate(() => navigator.clipboard.readText())).split('\n'),
+    ).toEqual(await page.locator('.recovery-codes code').allInnerTexts());
+    await expect(copyCodes).toHaveText('کپی کدها', { timeout: 5000 });
     const recovery = await page
       .locator('.recovery-codes code')
       .first()

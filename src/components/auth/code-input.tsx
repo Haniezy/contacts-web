@@ -6,10 +6,14 @@ export function CodeInput({
   value,
   onChange,
   invalid = false,
+  onPastedKey,
 }: {
   value: string;
   onChange: (value: string) => void;
   invalid?: boolean;
+  // A pasted setup key (letters and digits, 16+ long) is not a code; its
+  // digits would fill the boxes with a wrong code, so it is refused.
+  onPastedKey?: () => void;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const locale = useLocale();
@@ -41,7 +45,10 @@ export function CodeInput({
           value={displayDigits(value[i]?.trim() ?? '', locale)}
           onPaste={(event) => {
             event.preventDefault();
-            insert(event.clipboardData.getData('text'), i);
+            const text = event.clipboardData.getData('text');
+            if (/[a-z]/i.test(text) && text.replace(/\s/g, '').length >= 16)
+              return onPastedKey?.();
+            insert(text, i);
           }}
           onChange={(event) => {
             if (!event.target.value) {

@@ -62,9 +62,9 @@
     "setupPasswordHelp": "Confirm your password to generate a QR code.",
     "createQr": "Generate QR code",
     "qrAlt": "Two-factor authentication setup QR code",
-    "manualCode": "Or enter this key manually",
+    "manualCode": "Can't scan? Enter this key in your authenticator app",
     "copySecret": "Copy setup key",
-    "copyCode": "Copy code",
+    "copyCode": "Copy key",
     "copied": "Copied",
     "continue": "Continue",
     "skip": "Skip for now",
@@ -76,7 +76,11 @@
     "downloadCodes": "Download codes",
     "savedCodes": "I have stored my recovery codes safely",
     "goContacts": "Go to contacts",
-    "goSettings": "Back to settings"
+    "goSettings": "Back to settings",
+    "manualHint": "In the app, choose \"Enter a setup key\". This key is not for signing in to the site.",
+    "keyCopied": "Key copied",
+    "setupCodeHelp": "Enter the six-digit code your authenticator app shows now; it changes every 30 seconds.",
+    "codesCopied": "Codes copied"
   },
   "Errors": {
     "email": "Enter a valid email address.",
@@ -105,7 +109,8 @@
     "notFoundHelp": "The address may be wrong, or this page no longer exists.",
     "errorTitle": "Something went wrong",
     "home": "Back to the home page",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "pastedKey": "That is the setup key, not a code. Enter it in your authenticator app, then type the six-digit code the app shows here."
   },
   "Landing": {
     "title": "All your contacts, together and organized",
@@ -321,7 +326,7 @@
     "on": "On",
     "off": "Off",
     "logoutAll": "Sign out of all devices",
-    "logoutAllHelp": "Every active session will be closed",
+    "logoutAllHelp": "See where you're signed in and sign out of one or all",
     "logoutAllNote": "This device is signed out too; you'll need to sign in again.",
     "logoutAllConfirm": "Sign out everywhere",
     "deleteAccount": "Delete account",

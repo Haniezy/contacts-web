@@ -1,5 +1,5 @@
 'use client';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -22,7 +22,11 @@ export function SetupForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [codes, setCodes] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
+  // Which copy button last worked: the setup key or the recovery codes.
+  // Each shows its own "copied" for a moment, then reads as before.
+  const [copied, setCopied] = useState<'key' | 'codes' | null>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   const [saved, setSaved] = useState(false);
   async function setup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,10 +72,12 @@ export function SetupForm({
       setBusy(false);
     }
   }
-  async function copy(value: string) {
+  async function copy(value: string, what: 'key' | 'codes') {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
+      setCopied(what);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(null), 2500);
     } catch {
       setError('clipboard');
     }
@@ -103,11 +109,14 @@ export function SetupForm({
           <button
             type="button"
             className="text-link"
-            onClick={() => copy(codes.join('\n'))}
+            onClick={() => copy(codes.join('\n'), 'codes')}
           >
             <Icon name="copy" />
-            {t(copied ? 'copied' : 'copyCodes')}
+            {t(copied === 'codes' ? 'codesCopied' : 'copyCodes')}
           </button>
+          <span className="sr-only" role="status">
+            {copied === 'codes' ? t('codesCopied') : ''}
+          </span>
           <button type="button" className="text-link" onClick={download}>
             <Icon name="download" />
             {t('downloadCodes')}
@@ -160,7 +169,7 @@ export function SetupForm({
       </h1>
       <p className="auth-description">
         {stage === 'code' ? (
-          t('verifyHelp')
+          t('setupCodeHelp')
         ) : enrollment ? (
           <>
             <span className="only-desktop">{t('setupHelp')}</span>
@@ -205,10 +214,11 @@ export function SetupForm({
             </div>
             <div className="qr-manual">
               <p className="manual-label">{t('manualCode')}</p>
+              <p className="manual-hint">{t('manualHint')}</p>
               <button
                 type="button"
                 className="secret-code"
-                onClick={() => copy(enrollment.secret)}
+                onClick={() => copy(enrollment.secret, 'key')}
                 aria-label={t('copySecret')}
               >
                 <code dir="ltr">
@@ -219,12 +229,12 @@ export function SetupForm({
               <button
                 type="button"
                 className="copy-code text-link only-desktop"
-                onClick={() => copy(enrollment.secret)}
+                onClick={() => copy(enrollment.secret, 'key')}
               >
-                {t(copied ? 'copied' : 'copyCode')}
+                {t(copied === 'key' ? 'keyCopied' : 'copyCode')}
               </button>
               <p aria-live="polite" className="copy-status only-mobile">
-                {copied ? t('copied') : ''}
+                {copied === 'key' ? t('keyCopied') : ''}
               </p>
             </div>
           </div>
@@ -250,7 +260,12 @@ export function SetupForm({
         </>
       ) : (
         <form method="post" onSubmit={confirm} aria-busy={busy}>
-          <CodeInput value={code} onChange={setCode} invalid={!!error} />
+          <CodeInput
+            value={code}
+            onChange={setCode}
+            invalid={!!error}
+            onPastedKey={() => setError('pastedKey')}
+          />
           {error && (
             <p role="alert" className="form-error">
               {e(error)}
