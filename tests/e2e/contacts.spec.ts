@@ -1,4 +1,4 @@
-import { expect, fixture, test } from './fixtures';
+import { expect, fixture, openMenu, test } from './fixtures';
 
 test.beforeEach(async ({ context, account }) => {
   fixture({
@@ -124,27 +124,92 @@ test('mixed names: the page language script first, then the other, then #; numbe
   await expect(chips).toHaveText(['H', 'آ', 'ب', 'س', 'ه\u200d', '#']);
 });
 
-test('delete asks for confirmation and removes the contact for real', async ({
+test('delete asks, then moves to the trash with undo; the trash restores, deletes for good and empties', async ({
   page,
 }) => {
   await page.goto('/contacts');
-  await page.getByRole('button', { name: 'آرش محمدی' }).click();
-  const row = page.locator('.contact-row.is-open');
-  await row.getByRole('button', { name: 'حذف' }).click();
+  const toast = page.locator('.undo-toast');
+  const confirm = page.getByRole('dialog').getByRole('button', {
+    name: 'حذف',
+    exact: true,
+  });
+  const trashOpen = async () => {
+    await page
+      .locator('.contact-row.is-open')
+      .getByRole('button', { name: 'حذف' })
+      .click();
+    await confirm.click();
+  };
+
+  // It asks first (cancel keeps it), then the contact goes to the trash
+  // and Undo brings it back.
+  await page.getByRole('button', { name: /آرش محمدی/ }).click();
+  await page
+    .locator('.contact-row.is-open')
+    .getByRole('button', { name: 'حذف' })
+    .click();
   const dialog = page.getByRole('dialog', { name: 'حذف «آرش محمدی»؟' });
-  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'انصراف' })).toBeFocused();
   await dialog.getByRole('button', { name: 'انصراف' }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.locator('.contact-row')).toHaveCount(5);
-
-  await row.getByRole('button', { name: 'حذف' }).click();
-  await dialog.getByRole('button', { name: 'حذف', exact: true }).click();
-  await expect(dialog).toBeHidden();
-  await expect(page.getByRole('button', { name: 'آرش محمدی' })).toHaveCount(0);
+  await expect(toast).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /آرش محمدی/ })).toBeVisible();
+  await trashOpen();
+  await expect(toast).toContainText('«آرش محمدی» به سطل زباله رفت');
+  await expect(page.getByRole('button', { name: /آرش محمدی/ })).toHaveCount(0);
   await expect(page.locator('.count-chip').first()).toHaveText('۴ نفر');
+  await toast.getByRole('button', { name: 'بازگردانی' }).click();
+  await expect(page.getByRole('button', { name: /آرش محمدی/ })).toBeVisible();
+  await expect(page.locator('.count-chip').first()).toHaveText('۵ نفر');
+
+  // Two in the trash; the menu shows the count and leads there.
+  for (const name of ['آرش محمدی', 'آیدا کریمی']) {
+    await page.getByRole('button', { name: new RegExp(name) }).click();
+    await trashOpen();
+    await expect(toast).toContainText(name);
+  }
+  const menu = await openMenu(page);
+  const trashLink = menu.getByRole('link', { name: /سطل زباله/ });
+  await expect(trashLink).toContainText('۲');
+  await trashLink.click();
+  await expect(page).toHaveURL(/\/contacts\/trash$/);
+  await expect(page.getByRole('status')).toContainText('۲ مخاطب توی سطل زباله');
+  await expect(page.locator('.trash-card').first()).toContainText(
+    '۷ روز تا حذف همیشگی',
+  );
+
+  // Restore one; it is back in the book.
+  await page.getByRole('button', { name: 'بازگردانی آیدا کریمی' }).click();
+  await expect(page.locator('.trash-card')).toHaveCount(1);
+
+  // Deleting for good asks first; cancel keeps it.
+  await page.getByRole('button', { name: 'حذف همیشگی آرش محمدی' }).click();
+  const forever = page.getByRole('dialog', {
+    name: '«آرش محمدی» برای همیشه پاک بشه؟',
+  });
+  await expect(forever.getByRole('button', { name: 'انصراف' })).toBeFocused();
+  await forever.getByRole('button', { name: 'انصراف' }).click();
+  await expect(page.locator('.trash-card')).toHaveCount(1);
+  await page.getByRole('button', { name: 'حذف همیشگی آرش محمدی' }).click();
+  await forever.getByRole('button', { name: 'حذف همیشگی' }).click();
+  await expect(page.getByText('سطل زباله خالیه.')).toBeVisible();
+
+  // Empty trash deletes everything in it for good.
+  await page.goto('/contacts');
+  await expect(page.locator('.count-chip').first()).toHaveText('۴ نفر');
+  await expect(page.getByRole('button', { name: /آیدا کریمی/ })).toBeVisible();
+  await page.getByRole('button', { name: /بهار رضایی/ }).click();
+  await trashOpen();
+  await expect(toast).toBeVisible();
+  await page.goto('/contacts/trash');
+  await page.getByRole('button', { name: 'خالی کردن سطل' }).click();
+  await page
+    .getByRole('dialog', { name: '۱ مخاطب برای همیشه پاک بشن؟' })
+    .getByRole('button', { name: 'حذف همیشگی' })
+    .click();
+  await expect(page.getByText('سطل زباله خالیه.')).toBeVisible();
   await page.reload();
-  await expect(page.locator('.contact-row')).toHaveCount(4);
-  await expect(page.getByRole('button', { name: 'آرش محمدی' })).toHaveCount(0);
+  await expect(page.getByText('سطل زباله خالیه.')).toBeVisible();
 });
 
 test('duplicates are counted in the menu and the banner above the list', async ({
@@ -432,20 +497,23 @@ test('the details page shows one owned contact and its actions', async ({
     page.getByRole('heading', { name: 'این صفحه پیدا نشد' }),
   ).toBeVisible();
 
+  // Delete on its page asks, then sends it to the trash; the list offers Undo.
   await page.goto(href!);
   await page.getByRole('button', { name: 'حذف مخاطب' }).click();
   const dialog = page.getByRole('dialog', { name: 'حذف «بهار رضایی»؟' });
-  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('تا ۷ روز می‌تونی برش گردونی');
   await dialog.getByRole('button', { name: 'انصراف' }).click();
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('heading', { name: 'بهار رضایی' })).toBeVisible();
-
   await page.getByRole('button', { name: 'حذف مخاطب' }).click();
   await dialog.getByRole('button', { name: 'حذف', exact: true }).click();
   await expect(page).toHaveURL(/\/contacts$/);
-  await expect(page.getByRole('button', { name: 'بهار رضایی' })).toHaveCount(0);
+  await expect(page.locator('.undo-toast')).toContainText(
+    '«بهار رضایی» به سطل زباله رفت',
+  );
+  await expect(page.getByRole('button', { name: /بهار رضایی/ })).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'بهار رضایی' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /بهار رضایی/ })).toHaveCount(0);
 });
 
 test('a chosen photo is previewed and can be removed before saving', async ({

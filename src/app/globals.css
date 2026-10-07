@@ -2369,6 +2369,10 @@ button:disabled {
   background: var(--slate);
   color: var(--slate-d);
 }
+.icon-trash {
+  background: var(--coral);
+  color: var(--coral-d);
+}
 .icon-install {
   background: var(--sky);
   color: var(--sky-d);
@@ -5231,6 +5235,135 @@ html:has(.merge-dialog[open]) {
   height: 18px;
   margin-block-start: 2px;
   color: var(--amber-d);
+}
+/* The trash page: the duplicates page's layout with restore / delete for
+   good on each card, and "empty trash" next to the count. */
+.trash-icon {
+  background: var(--coral);
+  color: var(--coral-d);
+}
+.trash-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-block-start: 27px;
+}
+.trash-summary .duplicates-summary {
+  margin: 0;
+}
+.trash-empty,
+.trash-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.trash-empty {
+  min-height: 34px;
+  padding-inline: 14px;
+  background: var(--coral);
+  color: var(--ink);
+  font-size: 13px;
+}
+.trash-empty svg {
+  width: 16px;
+  height: 16px;
+}
+.trash-note {
+  margin-block-start: 6px;
+  color: var(--ink2-strong);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.trash-list {
+  display: grid;
+  gap: 14px;
+  margin-block: 16px 24px;
+}
+.trash-left {
+  margin-block-start: 2px;
+  color: var(--ink2-strong);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.trash-actions {
+  display: flex;
+  gap: 10px;
+  margin-block-start: 12px;
+}
+.trash-actions button {
+  flex: 1;
+  min-height: 42px;
+  padding-inline: 14px;
+  font-size: 14px;
+}
+.trash-actions .button-primary {
+  min-height: 42px;
+}
+.trash-actions .button-danger {
+  background: var(--coral);
+  color: var(--ink);
+}
+.trash-actions svg {
+  width: 18px;
+  height: 18px;
+}
+/* "… moved to the trash · Undo" after a delete. */
+.undo-toast {
+  position: fixed;
+  z-index: 6;
+  bottom: 28px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding-block: 8px;
+  padding-inline: 16px 8px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--chip);
+  font-size: 14px;
+  box-shadow: 0 12px 30px rgb(40 60 80 / 22%);
+  transform: translateX(-50%);
+  animation: toast-in 250ms ease-out;
+}
+.undo-toast > svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+.undo-toast > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.undo-toast button {
+  flex-shrink: 0;
+  min-height: 34px;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  color: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+.undo-toast.is-failed {
+  padding-inline: 16px;
+  background: var(--coral);
+  color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .undo-toast {
+    animation: none;
+  }
 }
 /* Photo crop window: the photo moves and zooms inside a circle. */
 .crop-dialog {

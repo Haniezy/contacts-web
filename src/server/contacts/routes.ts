@@ -20,6 +20,8 @@ import {
 import {
   contactsWithPhone,
   listContacts,
+  listTrash,
+  purgeTrash,
   duplicateContacts,
   ignoreDuplicates,
 } from './queries';
@@ -61,7 +63,10 @@ export function contactsRouter(
     id: string,
     userId: string,
   ) => {
-    const contact = await tx.contact.findFirst({ where: { id, userId } });
+    // Contacts in the trash are out of reach until restored.
+    const contact = await tx.contact.findFirst({
+      where: { id, userId, deletedAt: null },
+    });
     if (!contact) throw new ContactError(404, 'CONTACT_NOT_FOUND');
     return contact;
   };
@@ -132,14 +137,67 @@ export function contactsRouter(
       parseCookie(req.headers.cookie ?? '')[localeCookie] === 'en'
         ? 'en'
         : 'fa';
-    const result = await listContacts(db(), userId, query.data, locale);
+    // Contacts a week in the trash go for good whenever the book is opened.
+    await cleanupPhotos(photos, await purgeTrash(db(), userId));
+    const [result, trashCount] = await Promise.all([
+      listContacts(db(), userId, query.data, locale),
+      db().contact.count({ where: { userId, deletedAt: { not: null } } }),
+    ]);
     res.json({
+      trashCount,
       ...result,
       contacts: await Promise.all(
         result.contacts.map((c) => presentContact(c, userId, photos)),
       ),
     });
   });
+  // The trash: what is in it (a week's contacts at most), and deleting one
+  // or all of it for good, photos included.
+  router.get('/trash', async (_req, res) => {
+    const userId = owner(res.locals);
+    await cleanupPhotos(photos, await purgeTrash(db(), userId));
+    const contacts = await listTrash(db(), userId);
+    res.json({
+      contacts: await Promise.all(
+        contacts.map(async ({ deletedAt, purgeAt, ...contact }) => ({
+          ...(await presentContact(contact, userId, photos)),
+          deletedAt,
+          purgeAt,
+        })),
+      ),
+    });
+  });
+  router.delete('/trash', async (_req, res) => {
+    const userId = owner(res.locals);
+    const keys = await mutate(userId, async (tx) => {
+      const trashed = await tx.contact.findMany({
+        where: { userId, deletedAt: { not: null } },
+        select: { photoKey: true },
+      });
+      await tx.contact.deleteMany({
+        where: { userId, deletedAt: { not: null } },
+      });
+      return trashed.map((c) => c.photoKey);
+    });
+    await cleanupPhotos(photos, keys);
+    res.status(204).end();
+  });
+  router.delete('/trash/:id', validId, async (req, res) => {
+    const userId = owner(res.locals),
+      id = req.params.id as string;
+    const key = await mutate(userId, async (tx) => {
+      const trashed = await tx.contact.findFirst({
+        where: { id, userId, deletedAt: { not: null } },
+        select: { photoKey: true },
+      });
+      if (!trashed) throw new ContactError(404, 'CONTACT_NOT_FOUND');
+      await tx.contact.delete({ where: { id, userId } });
+      return trashed.photoKey;
+    });
+    await cleanupPhotos(photos, [key]);
+    res.status(204).end();
+  });
+
   // Before saving: is this number already in the book? (At most three.)
   router.get('/match', async (req, res) => {
     const query = matchQuery.safeParse(req.query);
@@ -198,7 +256,7 @@ export function contactsRouter(
     const result = await mutate(userId, async (tx) => {
       const target = await owned(tx, targetId, userId);
       const sources = await tx.contact.findMany({
-        where: { userId, id: { in: sourceIds } },
+        where: { userId, deletedAt: null, id: { in: sourceIds } },
         orderBy: { id: 'asc' },
       });
       if (sources.length !== sourceIds.length)
@@ -261,7 +319,11 @@ export function contactsRouter(
   });
   router.get('/:id', validId, async (req, res) => {
     const contact = await db().contact.findFirst({
-      where: { id: req.params.id as string, userId: owner(res.locals) },
+      where: {
+        id: req.params.id as string,
+        userId: owner(res.locals),
+        deletedAt: null,
+      },
       select: contactSelect,
     });
     if (!contact) throw new ContactError(404, 'CONTACT_NOT_FOUND');
@@ -289,16 +351,35 @@ export function contactsRouter(
       contact: await presentContact(contact, owner(res.locals), photos),
     });
   });
+  // Deleting moves the contact to the trash (photo kept, so it can come
+  // back whole); the trash routes below restore it or delete it for good.
   router.delete('/:id', validId, async (req, res) => {
     const userId = owner(res.locals),
       id = req.params.id as string;
-    const contact = await mutate(userId, async (tx) => {
-      const contact = await owned(tx, id, userId);
-      await tx.contact.delete({ where: { id, userId } });
-      return contact;
+    await mutate(userId, async (tx) => {
+      await owned(tx, id, userId);
+      await tx.contact.update({
+        where: { id, userId },
+        data: { deletedAt: new Date() },
+      });
     });
-    await cleanupPhotos(photos, [contact.photoKey]);
     res.status(204).end();
+  });
+  router.post('/:id/restore', validId, async (req, res) => {
+    const userId = owner(res.locals),
+      id = req.params.id as string;
+    const contact = await mutate(userId, async (tx) => {
+      const trashed = await tx.contact.findFirst({
+        where: { id, userId, deletedAt: { not: null } },
+      });
+      if (!trashed) throw new ContactError(404, 'CONTACT_NOT_FOUND');
+      return tx.contact.update({
+        where: { id, userId },
+        data: { deletedAt: null },
+        select: contactSelect,
+      });
+    });
+    res.json({ contact: await presentContact(contact, userId, photos) });
   });
   router.post(
     '/:id/photo',

@@ -532,7 +532,10 @@ test('merge moves source photo to target without deleting the retained asset', a
     old.photoKey,
   );
   expect(remove).not.toHaveBeenCalled();
+  // The trash keeps the photo; deleting for good removes it.
   await api('delete', `/${a.id}`).expect(204);
+  expect(remove).not.toHaveBeenCalled();
+  await api('delete', `/trash/${a.id}`).expect(204);
   expect(remove).toHaveBeenCalledWith(old.photoKey);
 });
 
@@ -763,4 +766,72 @@ test('the match check finds a saved number in any Iranian form, own contacts onl
     { q: '1' },
   ])
     await api('get', `/match?${new URLSearchParams(query)}`).expect(400);
+});
+
+test('the trash hides a contact everywhere, restores it, and deletes for good', async () => {
+  const bahar = await add({ name: 'بهار رضایی', phone: '09123456789' });
+  const twin = await add({ name: 'بهار رضایی', phone: '09123456789' });
+  await photo(bahar.id).expect(200);
+  const key = (await db.contact.findUnique({ where: { id: bahar.id } }))
+    .photoKey;
+  await api('delete', `/${bahar.id}`).expect(204);
+
+  // Gone from the list, search, the contact itself, duplicates, the match
+  // check and its public link; the list reports one in the trash.
+  const list = (await api('get').expect(200)).body;
+  expect(list.contacts.map((c) => c.id)).toEqual([twin.id]);
+  expect(list.trashCount).toBe(1);
+  await api('get', `/${bahar.id}`).expect(404);
+  await api('patch', `/${bahar.id}`).send({ name: 'xy' }).expect(404);
+  expect((await api('get', '/duplicates').expect(200)).body.groups).toEqual([]);
+  expect(
+    (await api('get', '/match?phone=09123456789').expect(200)).body.contacts,
+  ).toEqual([{ id: twin.id, name: 'بهار رضایی', phone: '09123456789' }]);
+  await request(app.listener).get(`/api/share/${bahar.shareToken}`).expect(404);
+
+  // The trash lists it with when it goes for good, a week later.
+  const [trashed] = (await api('get', '/trash').expect(200)).body.contacts;
+  expect(trashed.id).toBe(bahar.id);
+  expect(trashed.photoUrl).toBeTruthy();
+  expect(new Date(trashed.purgeAt) - new Date(trashed.deletedAt)).toBe(
+    7 * 24 * 60 * 60 * 1000,
+  );
+  // Another user can neither see, restore nor delete it.
+  expect((await api('get', '/trash', 1).expect(200)).body.contacts).toEqual([]);
+  await api('post', `/${bahar.id}/restore`, 1).send({}).expect(404);
+  await api('delete', `/trash/${bahar.id}`, 1).expect(404);
+
+  // Restore brings it back whole; a contact not in the trash cannot be
+  // restored or deleted for good.
+  const back = (await api('post', `/${bahar.id}/restore`).send({}).expect(200))
+    .body.contact;
+  expect(back.photoUrl).toBeTruthy();
+  expect((await api('get').expect(200)).body.contacts).toHaveLength(2);
+  await api('post', `/${bahar.id}/restore`).send({}).expect(404);
+  await api('delete', `/trash/${bahar.id}`).expect(404);
+  expect(remove).not.toHaveBeenCalled();
+
+  // Deleting one for good removes the row and the photo.
+  await api('delete', `/${bahar.id}`).expect(204);
+  await api('delete', `/trash/${bahar.id}`).expect(204);
+  expect(await db.contact.findUnique({ where: { id: bahar.id } })).toBeNull();
+  expect(remove).toHaveBeenCalledWith(key);
+
+  // Emptying the trash deletes everything in it, and only that.
+  await api('delete', `/${twin.id}`).expect(204);
+  const kept = await add({ name: 'آرش', phone: '09120000000' });
+  await api('delete', '/trash').expect(204);
+  expect(await db.contact.findUnique({ where: { id: twin.id } })).toBeNull();
+  expect((await api('get').expect(200)).body.contacts.map((c) => c.id)).toEqual(
+    [kept.id],
+  );
+
+  // A week in the trash: deleted for good the next time the book opens.
+  await api('delete', `/${kept.id}`).expect(204);
+  await db.contact.update({
+    where: { id: kept.id },
+    data: { deletedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000) },
+  });
+  expect((await api('get').expect(200)).body.trashCount).toBe(0);
+  expect(await db.contact.findUnique({ where: { id: kept.id } })).toBeNull();
 });

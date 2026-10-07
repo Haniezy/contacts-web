@@ -20,12 +20,14 @@ import {
   type Contact,
   type ContactPage,
   type DuplicatePage,
+  trashedKey,
 } from '@/lib/contacts';
 import { Icon } from '@/components/icon';
 import { ContactRow } from './contact-row';
 import { ContactPanel } from './contact-panel';
 import { AccountMenu, UserAvatar, type AccountUser } from './account-menu';
 import { DeleteDialog } from './delete-dialog';
+import { UndoToast, type TrashNote } from './undo-toast';
 import { ContactForm } from './contact-form';
 
 const searchDelay = 300;
@@ -83,6 +85,10 @@ export function ContactsApp({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Contact | null>(null);
+  // After a delete: the "moved to the trash" notice with Undo.
+  const [trashNote, setTrashNote] = useState<TrashNote | null>(null);
+  // How many contacts are in the trash; undefined until the first page.
+  const [trashCount, setTrashCount] = useState<number>();
   const [menuOpen, setMenuOpen] = useState(false);
   const [duplicates, setDuplicates] = useState<number>();
   const [form, setForm] = useState<FormState | null>(initialForm);
@@ -126,6 +132,7 @@ export function ContactsApp({
   const takeOver = useCallback((first: InitialContacts) => {
     setData((current) => (current === undefined ? first.page : current));
     setDuplicates((current) => current ?? first.duplicates);
+    setTrashCount((current) => current ?? first.page?.trashCount ?? 0);
   }, []);
 
   // Debounced search; a newer query aborts the request of an older one.
@@ -309,9 +316,45 @@ export function ContactsApp({
     );
     if (selectedId === id) setSelectedId(null);
     if (expandedId === id) setExpandedId(null);
-    setDeleting(null);
     void refreshDuplicates();
   }
+
+  // Once the dialog has moved it to the trash: Undo for a few seconds.
+  function trashed(contact: Contact) {
+    setDeleting(null);
+    removed(contact.id);
+    setTrashCount((count) => (count ?? 0) + 1);
+    setTrashNote({ kind: 'moved', id: contact.id, name: contact.name });
+  }
+
+  async function undo(id: string) {
+    setTrashNote(null);
+    try {
+      await api(`contacts/${id}/restore`, {});
+      setTrashCount((count) => Math.max(0, (count ?? 1) - 1));
+      setData(await load(shownQuery, 1));
+      void refreshDuplicates();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401)
+        return router.replace('/login');
+      setTrashNote({ kind: 'restoreFailed' });
+    }
+  }
+
+  // A contact deleted on its own page comes back here with the same notice.
+  useEffect(() => {
+    let handed: string | null = null;
+    try {
+      handed = sessionStorage.getItem(trashedKey);
+      sessionStorage.removeItem(trashedKey);
+    } catch {
+      // Storage may be unavailable; the notice is only a convenience.
+    }
+    if (!handed) return;
+    const { id, name } = JSON.parse(handed) as { id: string; name: string };
+    const timer = setTimeout(() => setTrashNote({ kind: 'moved', id, name }));
+    return () => clearTimeout(timer);
+  }, []);
 
   const selected = data?.contacts.find((c) => c.id === selectedId) ?? null;
   // Parts that need the first page wait for it behind their own skeleton;
@@ -582,12 +625,20 @@ export function ContactsApp({
         onClose={() => setMenuOpen(false)}
         user={user}
         duplicates={duplicates ?? 0}
+        trash={trashCount ?? 0}
       />
       <DeleteDialog
         contact={deleting}
         onCancel={() => setDeleting(null)}
-        onDeleted={removed}
+        onDeleted={trashed}
       />
+      {trashNote && (
+        <UndoToast
+          note={trashNote}
+          onUndo={undo}
+          onDone={() => setTrashNote(null)}
+        />
+      )}
     </div>
   );
 }

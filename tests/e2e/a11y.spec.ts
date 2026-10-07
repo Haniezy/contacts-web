@@ -94,6 +94,12 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
     await audit(page);
   }
 
+  // Before the trash step below takes one of the pair away.
+  await page.goto('/contacts/duplicates');
+  await page.getByRole('button', { name: 'بررسی و ادغام' }).click();
+  await expect(page.getByRole('dialog', { name: 'ادغام مخاطب' })).toBeVisible();
+  await audit(page);
+
   await page.goto('/contacts');
   await page.getByRole('button', { name: 'بهار رضایی' }).click();
   await audit(page);
@@ -103,9 +109,24 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
     page.getByRole('heading', { level: 1, name: 'بهار رضایی' }),
   ).toBeVisible();
   await audit(page);
+  // Deleting asks, then goes to the trash: the list's undo notice, the
+  // trash page and its "delete for good" window.
   await page.getByRole('button', { name: 'حذف مخاطب' }).click();
+  const dialog = page.getByRole('dialog', { name: 'حذف «بهار رضایی»؟' });
+  await expect(dialog).toBeVisible();
+  await audit(page);
+  await dialog.getByRole('button', { name: 'حذف', exact: true }).click();
+  await expect(page.locator('.undo-toast')).toBeVisible();
+  await expect(page.getByRole('button', { name: /آرش محمدی/ })).toBeVisible();
+  await audit(page);
+  await page.goto('/contacts/trash');
   await expect(
-    page.getByRole('dialog', { name: 'حذف «بهار رضایی»؟' }),
+    page.getByRole('heading', { level: 1, name: 'سطل زباله' }),
+  ).toBeVisible();
+  await audit(page);
+  await page.getByRole('button', { name: 'حذف همیشگی بهار رضایی' }).click();
+  await expect(
+    page.getByRole('dialog', { name: '«بهار رضایی» برای همیشه پاک بشه؟' }),
   ).toBeVisible();
   await audit(page);
   await page.keyboard.press('Escape');
@@ -113,11 +134,6 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
   await expect(await openMenu(page)).toBeVisible();
   await audit(page);
   await page.keyboard.press('Escape');
-
-  await page.goto('/contacts/duplicates');
-  await page.getByRole('button', { name: 'بررسی و ادغام' }).click();
-  await expect(page.getByRole('dialog', { name: 'ادغام مخاطب' })).toBeVisible();
-  await audit(page);
 
   await page.goto('/settings');
   await page.getByRole('button', { name: 'حذف حساب', exact: true }).click();

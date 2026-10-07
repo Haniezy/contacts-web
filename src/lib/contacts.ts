@@ -8,8 +8,16 @@ export type Contact = {
   // Code of the contact's public link, /s/<shareToken>.
   shareToken: string;
 };
+// Session storage key: a contact deleted on its own page, for the list to
+// show its "moved to the trash" notice.
+export const trashedKey = 'contacts-trashed';
+
+// A contact in the trash, and when it is deleted for good.
+export type TrashedContact = Contact & { deletedAt: string; purgeAt: string };
 export type ContactPage = {
   contacts: Contact[];
+  // How many contacts are in the trash (the menu shows it).
+  trashCount?: number;
   pagination: {
     page: number;
     pageSize: number;

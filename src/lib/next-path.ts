@@ -2,7 +2,7 @@
 // signed-in pages are allowed, so the parameter can never send the user to
 // another site (//evil.example) or anywhere unexpected.
 const allowed =
-  /^\/(contacts(\/new|\/duplicates|\/[0-9a-f-]{36}(\/edit)?)?|profile|settings)$/;
+  /^\/(contacts(\/new|\/duplicates|\/trash|\/[0-9a-f-]{36}(\/edit)?)?|profile|settings)$/;
 
 export function nextPath(value: unknown) {
   return typeof value === 'string' && allowed.test(value) ? value : null;

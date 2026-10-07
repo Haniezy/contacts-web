@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Icon } from '@/components/icon';
 import { displayDigits } from '@/lib/api';
-import { formatPhone, type Contact } from '@/lib/contacts';
+import { formatPhone, trashedKey, type Contact } from '@/lib/contacts';
 import { Avatar } from './avatar';
 import { CallLink, ShareButton, SmsLink } from './contact-actions';
 import { DeleteDialog } from './delete-dialog';
@@ -19,6 +19,20 @@ export function ContactDetails({ contact }: { contact: Contact }) {
   const locale = useLocale();
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+
+  // Once in the trash, the list offers Undo.
+  function trashed() {
+    setDeleting(false);
+    try {
+      sessionStorage.setItem(
+        trashedKey,
+        JSON.stringify({ id: contact.id, name: contact.name }),
+      );
+    } catch {
+      // Without storage the list just shows no notice.
+    }
+    router.replace('/contacts');
+  }
   return (
     <div className="contacts-page contact-details-page">
       <div className="contacts-decor" aria-hidden="true">
@@ -133,10 +147,7 @@ export function ContactDetails({ contact }: { contact: Contact }) {
       <DeleteDialog
         contact={deleting ? contact : null}
         onCancel={() => setDeleting(false)}
-        onDeleted={() => {
-          setDeleting(false);
-          router.replace('/contacts');
-        }}
+        onDeleted={trashed}
       />
     </div>
   );

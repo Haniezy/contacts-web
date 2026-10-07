@@ -46,13 +46,17 @@ export function AccountMenu({
   onClose,
   user,
   duplicates,
+  trash,
 }: {
   open: boolean;
   onClose: () => void;
   user: AccountUser;
   duplicates: number;
+  // Contacts in the trash, shown on its menu item.
+  trash: number;
 }) {
   const t = useTranslations('Contacts');
+  const tr = useTranslations('Trash');
   const p = useTranslations('Preferences');
   const f = useFormatter();
   const router = useRouter();
@@ -144,6 +148,17 @@ export function AccountMenu({
               <span className="menu-text">{t('merge')}</span>
               {duplicates > 0 && (
                 <span className="menu-badge">{f.number(duplicates)}</span>
+              )}
+            </Link>
+          </li>
+          <li>
+            <Link href="/contacts/trash" prefetch={false} className="menu-link">
+              <span className="menu-icon icon-trash">
+                <Icon name="trash" />
+              </span>
+              <span className="menu-text">{tr('menu')}</span>
+              {trash > 0 && (
+                <span className="menu-badge">{f.number(trash)}</span>
               )}
             </Link>
           </li>

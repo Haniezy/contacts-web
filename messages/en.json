@@ -239,7 +239,7 @@
     "editContact": "Edit contact",
     "deleteContact": "Delete contact",
     "deleteTitle": "Delete “{name}”?",
-    "deleteHelp": "This contact will be removed from your book for good.",
+    "deleteHelp": "It goes to the trash, and you can bring it back within 7 days.",
     "cancel": "Cancel",
     "deleteFailed": "Couldn't delete. Please try again.",
     "copied": "Contact link copied.",
@@ -401,5 +401,27 @@
     "done": "Installed. Open Contacts from your home screen or app list.",
     "close": "Close",
     "offline": "You're offline; showing what was saved last."
+  },
+  "Trash": {
+    "title": "Trash",
+    "menu": "Trash",
+    "summary": "{count, plural, one {# contact} other {# contacts}} in the trash",
+    "empty": "The trash is empty.",
+    "note": "Deleted contacts stay here for 7 days, then are deleted for good automatically.",
+    "emptyTrash": "Empty trash",
+    "failed": "That didn't work; try again.",
+    "daysLeft": "{count, plural, one {# day} other {# days}} until deleted for good",
+    "deletedOn": "Deleted {date}",
+    "restore": "Restore",
+    "restoreLabel": "Restore {name}",
+    "deleteForGood": "Delete for good",
+    "deleteLabel": "Delete {name} for good",
+    "emptyTitle": "Delete {count, plural, one {# contact} other {# contacts}} for good?",
+    "deleteTitle": "Delete “{name}” for good?",
+    "foreverHelp": "This can't be undone, and the photo is deleted too.",
+    "cancel": "Cancel",
+    "moved": "“<name></name>” moved to the trash",
+    "undo": "Undo",
+    "restoreFailed": "Couldn't restore; try from the trash."
   }
 }

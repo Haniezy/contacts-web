@@ -75,12 +75,16 @@ model Contact {
   // Random code for the contact's public link (/s/<code>); anyone with the
   // link sees the name, number and photo, nothing else.
   shareToken String    @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)")) @db.VarChar(32)
+  // Set when moved to the trash: hidden everywhere, and deleted for good
+  // after a week (or sooner from the trash page).
+  deletedAt  DateTime? @db.Timestamptz(3)
   createdAt  DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
 
   // Both indexes also support userId-only lookups via their leading column.
   @@index([userId, name])
   @@index([userId, phone])
+  @@index([userId, deletedAt])
 }
 
 // A duplicate group (same phone or same name) the user chose to keep apart.

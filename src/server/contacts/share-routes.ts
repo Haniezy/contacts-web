@@ -26,8 +26,9 @@ export function shareRouter(
         res.status(404).json({ error: 'NOT_FOUND' });
         return;
       }
-      const contact = await db().contact.findUnique({
-        where: { shareToken: token },
+      // A contact in the trash is not shared any more.
+      const contact = await db().contact.findFirst({
+        where: { shareToken: token, deletedAt: null },
         select: {
           userId: true,
           name: true,

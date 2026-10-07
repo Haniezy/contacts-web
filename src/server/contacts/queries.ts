@@ -35,7 +35,8 @@ export async function contactsWithPhone(
 ) {
   return db.$queryRaw<{ id: string; name: string; phone: string }[]>(
     Prisma.sql`SELECT "id", "name", "phone" FROM "Contact"
-      WHERE "userId" = ${userId}::uuid AND ${phoneKey} = ${phoneMatchKey(digitsOnly)}
+      WHERE "userId" = ${userId}::uuid AND "deletedAt" IS NULL
+        AND ${phoneKey} = ${phoneMatchKey(digitsOnly)}
         AND (${except ?? null}::uuid IS NULL OR "id" <> ${except ?? null}::uuid)
       ORDER BY "name" COLLATE "contacts_alphabetic", "id" LIMIT 3`,
   );
@@ -57,7 +58,7 @@ export async function listContacts(
     WHEN "name" ~ ${latinFirst} THEN ${locale === 'fa' ? 1 : 0}::int ELSE 2 END`;
   const name = normalizeName(q);
   const phone = /^[+0-9\s().-]+$/.test(digits(q)) ? normalizePhone(q) : '';
-  const filter = Prisma.sql`"userId" = ${userId}::uuid AND
+  const filter = Prisma.sql`"userId" = ${userId}::uuid AND "deletedAt" IS NULL AND
     (${q === ''} OR position(${name} in ${nameKey}) > 0 OR (${phone !== ''} AND position(${phone} in ${phoneDigits}) > 0))`;
   // One statement: the window count and the page share a snapshot and a
   // single database round trip.
@@ -98,7 +99,8 @@ const groupsOf = (kind: Kind, userId: string) => {
   const key = keyOf(kind);
   return Prisma.sql`SELECT ${kind}::text AS by, ${key} AS value, count(*) AS count,
     array_agg("id" ORDER BY "createdAt", "id") AS all_ids FROM "Contact"
-    WHERE "userId" = ${userId}::uuid GROUP BY ${key} HAVING count(*) > 1 AND ${key} <> ''`;
+    WHERE "userId" = ${userId}::uuid AND "deletedAt" IS NULL
+    GROUP BY ${key} HAVING count(*) > 1 AND ${key} <> ''`;
 };
 
 export async function duplicateContacts(
@@ -142,7 +144,11 @@ export async function duplicateContacts(
   // Owner-scoped; a contact deleted in between is simply left out of its group.
   const contacts = groups.length
     ? await db.contact.findMany({
-        where: { userId, id: { in: groups.flatMap((g) => g.ids) } },
+        where: {
+          userId,
+          deletedAt: null,
+          id: { in: groups.flatMap((g) => g.ids) },
+        },
         select: contactSelect,
         // The oldest version first: it is usually the original entry.
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -175,7 +181,8 @@ export async function ignoreDuplicates(
   const key = keyOf(by);
   const [chosen] = await tx.$queryRaw<{ count: bigint; keys: string[] }[]>(
     Prisma.sql`SELECT count(*) AS count, array_agg(DISTINCT ${key}) AS keys
-      FROM "Contact" WHERE "userId" = ${userId}::uuid AND "id" = ANY(${contactIds}::uuid[])`,
+      FROM "Contact" WHERE "userId" = ${userId}::uuid AND "deletedAt" IS NULL
+        AND "id" = ANY(${contactIds}::uuid[])`,
   );
   if (Number(chosen.count) !== contactIds.length) return 'missing';
   if (chosen.keys.length !== 1 || chosen.keys[0] === '') return 'mismatch';
@@ -183,8 +190,40 @@ export async function ignoreDuplicates(
   await tx.$executeRaw(
     Prisma.sql`INSERT INTO "DuplicateIgnore" ("userId", "by", "value", "contactIds")
       SELECT ${userId}::uuid, ${by}, ${value}, array_agg("id" ORDER BY "id") FROM "Contact"
-      WHERE "userId" = ${userId}::uuid AND ${key} = ${value}
+      WHERE "userId" = ${userId}::uuid AND "deletedAt" IS NULL AND ${key} = ${value}
       ON CONFLICT ("userId", "by", "value") DO UPDATE SET "contactIds" = EXCLUDED."contactIds", "createdAt" = now()`,
   );
   return 'ignored';
+}
+
+// The trash keeps a deleted contact for a week.
+export const trashDays = 7;
+const trashLimit = () => new Date(Date.now() - trashDays * 24 * 60 * 60 * 1000);
+
+// Deletes this user's contacts that have been in the trash for a week; run
+// whenever they open the book or the trash, so nothing needs a schedule.
+// Returns the photo keys to remove.
+export async function purgeTrash(db: PrismaClient, userId: string) {
+  const expired = await db.contact.findMany({
+    where: { userId, deletedAt: { lt: trashLimit() } },
+    select: { id: true, photoKey: true },
+  });
+  if (!expired.length) return [];
+  await db.contact.deleteMany({
+    where: { userId, id: { in: expired.map((c) => c.id) } },
+  });
+  return expired.map((c) => c.photoKey);
+}
+
+// The trash, most recently deleted first, with when each goes for good.
+export async function listTrash(db: PrismaClient, userId: string) {
+  const contacts = await db.contact.findMany({
+    where: { userId, deletedAt: { not: null } },
+    select: { ...contactSelect, deletedAt: true },
+    orderBy: [{ deletedAt: 'desc' }, { id: 'asc' }],
+  });
+  return contacts.map((c) => ({
+    ...c,
+    purgeAt: new Date(c.deletedAt!.getTime() + trashDays * 24 * 60 * 60 * 1000),
+  }));
 }

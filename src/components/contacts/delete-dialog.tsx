@@ -6,6 +6,7 @@ import { api, ApiError } from '@/lib/api';
 import { Icon } from '@/components/icon';
 import type { Contact } from '@/lib/contacts';
 
+// Asks before moving a contact to the trash (where it can still be restored).
 export function DeleteDialog({
   contact,
   onCancel,
@@ -13,7 +14,7 @@ export function DeleteDialog({
 }: {
   contact: Contact | null;
   onCancel: () => void;
-  onDeleted: (id: string) => void;
+  onDeleted: (contact: Contact) => void;
 }) {
   const t = useTranslations('Contacts');
   const router = useRouter();
@@ -40,11 +41,11 @@ export function DeleteDialog({
     setFailed(false);
     try {
       await api(`contacts/${contact.id}`, undefined, { method: 'DELETE' });
-      onDeleted(contact.id);
+      onDeleted(contact);
     } catch (error) {
       // Already deleted elsewhere: treat as done.
       if (error instanceof ApiError && error.status === 404)
-        onDeleted(contact.id);
+        onDeleted(contact);
       else if (error instanceof ApiError && error.status === 401)
         router.replace('/login');
       else setFailed(true);
