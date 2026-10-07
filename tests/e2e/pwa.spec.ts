@@ -49,48 +49,41 @@ test.describe('signed in', () => {
     ]);
   });
 
-  test('the menu opens install steps for this device', async ({
+  test('the menu offers installing only where the browser can', async ({
     page,
-    browser,
-    account,
-  }, info) => {
+  }) => {
     await page.goto('/contacts');
-    const menu = await openMenu(page);
+    let menu = await openMenu(page);
+    await expect(
+      menu.getByRole('button', { name: /نصب اپ دفترچه/ }),
+    ).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    // The browser offers it (as Chrome does): the menu item opens the sheet,
+    // whose button shows the browser's own install window.
+    await page.evaluate(() => {
+      const offer = Object.assign(new Event('beforeinstallprompt'), {
+        prompt: async () => {
+          (window as unknown as { prompted: boolean }).prompted = true;
+        },
+        userChoice: Promise.resolve({ outcome: 'accepted' }),
+      });
+      dispatchEvent(offer);
+    });
+    menu = await openMenu(page);
     await menu.getByRole('button', { name: /نصب اپ دفترچه/ }).click();
     const sheet = page.getByRole('dialog', { name: 'نصب دفترچه' });
     await expect(sheet).toBeVisible();
-    // Pixel 7 is Android; the other projects are desktop browsers.
-    await expect(sheet.locator('.install-steps')).toContainText(
-      info.project.name === 'mobile' ? 'منوی ⋮' : 'نوار آدرس',
-    );
+    await expect(sheet).not.toContainText('دستی');
+    await sheet.getByRole('button', { name: 'نصب', exact: true }).click();
+    await expect(sheet.getByRole('status')).toContainText('نصب شد');
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { prompted?: boolean }).prompted,
+      ),
+    ).toBe(true);
     await sheet.getByRole('button', { name: 'بستن' }).click();
     await expect(sheet).toBeHidden();
-
-    // Safari on an iPhone gets the Share → Add to Home Screen steps.
-    const iphone = await browser.newContext({
-      userAgent:
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-      viewport: { width: 390, height: 844 },
-    });
-    await iphone.addCookies([
-      {
-        name: 'contacts_session',
-        value: account.token,
-        domain: '127.0.0.1',
-        path: '/',
-      },
-    ]);
-    const phone = await iphone.newPage();
-    await phone.goto('/contacts');
-    await (
-      await openMenu(phone)
-    )
-      .getByRole('button', { name: /نصب اپ دفترچه/ })
-      .click();
-    await expect(phone.locator('.install-steps')).toContainText(
-      'Add to Home Screen',
-    );
-    await iphone.close();
   });
 
   test('the list opens offline, and signing out deletes what was saved', async ({

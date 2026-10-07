@@ -55,16 +55,3 @@ export function runningInstalled() {
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
-
-export type Platform = 'ios' | 'android' | 'desktop';
-export function platform(): Platform {
-  const ua = navigator.userAgent;
-  // iPadOS reports itself as a Mac; touch gives it away.
-  if (
-    /iPhone|iPad|iPod/.test(ua) ||
-    (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
-  )
-    return 'ios';
-  if (/Android/.test(ua)) return 'android';
-  return 'desktop';
-}
