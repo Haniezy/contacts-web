@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { expect, fixture, openMenu, test } from './fixtures';
 
 test('the app can be installed: manifest, icons and an uncached service worker', async ({
@@ -401,4 +402,337 @@ test('a server without its database counts as offline, and syncs once it is back
   expect(contacts.map((c) => c.name).sort()).toEqual(
     ['بهار رضایی', 'حنانه احمدی'].sort(),
   );
+});
+
+// Syncing sends exactly what waits, never loses a later change, and only
+// says it all went through when it did. A "lost reply" is a request the
+// server carried out whose answer never reached the app.
+test.describe('exact sync', () => {
+  // These fake lost replies and slow answers with page.route, which stops
+  // seeing a page's requests once the service worker controls it (a
+  // Playwright limit). Opening offline is covered above; here it is off.
+  test.use({ serviceWorkers: 'block' });
+  test.beforeEach(async ({ context, account }) => {
+    fixture({
+      action: 'contacts',
+      email: account.email,
+      contacts: [{ name: 'سارا احمدی', phone: '09121112233' }],
+    });
+    await context.addCookies([
+      {
+        name: 'contacts_session',
+        value: account.token,
+        domain: '127.0.0.1',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+  });
+
+  // The next new contact reaches the server (or not), and the reply is lost.
+  async function loseCreateReply(page: Page, reachServer = true) {
+    let done = false;
+    await page.route('**/api/contacts', async (route) => {
+      if (done || route.request().method() !== 'POST') return route.fallback();
+      done = true;
+      if (reachServer) await route.fetch();
+      await route.abort('connectionreset');
+    });
+  }
+  async function addContact(page: Page, name: string, phone: string) {
+    await page.locator('.contacts-add').click();
+    await page.getByLabel('نام و نام خانوادگی').fill(name);
+    await page.getByLabel('شماره تلفن').fill(phone);
+    await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
+    await expect(page.getByRole('button', { name })).toBeVisible();
+  }
+  async function editContact(
+    page: Page,
+    name: string,
+    label: RegExp,
+    value: string,
+  ) {
+    await page.getByRole('button', { name: new RegExp(name) }).click();
+    await page
+      .locator('.contact-row.is-open')
+      .getByRole('link', { name: 'ویرایش' })
+      .click();
+    await page.getByLabel(label).fill(value);
+    await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
+    await expect(page).toHaveURL(/\/contacts$/);
+  }
+  async function deleteContact(page: Page, name: string) {
+    await page.getByRole('button', { name: new RegExp(name) }).click();
+    await page
+      .locator('.contact-row.is-open')
+      .getByRole('button', { name: 'حذف', exact: true })
+      .click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'حذف', exact: true })
+      .click();
+    await expect(
+      page.getByRole('button', { name: new RegExp(name) }),
+    ).toHaveCount(0);
+  }
+  // What waits in the offline book: kind and name (or reminder) per change.
+  const waiting = (page: Page) =>
+    page.evaluate(
+      () =>
+        new Promise<string[]>((resolve) => {
+          const open = indexedDB.open('dafarche-offline');
+          open.onsuccess = () => {
+            const get = open.result
+              .transaction('books')
+              .objectStore('books')
+              .getAll();
+            get.onsuccess = () => {
+              open.result.close();
+              type Change = { kind: string; values?: { name?: string } };
+              resolve(
+                ((get.result[0]?.changes ?? []) as Change[]).map(
+                  (c) => `${c.kind}:${c.values?.name ?? ''}`,
+                ),
+              );
+            };
+          };
+        }),
+    );
+  type Saved = { id: string; name: string; reminder: string | null };
+  const onServer = async (page: Page, path = '/api/contacts') =>
+    ((await (await page.request.get(path)).json()) as { contacts: Saved[] })
+      .contacts;
+  const copied = (page: Page) =>
+    expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            new Promise<number>((resolve) => {
+              const open = indexedDB.open('dafarche-offline');
+              open.onsuccess = () => {
+                const get = open.result
+                  .transaction('books')
+                  .objectStore('books')
+                  .getAll();
+                get.onsuccess = () => {
+                  open.result.close();
+                  resolve(get.result[0]?.contacts?.length ?? 0);
+                };
+              };
+              open.onerror = () => resolve(0);
+            }),
+        ),
+      )
+      .toBeGreaterThan(0);
+  const allSynced = 'همه‌ی تغییرات بدون اینترنتت توی حسابت ثبت شد';
+
+  test('a lost reply, then an edit: the edit reaches the server', async ({
+    page,
+  }) => {
+    await page.goto('/contacts');
+    await loseCreateReply(page);
+    await addContact(page, 'نسخه اول', '09121110001');
+    await page.unrouteAll({ behavior: 'wait' });
+    expect((await onServer(page)).map((c) => c.name)).toContain('نسخه اول');
+    await editContact(page, 'نسخه اول', /نام و نام خانوادگی/, 'نسخه دوم');
+
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    const names = (await onServer(page)).map((c) => c.name);
+    expect(names.sort()).toEqual(['سارا احمدی', 'نسخه دوم'].sort());
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('a lost reply, then a delete: the contact goes to the trash', async ({
+    page,
+  }) => {
+    await page.goto('/contacts');
+    await loseCreateReply(page);
+    await addContact(page, 'موقت', '09121110002');
+    await page.unrouteAll({ behavior: 'wait' });
+    await deleteContact(page, 'موقت');
+
+    // The delete waits like any change and is offered for syncing.
+    const notice = page.locator('.sync-toast');
+    await expect(notice).toContainText('یک تغییری');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    expect((await onServer(page)).map((c) => c.name)).toEqual(['سارا احمدی']);
+    expect(
+      (await onServer(page, '/api/contacts/trash')).map((c) => c.name),
+    ).toEqual(['موقت']);
+    await page.reload();
+    await expect(page.getByRole('button', { name: /موقت/ })).toHaveCount(0);
+  });
+
+  test('a second edit made while the first is syncing is kept', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await editContact(page, 'سارا احمدی', /یادآوری/, 'یادداشت اول');
+    await context.setOffline(false);
+    // The first edit takes a while to reach the server.
+    await page.route('**/api/contacts/*', async (route) => {
+      if (route.request().method() !== 'PATCH') return route.fallback();
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await route.fallback();
+    });
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await editContact(page, 'سارا احمدی', /یادآوری/, 'یادداشت دوم');
+
+    await expect(notice).toContainText(allSynced, { timeout: 30000 });
+    const [saved] = await onServer(page);
+    expect(saved.reminder).toBe('یادداشت دوم');
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('a lost reply and an edit survive a reload before syncing', async ({
+    page,
+  }) => {
+    await page.goto('/contacts');
+    await loseCreateReply(page);
+    await addContact(page, 'نسخه اول', '09121110004');
+    await page.unrouteAll({ behavior: 'wait' });
+    await editContact(page, 'نسخه اول', /نام و نام خانوادگی/, 'نسخه دوم');
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'نسخه دوم' })).toBeVisible();
+    // The values sent stay as sent; the edit waits beside them.
+    expect(await waiting(page)).toEqual(['create:نسخه اول']);
+
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    const names = (await onServer(page)).map((c) => c.name);
+    expect(names.sort()).toEqual(['سارا احمدی', 'نسخه دوم'].sort());
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('a create that never reached the server is made once, with the edit', async ({
+    page,
+  }) => {
+    await page.goto('/contacts');
+    await loseCreateReply(page, false);
+    await addContact(page, 'نسخه اول', '09121110005');
+    await page.unrouteAll({ behavior: 'wait' });
+    expect((await onServer(page)).map((c) => c.name)).toEqual(['سارا احمدی']);
+    await editContact(page, 'نسخه اول', /نام و نام خانوادگی/, 'نسخه دوم');
+
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    const names = (await onServer(page)).map((c) => c.name);
+    expect(names.sort()).toEqual(['سارا احمدی', 'نسخه دوم'].sort());
+  });
+
+  test('syncing a lost reply keeps a field changed on another device', async ({
+    page,
+  }) => {
+    await page.goto('/contacts');
+    await loseCreateReply(page);
+    await addContact(page, 'نسخه اول', '09121110006');
+    await page.unrouteAll({ behavior: 'wait' });
+    const { id } = (await onServer(page)).find((c) => c.name === 'نسخه اول')!;
+    // Another device adds a reminder meanwhile.
+    const elsewhere = await page.request.patch(`/api/contacts/${id}`, {
+      data: { reminder: 'از دستگاه دیگر' },
+    });
+    expect(elsewhere.ok()).toBe(true);
+    await editContact(page, 'نسخه اول', /نام و نام خانوادگی/, 'نسخه دوم');
+
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    const saved = (await onServer(page)).find((c) => c.id === id)!;
+    expect(saved).toMatchObject({
+      name: 'نسخه دوم',
+      reminder: 'از دستگاه دیگر',
+    });
+  });
+
+  test('a contact deleted elsewhere is reported as not saved, not as success', async ({
+    page,
+  }) => {
+    await page.goto('/contacts');
+    await loseCreateReply(page);
+    await addContact(page, 'نسخه اول', '09121110007');
+    await page.unrouteAll({ behavior: 'wait' });
+    const { id } = (await onServer(page)).find((c) => c.name === 'نسخه اول')!;
+    await editContact(page, 'نسخه اول', /نام و نام خانوادگی/, 'نسخه دوم');
+    // Another device moves it to the trash meanwhile.
+    expect((await page.request.delete(`/api/contacts/${id}`)).ok()).toBe(true);
+
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText('بعضی تغییرات ثبت نشد');
+    await expect(notice).toContainText('«نسخه دوم»');
+    await expect(notice).not.toContainText(allSynced);
+    await expect(notice).not.toContainText('بقیه ثبت شد');
+    expect((await onServer(page)).map((c) => c.name)).toEqual(['سارا احمدی']);
+    expect(
+      (await onServer(page, '/api/contacts/trash')).map((c) => c.name),
+    ).toEqual(['نسخه اول']);
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('a sync cut off midway says so, keeps everything, and finishes on retry', async ({
+    page,
+  }) => {
+    await page.goto('/contacts');
+    await loseCreateReply(page);
+    await addContact(page, 'نسخه اول', '09121110008');
+    await page.unrouteAll({ behavior: 'wait' });
+    await editContact(page, 'نسخه اول', /نام و نام خانوادگی/, 'نسخه دوم');
+    // The connection drops as the sync sends the new contact again.
+    await page.route('**/api/contacts', (route) =>
+      route.request().method() === 'POST'
+        ? route.abort('connectionreset')
+        : route.fallback(),
+    );
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText('همگام‌سازی کامل نشد');
+    await expect(notice).not.toContainText(allSynced);
+    expect(await waiting(page)).toEqual(['create:نسخه اول']);
+
+    await page.unrouteAll({ behavior: 'wait' });
+    await notice.getByRole('button', { name: 'دوباره' }).click();
+    await expect(notice).toContainText(allSynced);
+    const names = (await onServer(page)).map((c) => c.name);
+    expect(names.sort()).toEqual(['سارا احمدی', 'نسخه دوم'].sort());
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('offline changes never sent: one request each, none for a contact made and deleted offline', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await addContact(page, 'آفلاین', '09121110009');
+    await editContact(page, 'آفلاین', /نام و نام خانوادگی/, 'آفلاین دوم');
+    await addContact(page, 'موقت', '09121110010');
+    await deleteContact(page, 'موقت');
+    expect(await waiting(page)).toEqual(['create:آفلاین دوم', 'delete:']);
+    await context.setOffline(false);
+
+    const sent: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/contacts') && request.method() !== 'GET')
+        sent.push(request.method());
+    });
+    const notice = page.locator('.sync-toast');
+    await expect(notice).toContainText('یک تغییری');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    expect(sent).toEqual(['POST']);
+    const names = (await onServer(page)).map((c) => c.name);
+    expect(names.sort()).toEqual(['آفلاین دوم', 'سارا احمدی'].sort());
+  });
 });

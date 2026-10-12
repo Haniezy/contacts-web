@@ -484,16 +484,18 @@ export function ContactsApp({
   async function sync() {
     if (!book) return;
     setSyncState({ kind: 'syncing' });
-    try {
-      const skipped = await book.sync();
-      setSyncState({ kind: 'done', skipped: skipped.length });
-      void refreshDuplicates();
-    } catch (error) {
+    const total = book.pending();
+    const { skipped, error } = await book.sync();
+    void refreshDuplicates();
+    if (error) {
       if (error instanceof ApiError && error.status === 401)
         return router.replace('/login');
       if (isUnreachable(error)) void serviceDown();
-      setSyncState({ kind: 'failed' });
+      return setSyncState({ kind: 'failed', skipped });
     }
+    // "Done" only once nothing waits: a change made just now is offered
+    // again instead.
+    setSyncState(book.pending() ? null : { kind: 'done', skipped, total });
   }
   const syncDone = useCallback(() => setSyncState(null), []);
 
@@ -799,16 +801,24 @@ export function ContactsApp({
           onDone={() => setTrashNote(null)}
         />
       )}
-      {/* Back online with changes made offline; it steps aside while the
-          trash notice uses the same spot. */}
-      {online && !trashNote && (pending > 0 || syncState?.kind === 'done') && (
-        <SyncToast
-          state={syncState ?? { kind: 'waiting' }}
-          pending={pending}
-          onSync={sync}
-          onDone={syncDone}
-        />
-      )}
+      {/* Back online with changes made offline. It steps aside while the
+          trash notice uses the same spot, and while the form is open (on a
+          phone it would cover the form's buttons). */}
+      {online &&
+        !trashNote &&
+        !form &&
+        (pending > 0 || syncState?.kind === 'done') && (
+          <SyncToast
+            state={
+              !syncState || (syncState.kind === 'done' && pending > 0)
+                ? { kind: 'waiting' }
+                : syncState
+            }
+            pending={pending}
+            onSync={sync}
+            onDone={syncDone}
+          />
+        )}
     </div>
   );
 }

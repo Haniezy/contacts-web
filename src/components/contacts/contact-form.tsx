@@ -297,14 +297,16 @@ export function ContactForm({
         : photo.kind === 'remove' && saved?.photoUrl
           ? ('remove' as const)
           : undefined;
-    // Kept on this device until the user syncs it.
-    const keep = async (contact = saved) =>
+    // Kept on this device until the user syncs it. `sent`: the new
+    // contact's request went out and no reply came, so it may exist.
+    const keep = async (contact = saved, sent = false) =>
       onSaved(
         await book!.save(
           contact?.id ?? newContactId,
           !contact,
           contact === saved ? changes : {},
           newPhoto,
+          sent,
         ),
       );
     if (local && book) return keep();
@@ -334,7 +336,7 @@ export function ContactForm({
       // (while the service is checked in the background).
       if (book && isUnreachable(err)) {
         void serviceDown();
-        return keep();
+        return keep(saved, true);
       }
       setBusy(false);
       if (err instanceof ApiError && err.status === 401)

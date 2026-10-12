@@ -425,6 +425,8 @@
     "retry": "Retry",
     "doneTitle": "Changes synced",
     "done": "Everything you changed offline is now in your account.",
-    "skipped": "Saved, except {count, plural, one {# change} other {# changes}} that no longer applied (the contact was deleted elsewhere, say)."
+    "partialTitle": "Some changes weren't saved",
+    "skipped": "{count, plural, one {# change} other {# changes}} could not be saved as {count, plural, one {it} other {they}} no longer applied (the contact was deleted elsewhere, say){names, select, none {} other {: {names}}}.",
+    "rest": "The rest were saved."
   }
 }

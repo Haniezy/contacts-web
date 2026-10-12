@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { OfflineBook } from '@/lib/offline-book';
 import { onlineStore } from '@/lib/online';
 import { Icon } from '@/components/icon';
@@ -35,14 +35,17 @@ export function useOfflineBook(userId: string) {
   return { book, online, pending, local: !!book && (!online || pending > 0) };
 }
 
+// `skipped`: names of changes set aside as no longer possible.
 export type SyncState =
   | { kind: 'waiting' }
   | { kind: 'syncing' }
-  | { kind: 'done'; skipped: number }
-  | { kind: 'failed' };
+  // `total`: how many changes were waiting when syncing began.
+  | { kind: 'done'; skipped: string[]; total: number }
+  | { kind: 'failed'; skipped: string[] };
 
 // Back online with changes made offline: "Sync changes", which the user
-// confirms. Afterwards it says how it went and goes away by itself.
+// confirms. Afterwards it says how it went: all saved (and it goes away by
+// itself), some set aside (named), or stopped before the end (retry).
 export function SyncToast({
   state,
   pending,
@@ -55,32 +58,54 @@ export function SyncToast({
   onDone: () => void;
 }) {
   const t = useTranslations('Sync');
+  const locale = useLocale();
+  const skipped =
+    state.kind === 'done' || state.kind === 'failed' ? state.skipped : [];
   useEffect(() => {
     if (state.kind !== 'done') return;
-    const timer = setTimeout(onDone, state.skipped ? 8000 : 4000);
+    const timer = setTimeout(onDone, state.skipped.length ? 12000 : 4000);
     return () => clearTimeout(timer);
   }, [state, onDone]);
   const failed = state.kind === 'failed';
+  const warn = failed || skipped.length > 0;
+  const quote = (name: string) => (locale === 'fa' ? `«${name}»` : `“${name}”`);
+  const names = skipped.filter(Boolean).map(quote);
+  const setAside = skipped.length
+    ? t('skipped', {
+        count: skipped.length,
+        names: names.length
+          ? new Intl.ListFormat(locale, { type: 'conjunction' }).format(names)
+          : 'none',
+      })
+    : '';
   return createPortal(
     <div
-      className={`sync-toast${failed ? ' is-failed' : ''}`}
-      role={failed ? 'alert' : 'status'}
+      className={`sync-toast${warn ? ' is-failed' : ''}`}
+      role={warn ? 'alert' : 'status'}
       aria-labelledby="sync-title"
     >
       <span className="sync-icon">
-        <Icon name={failed ? 'alert' : 'sync'} />
+        <Icon name={warn ? 'alert' : 'sync'} />
       </span>
       <div>
         <p className="sync-title" id="sync-title">
-          {t(state.kind === 'done' ? 'doneTitle' : 'title')}
+          {t(
+            state.kind !== 'done'
+              ? 'title'
+              : skipped.length
+                ? 'partialTitle'
+                : 'doneTitle',
+          )}
         </p>
         <p>
           {state.kind === 'done'
-            ? state.skipped
-              ? t('skipped', { count: state.skipped })
+            ? skipped.length
+              ? state.total > skipped.length
+                ? `${setAside} ${t('rest')}`
+                : setAside
               : t('done')
             : failed
-              ? t('failed')
+              ? `${t('failed')}${setAside ? ` ${setAside}` : ''}`
               : t('waiting', { count: pending })}
         </p>
       </div>

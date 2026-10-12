@@ -19,13 +19,34 @@ export type Values = {
   reminder: string | null;
 };
 type Photo = Blob | 'remove';
-// At most one change per contact: later edits fold into it.
+// At most one change per contact: later edits fold into it. A chosen photo
+// carries a stamp (`photoAt`, from the book's counter), so a finished
+// upload removes that photo only, never one chosen while it was on its way.
 type Change =
-  | { kind: 'create'; id: string; values: Values; photo?: Blob }
-  | { kind: 'update'; id: string; values: Partial<Values>; photo?: Photo }
+  | {
+      kind: 'create';
+      id: string;
+      values: Values;
+      photo?: Blob;
+      photoAt?: number;
+      // Its request may have reached the server (the reply was lost, or
+      // it is on its way): the contact may already exist there, with
+      // `values`. Those stay as sent; later edits wait in `edits`.
+      sent?: true;
+      edits?: Partial<Values>;
+    }
+  | {
+      kind: 'update';
+      id: string;
+      values: Partial<Values>;
+      photo?: Photo;
+      photoAt?: number;
+    }
   // `before` is what the delete replaced, so Undo can bring it back. A
   // contact created offline and deleted again never reaches the server.
-  | { kind: 'delete'; id: string; before?: Change };
+  // `sent`: the delete is on its way (or its reply was lost); Undo then
+  // goes through the server instead.
+  | { kind: 'delete'; id: string; before?: Change; sent?: true };
 type Book = {
   userId: string;
   // Null until the server's list has been read once on this device.
@@ -33,7 +54,16 @@ type Book = {
   trashCount: number;
   duplicates: number;
   changes: Change[];
+  // The last photo stamp handed out.
+  rev?: number;
 };
+// What one request to the server carried: a new contact, fields of an
+// edit, a photo (by its stamp) or a delete. Its answer settles that much.
+type Part =
+  | { kind: 'create' }
+  | { kind: 'values'; values: Partial<Values> }
+  | { kind: 'photo'; photoAt?: number }
+  | { kind: 'delete' };
 
 const dbName = 'dafarche-offline';
 const storeName = 'books';
@@ -130,38 +160,93 @@ const retryable = (error: unknown) =>
   error.status === 401 ||
   error.status === 429 ||
   (error.status >= 500 && error.code !== 'PHOTO_STORAGE_NOT_CONFIGURED');
+// A delete that never needs the server: its contact was made here and its
+// creation was never sent.
 const isTombstone = (change: Change) =>
-  change.kind === 'delete' && change.before?.kind === 'create';
-const newContact = (id: string, values: Values, photo?: Photo): Change => ({
+  change.kind === 'delete' &&
+  change.before?.kind === 'create' &&
+  !change.before.sent;
+const newContact = (
+  id: string,
+  values: Values,
+  photo: Photo | undefined,
+  stamp: number,
+  sent: boolean,
+): Change => ({
   kind: 'create',
   id,
   values,
-  photo: photo instanceof Blob ? photo : undefined,
+  ...(photo instanceof Blob ? { photo, photoAt: stamp } : {}),
+  ...(sent ? { sent: true as const } : {}),
 });
 // An edit folds into the change already waiting for that contact.
 function folded(
   before: Change | undefined,
   id: string,
   values: Partial<Values>,
-  photo?: Photo,
+  photo: Photo | undefined,
+  stamp: number,
 ): Change {
   if (before?.kind === 'create')
     return {
       ...before,
-      values: { ...before.values, ...values },
-      photo:
-        photo === 'remove'
-          ? undefined
-          : photo instanceof Blob
-            ? photo
-            : before.photo,
+      ...(before.sent
+        ? { edits: { ...before.edits, ...values } }
+        : { values: { ...before.values, ...values } }),
+      // A contact not yet on the server has no photo there to remove.
+      ...(photo === 'remove'
+        ? { photo: undefined, photoAt: undefined }
+        : photo
+          ? { photo, photoAt: stamp }
+          : {}),
     };
+  const earlier = before?.kind === 'update' ? before : undefined;
   return {
     kind: 'update',
     id,
-    values: { ...(before?.kind === 'update' ? before.values : {}), ...values },
-    photo: photo ?? (before?.kind === 'update' ? before.photo : undefined),
+    values: { ...earlier?.values, ...values },
+    ...(photo
+      ? { photo, photoAt: stamp }
+      : { photo: earlier?.photo, photoAt: earlier?.photoAt }),
   };
+}
+// What is left of an edit once the server has `part`: fields still holding
+// the value that was sent are done; a field changed since stays, and so
+// does a photo chosen since. Nothing left: undefined.
+function remainder(change: Change, part: Part): Change | undefined {
+  if (change.kind !== 'update') return change;
+  const values =
+    part.kind === 'values'
+      ? Object.fromEntries(
+          Object.entries(change.values).filter(
+            ([key, value]) =>
+              !(key in part.values) ||
+              part.values[key as keyof Values] !== value,
+          ),
+        )
+      : change.values;
+  const photoDone = part.kind === 'photo' && change.photoAt === part.photoAt;
+  const next = {
+    ...change,
+    values,
+    ...(photoDone ? { photo: undefined, photoAt: undefined } : {}),
+  };
+  return Object.keys(next.values).length || next.photo ? next : undefined;
+}
+// A new contact the server now has: what was changed here since its
+// request went out (edits, a photo) becomes an edit, sent next.
+function confirmed(change: Change): Change | undefined {
+  if (change.kind !== 'create') return change;
+  const values = change.edits ?? {};
+  return Object.keys(values).length || change.photo
+    ? {
+        kind: 'update',
+        id: change.id,
+        values,
+        photo: change.photo,
+        photoAt: change.photoAt,
+      }
+    : undefined;
 }
 
 export class OfflineBook {
@@ -274,15 +359,18 @@ export class OfflineBook {
         byId.set(
           change.id,
           shaped(
-            {
-              id: change.id,
-              photoUrl: null,
-              // Its public link exists once the server has it.
-              shareToken: '',
-              ...change.values,
-            },
-            change.values,
-            change.photo,
+            shaped(
+              {
+                id: change.id,
+                photoUrl: null,
+                // Its public link exists once the server has it.
+                shareToken: '',
+                ...change.values,
+              },
+              change.values,
+              change.photo,
+            ),
+            change.edits ?? {},
           ),
         );
       else if (base)
@@ -407,19 +495,24 @@ export class OfflineBook {
   }
 
   // Saves a new contact or an edit on this device until the next sync.
+  // `sent`: a new contact whose request may already have reached the
+  // server (it was sent and no reply came).
   async save(
     id: string,
     create: boolean,
     values: Partial<Values>,
     photo?: Photo,
+    sent = false,
   ) {
     await this.update((book) => {
       const before = book.changes.find((c) => c.id === id);
+      const stamp = (book.rev ?? 0) + 1;
       const change = create
-        ? newContact(id, values as Values, photo)
-        : folded(before, id, values, photo);
+        ? newContact(id, values as Values, photo, stamp, sent)
+        : folded(before, id, values, photo, stamp);
       return {
         ...book,
+        rev: stamp,
         changes: [...book.changes.filter((c) => c.id !== id), change],
       };
     });
@@ -438,12 +531,13 @@ export class OfflineBook {
     });
   }
 
-  // Undo of a delete made offline; false when there was none to undo.
+  // Undo of a delete waiting here; false when there is none, or when it is
+  // already on its way to the server (then the server restores it).
   async undo(id: string) {
     let undone = false;
     await this.update((book) => {
       const change = book.changes.find((c) => c.id === id);
-      if (change?.kind !== 'delete') return book;
+      if (change?.kind !== 'delete' || change.sent) return book;
       undone = true;
       const changes = book.changes.filter((c) => c.id !== id);
       return {
@@ -455,91 +549,151 @@ export class OfflineBook {
     return undone;
   }
 
-  // Sends the waiting changes to the server, oldest first. Each one leaves
-  // the queue once the server has it, so an interrupted sync resumes where
-  // it stopped. Resolves with the names of changes that could not apply.
-  async sync() {
+  // Sends the waiting changes to the server, oldest first, one request at
+  // a time. Each answer settles only what its request carried (see
+  // `settle`), so a change made meanwhile is never lost, and an
+  // interrupted sync resumes where it stopped. Resolves with the names of
+  // changes set aside because they can no longer apply (the contact was
+  // deleted elsewhere, say) and, when it stopped before the queue was
+  // empty, the error that stopped it.
+  async sync(): Promise<{ skipped: string[]; error?: unknown }> {
     const skipped: string[] = [];
     await this.reload();
-    while (this.book.changes.length) {
-      const change = this.book.changes[0];
-      const name =
-        change.kind === 'delete'
-          ? (this.book.contacts?.find((c) => c.id === change.id)?.name ?? '')
-          : (this.contacts().find((c) => c.id === change.id)?.name ?? '');
+    for (
+      let change = this.book.changes[0];
+      change;
+      change = this.book.changes[0]
+    ) {
+      const { id } = change;
+      const name = this.nameOf(change);
+      this.sending = undefined;
       try {
         await this.push(change);
       } catch (error) {
-        if (retryable(error)) throw error;
-        skipped.push(name);
+        if (retryable(error)) return { skipped, error };
         const gone = error instanceof ApiError && error.status === 404;
-        await this.settle(change.id, null, gone ? 'gone' : 'kept');
+        const latest = this.book.changes.find((c) => c.id === id);
+        // Deleted here and gone there: what was wanted happened.
+        if (!(gone && latest?.kind === 'delete')) skipped.push(name);
+        // Gone, or a new contact refused: nothing of it can apply. An edit
+        // refused: that request's part is set aside, what was changed here
+        // since stays.
+        // (`sending` is set by `push`, which TypeScript cannot follow.)
+        const sent = this.sending as Part | undefined;
+        const part = sent?.kind === 'create' ? undefined : sent;
+        await this.settle(id, gone ? 'gone' : 'kept', part);
       }
     }
-    return skipped;
+    return { skipped };
+  }
+  // What the request in flight carries, for setting it aside if refused.
+  private sending: Part | undefined;
+
+  private nameOf(change: Change) {
+    const shown = this.contacts().find((c) => c.id === change.id)?.name;
+    const known = this.book.contacts?.find((c) => c.id === change.id)?.name;
+    const made =
+      change.kind === 'delete' && change.before?.kind === 'create'
+        ? change.before.values.name
+        : undefined;
+    return shown ?? known ?? made ?? '';
   }
 
-  // The change is done (or replaced by what is left of it); the copy takes
-  // the server's answer.
-  private settle(
-    id: string,
-    rest: Change | null,
-    result: Contact | 'gone' | 'kept',
-  ) {
+  // The server's answer to one request. `contact`: the contact as it now
+  // is there; 'gone': not there any more; 'kept': no answer to take (the
+  // request was refused). Only `part` leaves the queue: what was changed
+  // here since, stays. Without `part`, or gone without a delete having
+  // been asked for, nothing of the change can apply and it all goes.
+  private settle(id: string, contact: Contact | 'gone' | 'kept', part?: Part) {
+    this.touched++;
     return this.update((book) => {
-      const changes = book.changes.map((c) => (c.id === id ? rest : c));
-      const contacts = book.contacts ?? [];
+      const others = (book.contacts ?? []).filter((c) => c.id !== id);
+      const changes = book.changes.flatMap((change): Change[] => {
+        if (change.id !== id) return [change];
+        if (!part || (contact === 'gone' && part.kind !== 'delete')) return [];
+        let next: Change | undefined;
+        if (part.kind === 'create')
+          next =
+            change.kind === 'delete' && change.before
+              ? { ...change, before: confirmed(change.before) }
+              : confirmed(change);
+        else if (part.kind === 'delete')
+          next = change.kind === 'delete' ? undefined : change;
+        else if (change.kind === 'delete' && change.before)
+          next = { ...change, before: remainder(change.before, part) };
+        else next = remainder(change, part);
+        return next ? [next] : [];
+      });
       return {
         ...book,
-        changes: changes.filter((c): c is Change => c !== null),
+        changes,
         contacts:
-          result === 'kept'
-            ? contacts
-            : [
-                ...contacts.filter((c) => c.id !== id),
-                ...(result === 'gone' ? [] : [result]),
-              ],
+          contact === 'kept'
+            ? book.contacts
+            : contact === 'gone'
+              ? book.contacts && others
+              : [...others, contact],
       };
     });
   }
 
-  private async push(change: Change): Promise<void> {
+  // Sends one request for the change at the head of the queue and settles
+  // its answer.
+  private async push(change: Change) {
     const { id } = change;
     if (change.kind === 'delete') {
-      if (change.before?.kind !== 'create')
+      const part: Part = { kind: 'delete' };
+      this.sending = part;
+      if (!isTombstone(change)) {
+        // Changed meanwhile (undone): start over from the queue.
+        if (!(await this.mark(id, 'delete')).change) return;
         try {
           await api(`contacts/${id}`, undefined, { method: 'DELETE' });
         } catch (error) {
           // Already gone elsewhere: the same outcome.
           if (!(error instanceof ApiError && error.status === 404)) throw error;
         }
-      return this.settle(id, null, 'gone');
+      }
+      return this.settle(id, 'gone', part);
     }
     if (change.kind === 'create') {
-      const body = Object.fromEntries(
-        Object.entries(change.values).filter(([, value]) => value !== null),
+      const { change: marked, wasSent: ambiguous } = await this.mark(
+        id,
+        'create',
       );
-      // The ID was made on this device; repeating the call is harmless.
-      const { contact } = await api<{ contact: Contact }>('contacts', {
+      // Changed meanwhile (deleted): start over from the queue.
+      if (marked?.kind !== 'create') return;
+      const { values } = marked;
+      const part: Part = { kind: 'create' };
+      this.sending = part;
+      const body = Object.fromEntries(
+        Object.entries(values).filter(([, value]) => value !== null),
+      );
+      // The ID was made on this device; repeating the call creates nothing
+      // and answers with the contact as the server has it.
+      let { contact } = await api<{ contact: Contact }>('contacts', {
         id,
         ...body,
       });
-      const rest: Change | null = change.photo
-        ? { kind: 'update', id, values: {}, photo: change.photo }
-        : null;
-      await this.settle(id, rest, contact);
-      return rest ? this.push(rest) : undefined;
+      // That answer comes even for a contact since moved to the trash
+      // elsewhere; a 404 here sets the change aside as not applied.
+      if (ambiguous)
+        contact = (await api<{ contact: Contact }>(`contacts/${id}`)).contact;
+      return this.settle(id, contact, part);
     }
-    let contact: Contact | null = null;
     if (Object.keys(change.values).length) {
-      contact = (
-        await api<{ contact: Contact }>(`contacts/${id}`, change.values, {
-          method: 'PATCH',
-        })
-      ).contact;
-      if (change.photo)
-        await this.settle(id, { ...change, values: {} }, contact);
+      const part: Part = { kind: 'values', values: change.values };
+      this.sending = part;
+      const { contact } = await api<{ contact: Contact }>(
+        `contacts/${id}`,
+        change.values,
+        { method: 'PATCH' },
+      );
+      return this.settle(id, contact, part);
     }
+    const part: Part = { kind: 'photo', photoAt: change.photoAt };
+    this.sending = part;
+    let contact: Contact | 'kept' = 'kept';
     if (change.photo === 'remove')
       contact = (
         await api<{ contact: Contact }>(`contacts/${id}/photo`, undefined, {
@@ -554,7 +708,28 @@ export class OfflineBook {
           change.photo,
         )
       ).contact;
-    await this.settle(id, null, contact ?? 'kept');
+    return this.settle(id, contact, part);
+  }
+
+  // Before a create or delete goes out it is marked as sent, and stored,
+  // so a lost reply or a closed window leaves it known as maybe done. For
+  // a create this also fixes the values sent: later edits go to `edits`.
+  // Resolves with the change as marked (none when the contact's change is
+  // no longer of that kind) and whether it was sent before: a create sent
+  // before had its reply lost, so the contact may exist already.
+  private async mark(id: string, kind: 'create' | 'delete') {
+    let marked: Change | undefined;
+    let wasSent = false;
+    await this.update((book) => ({
+      ...book,
+      changes: book.changes.map((change) => {
+        if (change.id !== id || change.kind !== kind) return change;
+        wasSent = Boolean(change.sent);
+        marked = change.sent ? change : { ...change, sent: true };
+        return marked;
+      }),
+    }));
+    return { change: marked, wasSent };
   }
 }
 
