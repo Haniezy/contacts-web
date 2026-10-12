@@ -13,6 +13,7 @@ export function ContactRow({
   contact,
   expanded,
   selected,
+  inPlace,
   onToggle,
   onEdit,
   onDelete,
@@ -20,6 +21,8 @@ export function ContactRow({
   contact: Contact;
   expanded: boolean;
   selected: boolean;
+  // Offline the details page cannot load: the avatar opens the row instead.
+  inPlace: boolean;
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -40,7 +43,7 @@ export function ContactRow({
           className="row-avatar"
           aria-label={t('details', { name: contact.name })}
           onClick={(event) => {
-            if (matchMedia(desktop).matches) {
+            if (inPlace || matchMedia(desktop).matches) {
               event.preventDefault();
               onToggle();
             }

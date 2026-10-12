@@ -75,6 +75,8 @@ export function ShareButton({
 }) {
   const t = useTranslations('Contacts');
   const { copy, status } = useCopy();
+  // A contact made offline has no public link until it is synced.
+  if (!contact.shareToken) return null;
   async function share() {
     const url = `${location.origin}/s/${contact.shareToken}`;
     if (navigator.share && matchMedia('(pointer: coarse)').matches) {

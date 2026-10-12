@@ -1,25 +1,36 @@
 'use client';
 import {
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
   type FormEvent,
   type ReactNode,
 } from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { api, ApiError, asciiDigits, displayDigits, upload } from '@/lib/api';
+import {
+  api,
+  ApiError,
+  asciiDigits,
+  displayDigits,
+  isUnreachable,
+  upload,
+} from '@/lib/api';
 import { formatPhone, type Contact } from '@/lib/contacts';
+import { newId, type OfflineBook, type Values } from '@/lib/offline-book';
+import { serviceDown } from '@/lib/online';
 import { birthdayInput, parseBirthday } from '@/lib/jalali';
 import { Icon, type IconName } from '@/components/icon';
 import { Avatar } from './avatar';
 import { DuplicateConfirm } from './duplicate-confirm';
 
-// The date picker package loads only when the calendar is first opened.
-const BirthdayCalendar = dynamic(() => import('./birthday-calendar'), {
-  ssr: false,
-});
+// The date picker package loads only when the calendar is first opened
+// (never on the server: it opens on a click). The list loads it ahead of
+// time too, through this same function, so it is kept for offline use.
+export const loadCalendar = () => import('./birthday-calendar');
+const BirthdayCalendar = lazy(loadCalendar);
 
 export type FormMode = 'new' | 'edit';
 type Photo =
@@ -72,15 +83,21 @@ function problems(fields: Fields, locale: string) {
 }
 
 // One form for creating and editing; only the title, initial values and
-// submit label differ between the two modes.
+// submit label differ between the two modes. With `local` (offline, or
+// changes still waiting to sync) it saves into the offline book instead,
+// and so does a save whose connection drops halfway.
 export function ContactForm({
   mode: initialMode,
   contact: initialContact,
+  book,
+  local,
   onClose,
   onSaved,
 }: {
   mode: FormMode;
   contact?: Contact;
+  book: OfflineBook | null;
+  local: boolean;
   onClose: () => void;
   onSaved: (contact: Contact) => void;
 }) {
@@ -93,6 +110,9 @@ export function ContactForm({
   // editing the saved contact instead of creating another one.
   const [saved, setSaved] = useState(initialContact);
   const mode = saved ? 'edit' : initialMode;
+  // A new contact's ID, made here: saving again after a lost reply, or
+  // syncing an offline save, never creates it twice.
+  const [newContactId] = useState(newId);
   const [fields, setFields] = useState<Fields>(() => ({
     name: initialContact?.name ?? '',
     phone: initialContact
@@ -150,6 +170,8 @@ export function ContactForm({
     const controller = new AbortController();
     const timer = setTimeout(() => {
       if (!phoneToCheck) return setMatches([]);
+      if (local && book)
+        return setMatches(book.owners(phoneToCheck, saved?.id));
       const query = new URLSearchParams({ phone: phoneToCheck });
       if (saved) query.set('except', saved.id);
       api<{ contacts: Pick<Contact, 'id' | 'name'>[] }>(
@@ -166,7 +188,7 @@ export function ContactForm({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [phoneToCheck, saved]);
+  }, [phoneToCheck, saved, local, book]);
   const shown = (key: keyof Fields) =>
     touched[key] && errors[key] ? t(errors[key]) : undefined;
   const set = (key: keyof Fields) => (value: string) =>
@@ -231,6 +253,7 @@ export function ContactForm({
     const phone = asciiDigits(fields.phone.trim());
     if (saved && phone.replace(/\D/g, '') === saved.phone.replace(/\D/g, ''))
       return [];
+    if (local && book) return book.owners(phone, saved?.id);
     try {
       const query = new URLSearchParams({ phone });
       if (saved) query.set('except', saved.id);
@@ -247,37 +270,58 @@ export function ContactForm({
   async function save() {
     setBusy(true);
     setError('');
-    const values = {
+    const values: Values = {
       name: fields.name.trim(),
       phone: asciiDigits(fields.phone.trim()),
       birthday: birthdayIso,
       reminder: fields.reminder.trim() || null,
     };
+    // What an edit changes; the API stores phones as an optional + followed
+    // by digits.
+    const normalized = (phone: string) =>
+      (phone.startsWith('+') ? '+' : '') + phone.replace(/\D/g, '');
+    const changes: Partial<Values> = saved
+      ? Object.fromEntries(
+          Object.entries(values).filter(([key, value]) =>
+            key === 'phone'
+              ? normalized(values.phone) !== saved.phone
+              : key === 'birthday'
+                ? value !== (saved.birthday?.slice(0, 10) ?? null)
+                : value !== saved[key as 'name' | 'reminder'],
+          ),
+        )
+      : values;
+    const newPhoto =
+      photo.kind === 'new'
+        ? photo.file
+        : photo.kind === 'remove' && saved?.photoUrl
+          ? ('remove' as const)
+          : undefined;
+    // Kept on this device until the user syncs it.
+    const keep = async (contact = saved) =>
+      onSaved(
+        await book!.save(
+          contact?.id ?? newContactId,
+          !contact,
+          contact === saved ? changes : {},
+          newPhoto,
+        ),
+      );
+    if (local && book) return keep();
     let contact = saved;
     try {
       if (!contact) {
         const body = Object.fromEntries(
           Object.entries(values).filter(([, value]) => value !== null),
         );
-        contact = (await api<{ contact: Contact }>('contacts', body)).contact;
+        contact = (
+          await api<{ contact: Contact }>('contacts', {
+            id: newContactId,
+            ...body,
+          })
+        ).contact;
         setSaved(contact);
       } else {
-        const original = {
-          name: contact.name,
-          phone: contact.phone,
-          birthday: contact.birthday?.slice(0, 10) ?? null,
-          reminder: contact.reminder,
-        };
-        // The API stores phones as an optional + followed by digits.
-        const normalized = (phone: string) =>
-          (phone.startsWith('+') ? '+' : '') + phone.replace(/\D/g, '');
-        const changes = Object.fromEntries(
-          Object.entries(values).filter(([key, value]) =>
-            key === 'phone'
-              ? normalized(values.phone) !== original.phone
-              : value !== original[key as keyof typeof original],
-          ),
-        );
         if (Object.keys(changes).length)
           contact = (
             await api<{ contact: Contact }>(`contacts/${contact.id}`, changes, {
@@ -286,6 +330,12 @@ export function ContactForm({
           ).contact;
       }
     } catch (err) {
+      // The service cannot be reached: keep it here like an offline save
+      // (while the service is checked in the background).
+      if (book && isUnreachable(err)) {
+        void serviceDown();
+        return keep();
+      }
       setBusy(false);
       if (err instanceof ApiError && err.status === 401)
         return router.replace('/login');
@@ -314,6 +364,12 @@ export function ContactForm({
           )
         ).contact;
     } catch (err) {
+      // Saved, but the photo lost its connection: it waits here.
+      if (book && isUnreachable(err)) {
+        void serviceDown();
+        await book.remember(contact);
+        return keep(contact);
+      }
       setSaved(contact);
       setBusy(false);
       const code = err instanceof ApiError ? err.code : '';
@@ -330,6 +386,7 @@ export function ContactForm({
       );
       return;
     }
+    await book?.remember(contact);
     onSaved(contact);
   }
 
@@ -527,25 +584,27 @@ export function ContactForm({
               </button>
             ),
             after: calendarOpen && (
-              <BirthdayCalendar
-                locale={locale}
-                label={t('pickBirthday')}
-                selected={
-                  // Local midnight of the stored day.
-                  birthdayIso ? new Date(`${birthdayIso}T00:00`) : undefined
-                }
-                onSelect={(date) => {
-                  const iso = [
-                    date.getFullYear(),
-                    String(date.getMonth() + 1).padStart(2, '0'),
-                    String(date.getDate()).padStart(2, '0'),
-                  ].join('-');
-                  set('birthday')(birthdayInput(iso, locale));
-                  setTouched((current) => ({ ...current, birthday: true }));
-                  setCalendarOpen(false);
-                }}
-                onClose={() => setCalendarOpen(false)}
-              />
+              <Suspense fallback={null}>
+                <BirthdayCalendar
+                  locale={locale}
+                  label={t('pickBirthday')}
+                  selected={
+                    // Local midnight of the stored day.
+                    birthdayIso ? new Date(`${birthdayIso}T00:00`) : undefined
+                  }
+                  onSelect={(date) => {
+                    const iso = [
+                      date.getFullYear(),
+                      String(date.getMonth() + 1).padStart(2, '0'),
+                      String(date.getDate()).padStart(2, '0'),
+                    ].join('-');
+                    set('birthday')(birthdayInput(iso, locale));
+                    setTouched((current) => ({ ...current, birthday: true }));
+                    setCalendarOpen(false);
+                  }}
+                  onClose={() => setCalendarOpen(false)}
+                />
+              </Suspense>
             ),
           })}
           {field('reminder', t('reminder'), {

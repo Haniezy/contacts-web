@@ -11,7 +11,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, isUnreachable } from '@/lib/api';
 import {
   duplicateCountPath,
   groupByInitial,
@@ -22,13 +22,16 @@ import {
   type DuplicatePage,
   trashedKey,
 } from '@/lib/contacts';
+import { keepForOffline } from '@/lib/offline';
+import { markDown, openedFromSavedCopy, serviceDown } from '@/lib/online';
 import { Icon } from '@/components/icon';
 import { ContactRow } from './contact-row';
 import { ContactPanel } from './contact-panel';
 import { AccountMenu, UserAvatar, type AccountUser } from './account-menu';
 import { DeleteDialog } from './delete-dialog';
 import { UndoToast, type TrashNote } from './undo-toast';
-import { ContactForm } from './contact-form';
+import { ContactForm, loadCalendar } from './contact-form';
+import { SyncToast, useOfflineBook, type SyncState } from './offline-sync';
 
 const searchDelay = 300;
 // Same alphabetical order as the API (ICU collation).
@@ -63,10 +66,12 @@ function Loaded({
 }
 
 export function ContactsApp({
+  userId,
   user,
   initial,
   initialForm = null,
 }: {
+  userId: string;
   user: AccountUser;
   initial: Promise<InitialContacts>;
   initialForm?: FormState | null;
@@ -74,6 +79,15 @@ export function ContactsApp({
   const t = useTranslations('Contacts');
   const a = useTranslations('Auth');
   const router = useRouter();
+  const locale = useLocale();
+  // Offline, and online until the changes made offline are synced, the
+  // list and every save go through the book kept on this device.
+  const { book, online, pending, local } = useOfflineBook(userId);
+  const mode = useRef({ book, local, locale });
+  useEffect(() => {
+    mode.current = { book, local, locale };
+  }, [book, local, locale]);
+  const [syncState, setSyncState] = useState<SyncState | null>(null);
   const [query, setQuery] = useState('');
   // The search the shown results belong to (the empty state needs none).
   const [shownQuery, setShownQuery] = useState('');
@@ -99,14 +113,112 @@ export function ContactsApp({
   const firstQuery = useRef(true);
 
   const load = useCallback(
-    async (q: string, page: number, signal?: AbortSignal) =>
-      api<ContactPage>(
-        `contacts?${new URLSearchParams({ q, page: String(page), pageSize: String(pageSize) })}`,
-        undefined,
-        { signal },
-      ),
+    async (q: string, page: number, signal?: AbortSignal) => {
+      const { book, local, locale } = mode.current;
+      if (book && local) return book.page(q, page, pageSize, locale);
+      try {
+        return await api<ContactPage>(
+          `contacts?${new URLSearchParams({ q, page: String(page), pageSize: String(pageSize) })}`,
+          undefined,
+          { signal },
+        );
+      } catch (error) {
+        // The service cannot be reached: the copy on this device. (One
+        // failed request while the service is up shows the error toast.)
+        if (
+          book?.hasCopy() &&
+          isUnreachable(error) &&
+          !signal?.aborted &&
+          (await serviceDown())
+        )
+          return book.page(q, page, pageSize, locale);
+        throw error;
+      }
+    },
     [],
   );
+  const shownSearch = useRef(query);
+  useEffect(() => {
+    shownSearch.current = query;
+  }, [query]);
+  // Re-reads the current search from its first page.
+  const reload = useCallback(async () => {
+    const q = shownSearch.current.trim();
+    const page = await load(q, 1);
+    setData(page);
+    setShownQuery(q);
+    setFailed(false);
+  }, [load]);
+
+  // Going offline, coming back, or syncing switches the list between the
+  // server and this device's book.
+  const wasLocal = useRef(false);
+  useEffect(() => {
+    if (!book || local === wasLocal.current) return;
+    wasLocal.current = local;
+    void (async () => {
+      // Never read in full on this device yet: start from the page the
+      // server sent (the saved copy of this page, offline).
+      if (local && !book.hasCopy()) await book.seed((await initial).page);
+      await reload().catch(() => {});
+    })();
+  }, [book, local, initial, reload]);
+
+  // Without a form this is the list's own page. Offline, the service
+  // worker answers /contacts/new (or an edit address) with the saved list
+  // page; the address follows, so Back and the form work as usual.
+  useEffect(() => {
+    if (!initialForm && location.pathname !== '/contacts')
+      history.replaceState(history.state, '', '/contacts');
+  }, [initialForm]);
+
+  // The page may have come from the saved copy because the service is
+  // down (see public/sw.js): then work offline at once; otherwise check
+  // the service now, before the first save.
+  useEffect(() => {
+    void openedFromSavedCopy().then((saved) => {
+      if (saved) markDown();
+      else void serviceDown();
+    });
+  }, []);
+
+  // Back to the front: another window may have changed the book.
+  useEffect(() => {
+    if (!book) return;
+    async function onShow() {
+      if (document.visibilityState !== 'visible') return;
+      await book!.reload();
+      if (mode.current.local) await reload().catch(() => {});
+    }
+    document.addEventListener('visibilitychange', onShow);
+    return () => document.removeEventListener('visibilitychange', onShow);
+  }, [book, reload]);
+
+  // The installed app must open offline: the service worker keeps this
+  // page and its files (production only, like the worker itself).
+  useEffect(() => {
+    if (!online || process.env.NODE_ENV !== 'production') return;
+    const timer = setTimeout(() => void keepForOffline(loadCalendar), 1000);
+    return () => clearTimeout(timer);
+  }, [online]);
+
+  // Online, the copy is brought up to date shortly after the page opens
+  // and whenever the connection comes back.
+  useEffect(() => {
+    if (!book || !online) return;
+    const timer = setTimeout(async () => {
+      try {
+        await book.refresh();
+        // With changes waiting, the list shows the copy: the fresh one.
+        if (mode.current.local) await reload();
+      } catch (error) {
+        // The page came from the saved copy while the service is down:
+        // switch to the book at once.
+        if (isUnreachable(error)) void serviceDown();
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [book, online, reload]);
 
   // The header stays on top; it casts a shadow once content runs under it.
   const [headerStuck, setHeaderStuck] = useState(false);
@@ -118,7 +230,6 @@ export function ContactsApp({
 
   // The API orders the page's own script first, so a language change
   // reloads the first page in the new order.
-  const locale = useLocale();
   const listedLocale = useRef(locale);
   useEffect(() => {
     if (listedLocale.current === locale) return;
@@ -319,6 +430,24 @@ export function ContactsApp({
     void refreshDuplicates();
   }
 
+  // Moves a contact to the trash; offline (or with changes waiting) the
+  // delete waits in the book like any other change.
+  async function remove(contact: Contact) {
+    if (book && mode.current.local) return book.remove(contact.id);
+    try {
+      await api(`contacts/${contact.id}`, undefined, { method: 'DELETE' });
+    } catch (error) {
+      // The service cannot be reached: the delete waits in the book.
+      if (book && isUnreachable(error)) {
+        void serviceDown();
+        return book.remove(contact.id);
+      }
+      // Already deleted elsewhere: treat as done.
+      if (!(error instanceof ApiError && error.status === 404)) throw error;
+    }
+    await book?.forget(contact.id);
+  }
+
   // Once the dialog has moved it to the trash: Undo for a few seconds.
   function trashed(contact: Contact) {
     setDeleting(null);
@@ -329,8 +458,17 @@ export function ContactsApp({
 
   async function undo(id: string) {
     setTrashNote(null);
+    // A delete still waiting in the book is simply taken back.
+    if (await book?.undo(id)) {
+      setTrashCount((count) => Math.max(0, (count ?? 1) - 1));
+      return reload().catch(() => {});
+    }
     try {
-      await api(`contacts/${id}/restore`, {});
+      const { contact } = await api<{ contact: Contact }>(
+        `contacts/${id}/restore`,
+        {},
+      );
+      await book?.remember(contact);
       setTrashCount((count) => Math.max(0, (count ?? 1) - 1));
       setData(await load(shownQuery, 1));
       void refreshDuplicates();
@@ -340,6 +478,24 @@ export function ContactsApp({
       setTrashNote({ kind: 'restoreFailed' });
     }
   }
+
+  // The user confirmed syncing the changes made offline. Once none wait,
+  // the list goes back to the server (the effect above).
+  async function sync() {
+    if (!book) return;
+    setSyncState({ kind: 'syncing' });
+    try {
+      const skipped = await book.sync();
+      setSyncState({ kind: 'done', skipped: skipped.length });
+      void refreshDuplicates();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401)
+        return router.replace('/login');
+      if (isUnreachable(error)) void serviceDown();
+      setSyncState({ kind: 'failed' });
+    }
+  }
+  const syncDone = useCallback(() => setSyncState(null), []);
 
   // A contact deleted on its own page comes back here with the same notice.
   useEffect(() => {
@@ -545,6 +701,7 @@ export function ContactsApp({
                             contact={contact}
                             expanded={expandedId === contact.id}
                             selected={selectedId === contact.id}
+                            inPlace={local || !online}
                             onToggle={() => {
                               setExpandedId((id) =>
                                 id === contact.id ? null : contact.id,
@@ -574,6 +731,8 @@ export function ContactsApp({
               key={form.mode === 'edit' ? form.contact.id : 'new'}
               mode={form.mode}
               contact={form.mode === 'edit' ? form.contact : undefined}
+              book={book}
+              local={local}
               onClose={closeForm}
               onSaved={saved}
             />
@@ -629,6 +788,7 @@ export function ContactsApp({
       />
       <DeleteDialog
         contact={deleting}
+        remove={remove}
         onCancel={() => setDeleting(null)}
         onDeleted={trashed}
       />
@@ -637,6 +797,16 @@ export function ContactsApp({
           note={trashNote}
           onUndo={undo}
           onDone={() => setTrashNote(null)}
+        />
+      )}
+      {/* Back online with changes made offline; it steps aside while the
+          trash notice uses the same spot. */}
+      {online && !trashNote && (pending > 0 || syncState?.kind === 'done') && (
+        <SyncToast
+          state={syncState ?? { kind: 'waiting' }}
+          pending={pending}
+          onSync={sync}
+          onDone={syncDone}
         />
       )}
     </div>

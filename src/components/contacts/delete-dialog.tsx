@@ -7,12 +7,15 @@ import { Icon } from '@/components/icon';
 import type { Contact } from '@/lib/contacts';
 
 // Asks before moving a contact to the trash (where it can still be restored).
+// `remove` replaces the API call (the list passes one that works offline).
 export function DeleteDialog({
   contact,
+  remove,
   onCancel,
   onDeleted,
 }: {
   contact: Contact | null;
+  remove?: (contact: Contact) => Promise<void>;
   onCancel: () => void;
   onDeleted: (contact: Contact) => void;
 }) {
@@ -40,12 +43,13 @@ export function DeleteDialog({
     setBusy(true);
     setFailed(false);
     try {
-      await api(`contacts/${contact.id}`, undefined, { method: 'DELETE' });
+      await (remove
+        ? remove(contact)
+        : api(`contacts/${contact.id}`, undefined, { method: 'DELETE' }));
       onDeleted(contact);
     } catch (error) {
       // Already deleted elsewhere: treat as done.
-      if (error instanceof ApiError && error.status === 404)
-        onDeleted(contact);
+      if (error instanceof ApiError && error.status === 404) onDeleted(contact);
       else if (error instanceof ApiError && error.status === 401)
         router.replace('/login');
       else setFailed(true);

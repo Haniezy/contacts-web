@@ -7,7 +7,7 @@ import { api, errorKey } from '@/lib/api';
 import { emailSuggestion } from '@/lib/email';
 import { Field } from './field';
 import { useEnrollment, type Enrollment } from './enrollment-context';
-import { forgetOfflineData } from '@/lib/offline';
+import { forgetSavedPages } from '@/lib/offline';
 
 export function AccountForm({
   signup = false,
@@ -94,7 +94,7 @@ export function AccountForm({
         signup ? { email, password, firstName, lastName } : { email, password },
       );
       // A new sign-in starts without anyone's saved offline pages.
-      await forgetOfflineData();
+      await forgetSavedPages();
       if (signup) {
         try {
           setEnrollment(await api<Enrollment>('auth/2fa/setup', { password }));

@@ -2,20 +2,8 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { listenForInstall } from '@/lib/install';
+import { onlineStore } from '@/lib/online';
 import { Icon } from '@/components/icon';
-
-const onlineStore = {
-  subscribe(listener: () => void) {
-    addEventListener('online', listener);
-    addEventListener('offline', listener);
-    return () => {
-      removeEventListener('online', listener);
-      removeEventListener('offline', listener);
-    };
-  },
-  get: () => navigator.onLine,
-  server: () => true,
-};
 
 // The installable-app pieces every page shares: the service worker (in
 // production builds only, so development never serves stale files), the

@@ -115,6 +115,9 @@ const paths = {
   bell: (
     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0" />
   ),
+  sync: (
+    <path d="M20.5 12a8.5 8.5 0 0 0-14.7-5.8L3.5 8.5m0-5v5h5M3.5 12a8.5 8.5 0 0 0 14.7 5.8l2.3-2.3m0 5v-5h-5" />
+  ),
 };
 export type IconName = keyof typeof paths;
 export function Icon({

@@ -5333,8 +5333,90 @@ html:has(.merge-dialog[open]) {
   background: var(--coral);
   color: var(--ink);
 }
+/* Back online with changes made offline: "Sync changes", to confirm. Same
+   spot and colours as the trash notice, with room for a sentence. */
+.sync-toast {
+  position: fixed;
+  z-index: 6;
+  bottom: 28px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: min(440px, calc(100% - 32px));
+  padding-block: 12px;
+  padding-inline: 12px;
+  border-radius: 24px;
+  background: var(--ink);
+  color: var(--chip);
+  box-shadow: 0 12px 30px rgb(40 60 80 / 22%);
+  transform: translateX(-50%);
+  animation: toast-in 250ms ease-out;
+}
+.sync-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+.sync-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.sync-toast p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  opacity: 0.85;
+}
+.sync-toast .sync-title {
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 1;
+}
+.sync-confirm {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding-inline: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  color: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sync-confirm:disabled {
+  opacity: 0.7;
+}
+.sync-toast.is-failed {
+  background: var(--coral);
+  color: var(--ink);
+}
+/* Desktop: under the list, clear of the side panel's buttons. */
+@media (min-width: 1024px) {
+  .sync-toast {
+    /* The list column's edge and width (the toast sits outside the page,
+       so it repeats the page's --d unit). */
+    left: auto;
+    inset-inline-start: calc(44 * min(100vw / 1280, 1.5px));
+    max-width: min(440px, calc(500 * min(100vw / 1280, 1.5px)));
+    transform: none;
+    animation-name: sync-in;
+  }
+}
+@keyframes sync-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .undo-toast {
+  .undo-toast,
+  .sync-toast {
     animation: none;
   }
 }

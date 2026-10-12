@@ -58,6 +58,7 @@ export async function ContactsView({
       : null;
   return (
     <ContactsApp
+      userId={user.id}
       user={accountUser(user)}
       initial={initial}
       initialForm={initialForm}

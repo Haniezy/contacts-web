@@ -2,10 +2,19 @@ export class ApiError extends Error {
   constructor(
     public code: string,
     public status: number,
+    // True when the request never got an answer (no connection).
+    public network = false,
   ) {
     super(code);
   }
 }
+// The request could not get through: no answer, or the server's own
+// "service unavailable" (it could not reach its database, say). Whether
+// the service is down altogether is for `serviceDown` (src/lib/online.ts).
+export const isUnreachable = (error: unknown) =>
+  error instanceof ApiError &&
+  (error.network ||
+    (error.status >= 500 && error.code === 'SERVICE_UNAVAILABLE'));
 export async function api<T>(
   path: string,
   body?: unknown,
@@ -27,7 +36,7 @@ export async function api<T>(
   } catch (error) {
     // A superseded request is not a service failure.
     if (options.signal?.aborted) throw error;
-    throw new ApiError('SERVICE_UNAVAILABLE', 503);
+    throw new ApiError('SERVICE_UNAVAILABLE', 503, true);
   }
   const data =
     response.status === 204 ? {} : await response.json().catch(() => ({}));
@@ -36,7 +45,7 @@ export async function api<T>(
   return data as T;
 }
 // Multipart upload through the same-origin API; the browser sets the boundary.
-export async function upload<T>(path: string, field: string, file: File) {
+export async function upload<T>(path: string, field: string, file: Blob) {
   const body = new FormData();
   body.append(field, file);
   let response: Response;
@@ -49,7 +58,7 @@ export async function upload<T>(path: string, field: string, file: File) {
       signal: AbortSignal.timeout(60000),
     });
   } catch {
-    throw new ApiError('SERVICE_UNAVAILABLE', 503);
+    throw new ApiError('SERVICE_UNAVAILABLE', 503, true);
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok)

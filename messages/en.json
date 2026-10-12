@@ -388,11 +388,11 @@
     "menu": "Install the app",
     "menuHelp": "On your phone or computer; it opens offline too",
     "title": "Install Contacts",
-    "help": "Contacts sits on your home screen like an app, opens without the browser bars, and your last list works offline.",
+    "help": "Contacts sits on your home screen like an app, opens without the browser bars, and even offline you can see, add, edit and delete contacts.",
     "install": "Install",
     "done": "Installed. Open Contacts from your home screen or app list.",
     "close": "Close",
-    "offline": "You're offline; showing what was saved last."
+    "offline": "You're offline; your changes are kept."
   },
   "Trash": {
     "title": "Trash",
@@ -415,5 +415,16 @@
     "moved": "“<name></name>” moved to the trash",
     "undo": "Undo",
     "restoreFailed": "Couldn't restore; try from the trash."
+  },
+  "Sync": {
+    "title": "Sync changes",
+    "waiting": "{count, plural, one {# change} other {# changes}} you made offline {count, plural, one {isn't} other {aren't}} in your account yet. Confirm to save {count, plural, one {it} other {them}}.",
+    "confirm": "Confirm",
+    "syncing": "Syncing…",
+    "failed": "Syncing didn't finish; the unsaved changes are kept.",
+    "retry": "Retry",
+    "doneTitle": "Changes synced",
+    "done": "Everything you changed offline is now in your account.",
+    "skipped": "Saved, except {count, plural, one {# change} other {# changes}} that no longer applied (the contact was deleted elsewhere, say)."
   }
 }
