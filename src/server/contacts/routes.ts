@@ -307,15 +307,30 @@ export function contactsRouter(
       return;
     }
     const userId = owner(res.locals);
-    const contact = await mutate(userId, (tx) =>
-      tx.contact.create({
+    const { id } = body.data;
+    const result = await mutate(userId, async (tx) => {
+      // The same ID again is the same save repeated: answer with what it
+      // made. Another account's ID is never touched.
+      const existing = id
+        ? await tx.contact.findUnique({
+            where: { id },
+            select: { ...contactSelect, userId: true },
+          })
+        : null;
+      if (existing) {
+        const { userId: holder, ...contact } = existing;
+        if (holder !== userId) throw new ContactError(409, 'CONTACT_ID_TAKEN');
+        return { contact, created: false };
+      }
+      const contact = await tx.contact.create({
         data: { ...body.data, ...bodyData(body.data), userId },
         select: contactSelect,
-      }),
-    );
+      });
+      return { contact, created: true };
+    });
     res
-      .status(201)
-      .json({ contact: await presentContact(contact, userId, photos) });
+      .status(result.created ? 201 : 200)
+      .json({ contact: await presentContact(result.contact, userId, photos) });
   });
   router.get('/:id', validId, async (req, res) => {
     const contact = await db().contact.findFirst({

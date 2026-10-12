@@ -194,7 +194,7 @@ test('A cannot read, update, delete, upload or clear a photo belonging to B', as
 test('mass assignment cannot transfer ownership, IDs or arbitrary photo URLs', async () => {
   for (const extra of [
     { userId: users[1].id },
-    { id: randomUUID() },
+    { id: 'not-a-uuid' },
     { photoUrl: 'https://example.test/a.png' },
     { photoKey: 'other/asset' },
   ])
@@ -203,7 +203,29 @@ test('mass assignment cannot transfer ownership, IDs or arbitrary photo URLs', a
       .expect(400);
   const c = await add();
   await api('patch', `/${c.id}`).send({ userId: users[1].id }).expect(400);
+  await api('patch', `/${c.id}`).send({ id: randomUUID() }).expect(400);
   expect(await db.contact.count({ where: { userId: users[1].id } })).toBe(0);
+});
+
+test('a new contact may bring its own ID, and repeating that save creates nothing', async () => {
+  const id = randomUUID();
+  const first = await api('post')
+    .send({ id: id.toUpperCase(), name: 'آفلاین', phone: '09120000000' })
+    .expect(201);
+  expect(first.body.contact.id).toBe(id);
+  // A lost reply is retried with the same ID: same contact, no second one.
+  const again = await api('post')
+    .send({ id, name: 'آفلاین', phone: '09120000000' })
+    .expect(200);
+  expect(again.body.contact).toEqual(first.body.contact);
+  expect(await db.contact.count({ where: { id } })).toBe(1);
+  // Another account's ID is refused and left as it was.
+  await api('post', '', 1)
+    .send({ id, name: 'Other', phone: '1234567' })
+    .expect(409, { error: 'CONTACT_ID_TAKEN' });
+  expect(
+    await db.contact.findUnique({ where: { id }, select: { userId: true } }),
+  ).toEqual({ userId: users[0].id });
 });
 
 test('validates names, phone numbers, real dates, optional fields and patch bodies', async () => {

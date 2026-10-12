@@ -41,13 +41,14 @@ const reminder = z
   .refine((v) => !v.includes('\0'))
   .nullable()
   .optional();
-export const createBody = z
-  .object({ name, phone, birthday, reminder })
-  .strict();
-export const patchBody = createBody
+export const idSchema = z.uuid().transform((value) => value.toLowerCase());
+const fields = z.object({ name, phone, birthday, reminder }).strict();
+// A new contact may bring its own ID: the app makes one up front, so a
+// save made offline (or retried after a lost reply) is created only once.
+export const createBody = fields.extend({ id: idSchema.optional() }).strict();
+export const patchBody = fields
   .partial()
   .refine((v) => Object.keys(v).length > 0);
-export const idSchema = z.uuid().transform((value) => value.toLowerCase());
 const page = z
   .string()
   .regex(/^[1-9][0-9]*$/)
@@ -94,7 +95,7 @@ export const mergeBody = z
   .object({
     targetId: idSchema,
     sourceIds: z.array(idSchema).min(1).max(19),
-    overrides: createBody.partial().optional(),
+    overrides: fields.partial().optional(),
   })
   .strict()
   .refine(
