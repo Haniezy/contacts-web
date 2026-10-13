@@ -118,3 +118,20 @@ export function CopyNumberButton({ phone }: { phone: string }) {
     </button>
   );
 }
+
+// An icon that copies a number (the desktop details card).
+export function CopyIconButton({ phone }: { phone: string }) {
+  const t = useTranslations('Contacts');
+  const { copy, status } = useCopy();
+  return (
+    <button
+      type="button"
+      className="copy-icon"
+      aria-label={t('copyNumber')}
+      onClick={() => copy(phone, 'numberCopied')}
+    >
+      <Icon name="copy" />
+      {status}
+    </button>
+  );
+}

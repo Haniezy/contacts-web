@@ -1,11 +1,11 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { expect, isDesk, test } from './fixtures';
 
 // The switches live in the menu: the drawer on mobile, the account
 // dropdown on desktop.
 async function preferences(page: Page) {
   // Wait for the contacts header.
-  await page.locator('.contacts-search').waitFor();
+  await page.getByRole('searchbox').waitFor();
   await page
     .getByRole('button', { name: /^(منو|Menu|حساب کاربری|Account)$/ })
     .filter({ visible: true })
@@ -57,8 +57,11 @@ test('theme and language persist, retain physical knob positions and translate t
   await scope.getByRole('button', { name: 'English', exact: true }).click();
   await expect(html).toHaveAttribute('lang', 'en');
   await expect(html).toHaveAttribute('dir', 'ltr');
+  // Desktop titles the list «All contacts (n)».
   await expect(
-    page.getByRole('heading', { name: 'Contacts', exact: true }),
+    isDesk(page)
+      ? page.getByRole('heading', { level: 1, name: /^All contacts/ })
+      : page.getByRole('heading', { name: 'Contacts', exact: true }),
   ).toBeVisible();
   await page.reload();
   await expect(html).toHaveAttribute('data-theme', 'dark');

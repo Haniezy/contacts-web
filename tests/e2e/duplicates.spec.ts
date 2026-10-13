@@ -1,4 +1,12 @@
-import { expect, fixture, test } from './fixtures';
+import {
+  editChosen,
+  expect,
+  expectCount,
+  fixture,
+  isDesk,
+  openMenu,
+  test,
+} from './fixtures';
 
 test.beforeEach(async ({ context, account }) => {
   fixture({
@@ -36,15 +44,11 @@ const card = (page: import('@playwright/test').Page, name: string) =>
 
 test('merging keeps one complete record with the chosen fields', async ({
   page,
-  isMobile,
 }) => {
   await page.goto('/contacts');
-  await page
-    .getByRole('button', { name: isMobile ? 'منو' : 'حساب کاربری' })
-    .click();
-  const link = page
-    .getByRole('dialog', { name: 'منو' })
-    .getByRole('link', { name: /ادغام تکراری‌ها/ });
+  const link = (await openMenu(page)).getByRole('link', {
+    name: /ادغام تکراری‌ها/,
+  });
   // The badge counts groups: two phone groups and one name group.
   await expect(link).toContainText('۳');
   await link.click();
@@ -82,17 +86,21 @@ test('merging keeps one complete record with the chosen fields', async ({
   // The browser's back button must not show the contacts page from before.
   await page.goBack();
   await expect(page).toHaveURL(/\/contacts$/);
-  await expect(page.locator('.count-chip').first()).toHaveText('۶ نفر');
-  if (!isMobile)
-    await expect(page.getByText('۲ گروه تکراری پیدا شد')).toBeVisible();
+  await expectCount(page, '۶');
+  await expect(
+    isDesk(page)
+      ? page
+          .locator('.desk-sidebar')
+          .getByRole('link', { name: /مخاطبین تکراری/ })
+      : page.locator('.duplicates-banner'),
+  ).toContainText('۲');
   await expect(page.getByRole('button', { name: 'بهار.ر نوری' })).toHaveCount(
     0,
   );
   await page.getByRole('button', { name: 'بهار رضایی' }).click();
-  const edit = page
-    .locator('.contact-row.is-open')
-    .getByRole('link', { name: 'ویرایش' });
-  await page.goto((await edit.getAttribute('href'))!);
+  await editChosen(page);
+  await expect(page).toHaveURL(/\/edit$/);
+  await page.goto(page.url());
   await expect(page.getByLabel('شماره تلفن')).toHaveValue('۰۹۱۲ ۳۴۵ ۶۷۸۹');
   await expect(page.getByLabel(/تاریخ تولد/)).toHaveValue('۱۵ مهر ۱۳۷۵');
   await expect(page.getByLabel(/یادآوری/)).toHaveValue('قرار قهوه پنجشنبه');
@@ -162,9 +170,8 @@ test('contacts with the same name merge too, keeping the chosen number', async (
   await page.goto('/contacts');
   await expect(page.getByRole('button', { name: /^سارا/ })).toHaveCount(1);
   await page.getByRole('button', { name: 'سارا احمدی' }).click();
-  const edit = page
-    .locator('.contact-row.is-open')
-    .getByRole('link', { name: 'ویرایش' });
-  await page.goto((await edit.getAttribute('href'))!);
+  await editChosen(page);
+  await expect(page).toHaveURL(/\/edit$/);
+  await page.goto(page.url());
   await expect(page.getByLabel('شماره تلفن')).toHaveValue('۰۹۳۶ ۱۱۱ ۰۰۰۰');
 });

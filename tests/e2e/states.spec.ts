@@ -1,4 +1,12 @@
-import { expect, fixture, test } from './fixtures';
+import {
+  addButton,
+  expect,
+  expectCount,
+  fixture,
+  isDesk,
+  rows,
+  test,
+} from './fixtures';
 
 // These tests fail requests with page.route, which a service worker's own
 // fetches would skip; offline behaviour has its own tests (pwa.spec.ts).
@@ -19,10 +27,9 @@ test.beforeEach(async ({ context, account }) => {
 
 test('an empty book invites the first contact, which replaces the empty state', async ({
   page,
-  isMobile,
 }) => {
   await page.goto('/contacts');
-  const empty = page.locator('.contacts-blank');
+  const empty = page.locator(isDesk(page) ? '.desk-blank' : '.contacts-blank');
   await expect(
     empty.getByRole('heading', { name: 'هنوز مخاطبی نداری' }),
   ).toBeVisible();
@@ -31,11 +38,10 @@ test('an empty book invites the first contact, which replaces the empty state', 
       'با دکمه‌ی پایین اولین مخاطبت رو اضافه کن تا دفترچه‌ت شکل بگیره',
     ),
   ).toBeVisible();
-  // The header's add button stays; desktop shows no side panel.
-  await expect(page.locator('.contacts-add')).toBeVisible();
-  await expect(page.locator('.contact-panel')).toBeHidden();
-  if (isMobile)
-    await expect(page.locator('.count-chip').first()).toHaveText('۰ نفر');
+  // The add button stays; desktop shows no side panel.
+  await expect(addButton(page)).toBeVisible();
+  await expect(page.locator('.desk-panel.is-open')).toHaveCount(0);
+  await expectCount(page, '۰');
 
   await empty.getByRole('link', { name: 'افزودن مخاطب' }).click();
   await expect(page).toHaveURL(/\/contacts\/new$/);
@@ -46,8 +52,8 @@ test('an empty book invites the first contact, which replaces the empty state', 
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(page.getByRole('button', { name: 'نگار صالحی' })).toBeVisible();
   await expect(empty).toHaveCount(0);
-  await expect(page.locator('.contacts-add')).toBeVisible();
-  await expect(page.locator('.count-chip').first()).toHaveText('۱ نفر');
+  await expect(addButton(page)).toBeVisible();
+  await expectCount(page, '۱');
 });
 
 test('a failed request shows the error toast until a retry succeeds', async ({
@@ -63,7 +69,7 @@ test('a failed request shows the error toast until a retry succeeds', async ({
     ],
   });
   await page.goto('/contacts');
-  await expect(page.locator('.contact-row')).toHaveCount(2);
+  await expect(rows(page)).toHaveCount(2);
 
   await page.route('**/api/contacts?**', (route) => route.abort());
   await page
@@ -75,7 +81,7 @@ test('a failed request shows the error toast until a retry succeeds', async ({
     toast.getByText('اتصال اینترنت رو چک کن و دوباره تلاش کن'),
   ).toBeVisible();
   // The list already shown stays under the toast.
-  await expect(page.locator('.contact-row')).toHaveCount(2);
+  await expect(rows(page)).toHaveCount(2);
 
   // Still offline: the retry fails and the toast stays.
   await toast.getByRole('button', { name: 'تلاش مجدد' }).click();
@@ -85,6 +91,6 @@ test('a failed request shows the error toast until a retry succeeds', async ({
   await page.unroute('**/api/contacts?**');
   await toast.getByRole('button', { name: 'تلاش مجدد' }).click();
   await expect(toast).toBeHidden();
-  await expect(page.locator('.contact-row')).toHaveCount(1);
+  await expect(rows(page)).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'بهار رضایی' })).toBeVisible();
 });

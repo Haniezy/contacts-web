@@ -1,6 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import { expect, fixture, openMenu, test } from './fixtures';
+import {
+  detailsHref,
+  expect,
+  fixture,
+  isDesk,
+  openMenu,
+  test,
+} from './fixtures';
 
 // Small text kept in the design's own colours (decided in phase 11): these
 // stay out of the contrast check only; every other rule still applies.
@@ -108,8 +115,14 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
   await page.goto('/contacts');
   await page.getByRole('button', { name: 'بهار رضایی' }).click();
   await audit(page);
-  const details = page.getByRole('link', { name: 'جزئیات بهار رضایی' });
-  await page.goto((await details.getAttribute('href'))!);
+  // Desktop: the details beside the list, and their menu.
+  if (isDesk(page)) {
+    await page.getByRole('button', { name: 'گزینه‌های بیشتر' }).click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await audit(page);
+    await page.keyboard.press('Escape');
+  }
+  await page.goto(await detailsHref(page, 'بهار رضایی'));
   await expect(
     page.getByRole('heading', { level: 1, name: 'بهار رضایی' }),
   ).toBeVisible();
@@ -195,10 +208,8 @@ test('the keyboard reaches every control with a visible focus ring', async ({
     },
   ]);
   await page.goto('/contacts');
-  const details = await page
-    .getByRole('link', { name: 'جزئیات آرش محمدی' })
-    .getAttribute('href');
-  for (const path of ['/contacts', details!, '/profile', '/settings']) {
+  const details = await detailsHref(page, 'آرش محمدی');
+  for (const path of ['/contacts', details, '/profile', '/settings']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     // Skeletons show the real title too; wait until the page has loaded.
@@ -219,7 +230,7 @@ test('the keyboard reaches every control with a visible focus ring', async ({
           // Text fields show focus on their line or frame (:focus-within).
           ring:
             (style.outlineStyle !== 'none' && style.outlineWidth !== '0px') ||
-            Boolean(el.closest('.field-line, .contacts-search')),
+            Boolean(el.closest('.field-line, .contacts-search, .desk-search')),
         };
       });
       if (!focused) continue;

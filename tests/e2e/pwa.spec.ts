@@ -1,6 +1,16 @@
 import type { Page, Route } from '@playwright/test';
 import sharp from 'sharp';
-import { expect, fixture, openMenu, test } from './fixtures';
+import {
+  addButton,
+  deleteChosen,
+  editChosen,
+  expect,
+  expectCount,
+  fixture,
+  openMenu,
+  rows,
+  test,
+} from './fixtures';
 
 test('the app can be installed: manifest, icons and an uncached service worker', async ({
   request,
@@ -185,10 +195,10 @@ test.describe('signed in', () => {
     await context.setOffline(true);
     await page.reload();
     await expect(page.locator('.offline-note')).toBeVisible();
-    await expect(page.locator('.count-chip').first()).toHaveText('۲ نفر');
+    await expectCount(page, '۲');
 
     // Add.
-    await page.locator('.contacts-add').click();
+    await addButton(page).click();
     await page.getByLabel('نام و نام خانوادگی').fill('نگار صالحی');
     await page.getByLabel('شماره تلفن').fill('09121112222');
     await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
@@ -196,24 +206,18 @@ test.describe('signed in', () => {
     await expect(
       page.getByRole('button', { name: 'نگار صالحی' }),
     ).toBeVisible();
-    await expect(page.locator('.count-chip').first()).toHaveText('۳ نفر');
+    await expectCount(page, '۳');
 
     // Edit.
     await page.getByRole('button', { name: /بهار رضایی/ }).click();
-    await page
-      .locator('.contact-row.is-open')
-      .getByRole('link', { name: 'ویرایش' })
-      .click();
+    await editChosen(page);
     await page.getByLabel('نام و نام خانوادگی').fill('بهار رضوی');
     await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
     await expect(page.getByRole('button', { name: 'بهار رضوی' })).toBeVisible();
 
     // Delete.
     await page.getByRole('button', { name: /آرش محمدی/ }).click();
-    await page
-      .locator('.contact-row.is-open')
-      .getByRole('button', { name: 'حذف' })
-      .click();
+    await deleteChosen(page);
     await page
       .getByRole('dialog')
       .getByRole('button', { name: 'حذف', exact: true })
@@ -224,7 +228,7 @@ test.describe('signed in', () => {
 
     // Still there after reopening offline, and searchable.
     await page.reload();
-    await expect(page.locator('.count-chip').first()).toHaveText('۲ نفر');
+    await expectCount(page, '۲');
     await page
       .getByRole('searchbox', { name: 'جستجوی نام یا شماره' })
       .fill('۱۱۱');
@@ -308,7 +312,7 @@ test('after a plain sign-in the app works offline and syncs when confirmed', asy
   // The connection drops while the app is open: saving still works.
   await context.setOffline(true);
   await expect(page.locator('.offline-note')).toBeVisible();
-  await page.locator('.contacts-add').click();
+  await addButton(page).click();
   await page.getByLabel('نام و نام خانوادگی').fill('سارا احمدی');
   await page.getByLabel('شماره تلفن').fill('09351234567');
   await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
@@ -322,7 +326,7 @@ test('after a plain sign-in the app works offline and syncs when confirmed', asy
   await expect(app.getByRole('button', { name: /بهار رضایی/ })).toBeVisible();
   await expect(app.getByRole('button', { name: 'سارا احمدی' })).toBeVisible();
   await expect(app.locator('.offline-note')).toBeVisible();
-  await app.locator('.contacts-add').click();
+  await addButton(app).click();
   await app.getByLabel('نام و نام خانوادگی').fill('نگار صالحی');
   await app.getByLabel('شماره تلفن').fill('09121112222');
   // The date picker loads its code on first use; offline too.
@@ -367,7 +371,7 @@ test('a server without its database counts as offline, and syncs once it is back
   await page.getByRole('button', { name: 'ورود', exact: true }).click();
   await expect(page.getByRole('button', { name: /بهار رضایی/ })).toBeVisible();
   await page.waitForTimeout(4000);
-  await page.locator('.contacts-add').click();
+  await addButton(page).click();
   await expect(page).toHaveURL(/\/contacts\/new$/);
 
   const down = /\/(api\/.*|ready|contacts(\/.*)?)(\?.*)?$/;
@@ -382,7 +386,7 @@ test('a server without its database counts as offline, and syncs once it is back
   await expect(page.getByRole('button', { name: /بهار رضایی/ })).toBeVisible();
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(page.locator('.offline-note')).toBeVisible();
-  await page.locator('.contacts-add').click();
+  await addButton(page).click();
   await page.getByLabel('نام و نام خانوادگی').fill('حنانه احمدی');
   await page.getByLabel('شماره تلفن').fill('09114588565');
   await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
@@ -442,7 +446,7 @@ test.describe('exact sync', () => {
     });
   }
   async function addContact(page: Page, name: string, phone: string) {
-    await page.locator('.contacts-add').click();
+    await addButton(page).click();
     await page.getByLabel('نام و نام خانوادگی').fill(name);
     await page.getByLabel('شماره تلفن').fill(phone);
     await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
@@ -455,20 +459,14 @@ test.describe('exact sync', () => {
     value: string,
   ) {
     await page.getByRole('button', { name: new RegExp(name) }).click();
-    await page
-      .locator('.contact-row.is-open')
-      .getByRole('link', { name: 'ویرایش' })
-      .click();
+    await editChosen(page);
     await page.getByLabel(label).fill(value);
     await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
     await expect(page).toHaveURL(/\/contacts$/);
   }
   async function deleteContact(page: Page, name: string) {
     await page.getByRole('button', { name: new RegExp(name) }).click();
-    await page
-      .locator('.contact-row.is-open')
-      .getByRole('button', { name: 'حذف', exact: true })
-      .click();
+    await deleteChosen(page);
     await page
       .getByRole('dialog')
       .getByRole('button', { name: 'حذف', exact: true })
@@ -792,10 +790,7 @@ test.describe('exact sync', () => {
     photo: Awaited<ReturnType<typeof png>>,
   ) {
     await page.getByRole('button', { name: new RegExp(name) }).click();
-    await page
-      .locator('.contact-row.is-open')
-      .getByRole('link', { name: 'ویرایش' })
-      .click();
+    await editChosen(page);
     await choosePhoto(page, photo);
     await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
     await expect(page).toHaveURL(/\/contacts$/);
@@ -809,13 +804,12 @@ test.describe('exact sync', () => {
     await page.goto('/contacts');
     await copied(page);
     await context.setOffline(true);
-    await page.locator('.contacts-add').click();
+    await addButton(page).click();
     await page.getByLabel('نام و نام خانوادگی').fill('با عکس');
     await page.getByLabel('شماره تلفن').fill('09121110011');
     await choosePhoto(page, photo);
     await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
-    const avatar = page
-      .locator('.contact-row')
+    const avatar = rows(page)
       .filter({ hasText: 'با عکس' })
       .locator('img.avatar');
     await expect(avatar).toHaveAttribute('src', /^blob:/);

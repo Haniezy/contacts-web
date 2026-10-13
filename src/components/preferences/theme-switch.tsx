@@ -37,3 +37,38 @@ export function ThemeSwitch() {
     </button>
   );
 }
+
+// The desktop top bar: a sun and a moon, the current theme's one lit.
+export function ThemeButtons() {
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
+  const { resolvedTheme, setTheme } = useTheme();
+  const t = useTranslations('Contacts');
+  const p = useTranslations('Preferences');
+  const dark = mounted && resolvedTheme === 'dark';
+  return (
+    <div className="theme-buttons" role="group" aria-label={p('theme')}>
+      <button
+        type="button"
+        aria-label={t('darkTheme')}
+        aria-pressed={dark}
+        disabled={!mounted}
+        onClick={() => setTheme('dark')}
+      >
+        <PreferenceIcon name="moon" />
+      </button>
+      <button
+        type="button"
+        aria-label={t('lightTheme')}
+        aria-pressed={mounted && !dark}
+        disabled={!mounted}
+        onClick={() => setTheme('light')}
+      >
+        <PreferenceIcon name="sun" />
+      </button>
+    </div>
+  );
+}

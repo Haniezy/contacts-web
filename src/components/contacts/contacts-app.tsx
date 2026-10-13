@@ -26,7 +26,10 @@ import { keepForOffline } from '@/lib/offline';
 import { markDown, openedFromSavedCopy, serviceDown } from '@/lib/online';
 import { Icon } from '@/components/icon';
 import { ContactRow } from './contact-row';
-import { ContactPanel } from './contact-panel';
+import { ContactSheet } from './contact-sheet';
+import { DeskList } from './desk-list';
+import { DeskSidebar, useSidebarCollapsed } from './desk-sidebar';
+import { DeskTopbar } from './desk-topbar';
 import { AccountMenu, UserAvatar, type AccountUser } from './account-menu';
 import { DeleteDialog } from './delete-dialog';
 import { UndoToast, type TrashNote } from './undo-toast';
@@ -41,6 +44,21 @@ export type FormState = { mode: 'new' } | { mode: 'edit'; contact: Contact };
 export type InitialContacts = { page: ContactPage | null; duplicates: number };
 const editPath = /^\/contacts\/([0-9a-f-]{36})\/edit$/i;
 const skeletonRows = 6;
+// How long the desktop side panel takes to slide in or out (the CSS).
+const panelMotion = 320;
+
+// The last value that was not null, kept for `ms` after it becomes null:
+// what the side panel shows while it slides away.
+function useLatched<T>(value: T | null, ms: number) {
+  const [kept, setKept] = useState(value);
+  if (value !== null && value !== kept) setKept(value);
+  useEffect(() => {
+    if (value !== null) return;
+    const timer = setTimeout(() => setKept(null), ms);
+    return () => clearTimeout(timer);
+  }, [value, ms]);
+  return value ?? kept;
+}
 
 // Renders from local state once it exists; before that, from the streamed
 // first page, suspending (showing the fallback) until it arrives.
@@ -77,7 +95,6 @@ export function ContactsApp({
   initialForm?: FormState | null;
 }) {
   const t = useTranslations('Contacts');
-  const a = useTranslations('Auth');
   const router = useRouter();
   const locale = useLocale();
   // Offline, and online until the changes made offline are synced, the
@@ -106,6 +123,19 @@ export function ContactsApp({
   const [menuOpen, setMenuOpen] = useState(false);
   const [duplicates, setDuplicates] = useState<number>();
   const [form, setForm] = useState<FormState | null>(initialForm);
+  // Desktop: the list in pages (the phone layout scrolls on instead); pages
+  // beyond the ones the phone list has read are fetched on their own.
+  const [deskPage, setDeskPage] = useState(1);
+  const [deskSize, setDeskSize] = useState(10);
+  const [deskFetched, setDeskFetched] = useState<{
+    key: string;
+    page: ContactPage;
+  } | null>(null);
+  // The whole book's size (the list's own total follows the search).
+  const [bookTotal, setBookTotal] = useState<number>();
+  const [collapsed, toggleSidebar] = useSidebarCollapsed();
+  // The contact last chosen, for when its page is no longer the one shown.
+  const [chosen, setChosen] = useState<Contact | null>(null);
   // True when the form was opened in place (history entry pushed here).
   const pushed = useRef(false);
   const search = useRef<AbortController | null>(null);
@@ -113,12 +143,12 @@ export function ContactsApp({
   const firstQuery = useRef(true);
 
   const load = useCallback(
-    async (q: string, page: number, signal?: AbortSignal) => {
+    async (q: string, page: number, signal?: AbortSignal, size = pageSize) => {
       const { book, local, locale } = mode.current;
-      if (book && local) return book.page(q, page, pageSize, locale);
+      if (book && local) return book.page(q, page, size, locale);
       try {
         return await api<ContactPage>(
-          `contacts?${new URLSearchParams({ q, page: String(page), pageSize: String(pageSize) })}`,
+          `contacts?${new URLSearchParams({ q, page: String(page), pageSize: String(size) })}`,
           undefined,
           { signal },
         );
@@ -131,7 +161,7 @@ export function ContactsApp({
           !signal?.aborted &&
           (await serviceDown())
         )
-          return book.page(q, page, pageSize, locale);
+          return book.page(q, page, size, locale);
         throw error;
       }
     },
@@ -268,6 +298,7 @@ export function ContactsApp({
       try {
         setData(await load(query.trim(), 1, controller.signal));
         setShownQuery(query.trim());
+        setDeskPage(1);
         setFailed(false);
       } catch (error) {
         if (!controller.signal.aborted) setFailed(true);
@@ -318,6 +349,35 @@ export function ContactsApp({
     observer.observe(target);
     return () => observer.disconnect();
   }, [data, loadingMore, load, query]);
+
+  // Desktop pages past what the phone list has read come from the API.
+  const deskKey = `${shownQuery}|${deskPage}|${deskSize}`;
+  useEffect(() => {
+    if (!data) return;
+    const end = deskPage * deskSize;
+    if (end <= data.contacts.length) return;
+    if (data.contacts.length >= data.pagination.total) return;
+    const controller = new AbortController();
+    load(shownQuery, deskPage, controller.signal, deskSize).then(
+      (page) => setDeskFetched({ key: deskKey, page }),
+      () => {
+        if (!controller.signal.aborted) setFailed(true);
+      },
+    );
+    return () => controller.abort();
+  }, [data, deskPage, deskSize, deskKey, shownQuery, load]);
+
+  // Escape closes the desktop details (not the form, nor under a dialog).
+  useEffect(() => {
+    if (!selectedId || form) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (document.querySelector('dialog[open]')) return;
+      setSelectedId(null);
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selectedId, form]);
 
   const refreshDuplicates = useCallback(async () => {
     try {
@@ -392,6 +452,8 @@ export function ContactsApp({
   async function saved(contact: Contact) {
     closeForm();
     setSelectedId(contact.id);
+    // Desktop shows it beside the list, wherever it now falls.
+    setChosen(contact);
     setExpandedId(null);
     // Show the result at once, then re-read the current results so paging
     // and search stay exact.
@@ -525,7 +587,42 @@ export function ContactsApp({
     return () => clearTimeout(timer);
   }, []);
 
-  const selected = data?.contacts.find((c) => c.id === selectedId) ?? null;
+  if (data && !shownQuery && data.pagination.total !== bookTotal)
+    setBookTotal(data.pagination.total);
+  const selected = selectedId
+    ? (data?.contacts.find((c) => c.id === selectedId) ??
+      (deskFetched?.page.contacts.find((c) => c.id === selectedId) ||
+        (chosen?.id === selectedId ? chosen : null)))
+    : null;
+  // The desktop side panel: the form, else the chosen contact; while it
+  // slides away it keeps showing what it showed.
+  const keptForm = useLatched(form, panelMotion);
+  const keptContact = useLatched(selected, panelMotion);
+  const panelForm = form ?? (selected ? null : keptForm);
+  const panelContact = panelForm ? null : (selected ?? keptContact);
+  const panelOpen = Boolean(form || selected);
+  // The page of the desktop list, from the phone list's pages when it has
+  // read that far, else fetched.
+  const deskView = (source: ContactPage | null) => {
+    if (!source) return { pages: 1 };
+    const total = source.pagination.total;
+    const pages = Math.max(1, Math.ceil(total / deskSize));
+    const page = Math.min(deskPage, pages);
+    const start = (page - 1) * deskSize;
+    if (
+      start + deskSize <= source.contacts.length ||
+      source.contacts.length >= total
+    )
+      return {
+        contacts: source.contacts.slice(start, start + deskSize),
+        total,
+        pages,
+        page,
+      };
+    if (deskFetched?.key === deskKey)
+      return { contacts: deskFetched.page.contacts, total, pages, page };
+    return { total, pages, page };
+  };
   // Parts that need the first page wait for it behind their own skeleton;
   // the header and everything else render straight away.
   const loaded = (
@@ -566,18 +663,14 @@ export function ContactsApp({
   );
 
   return (
-    <div className={`contacts-page${form ? ' has-form' : ''}`}>
+    <div
+      className={`contacts-page contacts-home${form ? ' has-form' : ''}${collapsed ? ' sidebar-collapsed' : ''}`}
+    >
       <div className="contacts-decor" aria-hidden="true">
         <span className="contacts-circle" />
         <span className="contacts-mint" />
       </div>
       <header className={`contacts-header${headerStuck ? ' is-stuck' : ''}`}>
-        <Link href="/contacts" className="contacts-logo">
-          <span>
-            <Icon name="book" />
-          </span>
-          {a('brand')}
-        </Link>
         <form
           role="search"
           className="contacts-search"
@@ -612,29 +705,39 @@ export function ContactsApp({
           <UserAvatar user={user} />
           <Icon name="menu" />
         </button>
-        <div className="header-preferences">
-          <button
-            type="button"
-            className="account-button"
-            aria-label={t('account')}
-            aria-haspopup="dialog"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(true)}
-          >
-            <UserAvatar user={user} />
-            <span className="account-name">
-              <bdi>{user.firstName}</bdi>
-            </span>
-            <span className="account-divider" aria-hidden="true" />
-            <Icon name="menu" />
-          </button>
-        </div>
         <div className="contacts-title">
           <h1>{t('title')}</h1>
           {count}
         </div>
       </header>
-      <main className="contacts-main">
+      {loaded(
+        <DeskSidebar
+          collapsed={collapsed}
+          onToggle={toggleSidebar}
+          addLink={addLink}
+        />,
+        (page, first) => (
+          <DeskSidebar
+            total={
+              bookTotal ?? (shownQuery ? undefined : page?.pagination.total)
+            }
+            duplicates={duplicates ?? first}
+            trash={trashCount ?? page?.trashCount}
+            collapsed={collapsed}
+            onToggle={toggleSidebar}
+            addLink={addLink}
+          />
+        ),
+      )}
+      <DeskTopbar
+        query={query}
+        onQuery={setQuery}
+        user={user}
+        online={online}
+        menuOpen={menuOpen}
+        onMenu={() => setMenuOpen(true)}
+      />
+      <main className={`contacts-main${panelOpen ? ' panel-open' : ''}`}>
         <section className="contacts-column" aria-labelledby="contacts-title">
           <div className="contacts-title">
             <h1 id="contacts-title">{t('title')}</h1>
@@ -738,37 +841,70 @@ export function ContactsApp({
             )}
           </div>
         </section>
-        {form ? (
-          <aside className="contact-panel is-form">
-            <ContactForm
-              key={form.mode === 'edit' ? form.contact.id : 'new'}
-              mode={form.mode}
-              contact={form.mode === 'edit' ? form.contact : undefined}
-              book={book}
-              local={local}
-              onClose={closeForm}
-              onSaved={saved}
+        {loaded(null, (page) => {
+          const view = deskView(page);
+          return (
+            <DeskList
+              contacts={view.contacts}
+              total={view.total}
+              emptyBook={
+                page?.pagination.total === 0 && !shownQuery && !query.trim()
+              }
+              page={view.page ?? 1}
+              pages={view.pages}
+              size={deskSize}
+              selectedId={selectedId}
+              onSelect={(contact) => {
+                setChosen(contact);
+                setSelectedId(contact.id);
+              }}
+              onPage={(next) => {
+                setDeskPage(next);
+                document.querySelector('.desk-rows')?.scrollTo(0, 0);
+              }}
+              onSize={(next) => {
+                setDeskSize(next);
+                setDeskPage(1);
+              }}
+              addLink={addLink}
             />
-          </aside>
-        ) : (
-          loaded(
-            <aside className="contact-panel is-loading">
-              <div className="panel-decor" aria-hidden="true">
-                <span className="sphere sphere-1" />
-                <span className="sphere sphere-4" />
-              </div>
-              <span className="panel-spinner" />
-              <p aria-hidden="true">{t('loading')}</p>
-            </aside>,
-            () => (
-              <ContactPanel
-                contact={selected}
-                onEdit={(contact) => openForm({ mode: 'edit', contact })}
-                onDelete={setDeleting}
+          );
+        })}
+        {/* Desktop: the details (or the form) slide in beside the list and
+            out again; on a phone this wrapper is transparent and only the
+            form, a page of its own, shows. */}
+        <div
+          className={`desk-panel${panelOpen ? ' is-open' : ''}${panelForm ? ' is-form-view' : ''}`}
+          inert={!panelOpen}
+        >
+          <div className="desk-panel-inner">
+            {panelForm ? (
+              <aside
+                className={`contact-panel is-form${form ? '' : ' is-closing'}`}
+              >
+                <ContactForm
+                  key={panelForm.mode === 'edit' ? panelForm.contact.id : 'new'}
+                  mode={panelForm.mode}
+                  contact={
+                    panelForm.mode === 'edit' ? panelForm.contact : undefined
+                  }
+                  book={book}
+                  local={local}
+                  onClose={closeForm}
+                  onSaved={saved}
+                />
+              </aside>
+            ) : panelContact ? (
+              <ContactSheet
+                key={panelContact.id}
+                contact={panelContact}
+                onClose={() => setSelectedId(null)}
+                onEdit={() => openForm({ mode: 'edit', contact: panelContact })}
+                onDelete={() => setDeleting(panelContact)}
               />
-            ),
-          )
-        )}
+            ) : null}
+          </div>
+        </div>
       </main>
       {loaded(null, (page) =>
         failed || !page ? (

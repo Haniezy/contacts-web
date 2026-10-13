@@ -1,4 +1,16 @@
-import { expect, fixture, openMenu, test } from './fixtures';
+import {
+  addButton,
+  deleteChosen,
+  detailsHref,
+  editChosen,
+  expect,
+  expectCount,
+  fixture,
+  isDesk,
+  openMenu,
+  rows,
+  test,
+} from './fixtures';
 
 test.beforeEach(async ({ context, account }) => {
   fixture({
@@ -31,22 +43,58 @@ test.beforeEach(async ({ context, account }) => {
 
 test('list is grouped alphabetically, searchable, and rows open their actions', async ({
   page,
-  isMobile,
 }) => {
   await page.goto('/contacts');
-  await expect(page.locator('.count-chip').first()).toHaveText('۵ نفر');
-  await expect(page.locator('.letter-chip')).toHaveText(['آ', 'ب', 'س']);
+  await expectCount(page, '۵');
+  // Phones group the list by first letter; desktop lists it in pages.
+  if (!isDesk(page))
+    await expect(page.locator('.letter-chip')).toHaveText(['آ', 'ب', 'س']);
   const search = page.getByRole('searchbox', { name: 'جستجوی نام یا شماره' });
   await search.fill('سارا');
-  await expect(page.locator('.contact-row')).toHaveCount(2);
+  await expect(rows(page)).toHaveCount(2);
   await search.fill('۰۹۱۲۳۴۵');
-  await expect(page.locator('.contact-row')).toHaveCount(1);
+  await expect(rows(page)).toHaveCount(1);
   await search.fill('نیست');
-  await expect(page.getByText('مخاطبی پیدا نشد.')).toBeVisible();
+  await expect(
+    page.getByText('مخاطبی پیدا نشد.').filter({ visible: true }),
+  ).toBeVisible();
   await search.fill('');
-  await expect(page.locator('.contact-row')).toHaveCount(5);
+  await expect(rows(page)).toHaveCount(5);
 
   const toggle = page.getByRole('button', { name: 'بهار رضایی' });
+  if (isDesk(page)) {
+    // Desktop: the row opens the details beside the list.
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-current', 'true');
+    const sheet = page.locator('.desk-sheet');
+    await expect(
+      sheet.getByRole('heading', { name: 'بهار رضایی' }),
+    ).toBeVisible();
+    await expect(sheet.getByText('۱۵ مهر ۱۳۷۵')).toBeVisible();
+    await expect(sheet.getByText('۰۹۱۲ ۳۴۵ ۶۷۸۹')).toBeVisible();
+    await expect(sheet.getByText('پنجشنبه زنگ بزن')).toBeVisible();
+    await expect(sheet.getByRole('link', { name: 'تماس' })).toHaveAttribute(
+      'href',
+      'tel:09123456789',
+    );
+    await expect(sheet.getByRole('link', { name: 'پیامک' })).toHaveAttribute(
+      'href',
+      'sms:09123456789',
+    );
+    // Its close button and Escape both put it away.
+    await sheet.getByRole('button', { name: 'بستن جزئیات' }).click();
+    await expect(sheet).toHaveCount(0);
+    await expect(toggle).not.toHaveAttribute('aria-current');
+    // A contact without a reminder or birthday says so.
+    await page.getByRole('button', { name: 'آرش محمدی' }).click();
+    await expect(
+      sheet.getByRole('heading', { name: 'آرش محمدی' }),
+    ).toBeVisible();
+    await expect(sheet.locator('.sheet-note p')).toHaveText('—');
+    await page.keyboard.press('Escape');
+    await expect(sheet).toHaveCount(0);
+    return;
+  }
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -59,24 +107,14 @@ test('list is grouped alphabetically, searchable, and rows open their actions', 
     'href',
     'sms:09123456789',
   );
-  // Without the side panel, the reminder shows as a note under the actions.
+  // The reminder shows as a note under the actions.
   const note = row.locator('.row-reminder');
-  if (isMobile) {
-    await expect(note).toBeVisible();
-    await expect(note).toContainText('یادآوری');
-    await expect(note).toContainText('پنجشنبه زنگ بزن');
-    await expect(
-      page.getByRole('link', { name: 'جزئیات بهار رضایی' }),
-    ).toHaveAttribute('href', /\/contacts\/[0-9a-f-]{36}$/);
-  } else {
-    const panel = page.locator('.contact-panel');
-    await expect(
-      panel.getByRole('heading', { name: 'بهار رضایی' }),
-    ).toBeVisible();
-    await expect(panel.getByText('۱۵ مهر ۱۳۷۵')).toBeVisible();
-    await expect(panel.getByText('۰۹۱۲ ۳۴۵ ۶۷۸۹')).toBeVisible();
-    await expect(note).toBeHidden();
-  }
+  await expect(note).toBeVisible();
+  await expect(note).toContainText('یادآوری');
+  await expect(note).toContainText('پنجشنبه زنگ بزن');
+  await expect(
+    page.getByRole('link', { name: 'جزئیات بهار رضایی' }),
+  ).toHaveAttribute('href', /\/contacts\/[0-9a-f-]{36}$/);
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   // A contact without a reminder has no note.
@@ -106,12 +144,27 @@ test('mixed names: the page language script first, then the other, then #; numbe
   });
   await page.goto('/contacts');
   const chips = page.locator('.letter-chip');
-  await expect(chips).toHaveText(['آ', 'ب', 'س', 'ه\u200d', 'H', '#']);
-  // Same-named contacts are told apart by the number under the name.
+  // Desktop has no letter groups: the names in order (equal names by id).
+  const names = page.locator('.desk-row-name');
+  if (isDesk(page))
+    await expect(names).toHaveText([
+      'آرش محمدی',
+      'آیدا کریمی',
+      'بهار رضایی',
+      'سارا احمدی',
+      'سارا احمدی',
+      'هانیه',
+      'Hanie',
+      'Hanie',
+      /^(۱۲۳ تاکسی|#دفتر)$/,
+      /^(۱۲۳ تاکسی|#دفتر)$/,
+    ]);
+  else await expect(chips).toHaveText(['آ', 'ب', 'س', 'ه\u200d', 'H', '#']);
+  // Same-named contacts are told apart by their numbers.
   // (Equal names are ordered by id, so either may come first.)
-  const phones = page
-    .locator('.contact-row', { hasText: 'Hanie' })
-    .locator('.row-phone');
+  const phones = rows(page)
+    .filter({ hasText: 'Hanie' })
+    .locator(isDesk(page) ? '.desk-row-phone' : '.row-phone');
   await expect(phones).toHaveCount(2);
   expect((await phones.allTextContents()).sort()).toEqual([
     '۰۹۱۲ ۰۰۰ ۰۰۰۱',
@@ -121,7 +174,10 @@ test('mixed names: the page language script first, then the other, then #; numbe
     { name: 'contacts-locale', value: 'en', domain: '127.0.0.1', path: '/' },
   ]);
   await page.reload();
-  await expect(chips).toHaveText(['H', 'آ', 'ب', 'س', 'ه\u200d', '#']);
+  if (isDesk(page)) {
+    await expect(names.first()).toHaveText('Hanie');
+    await expect(names.nth(2)).toHaveText('آرش محمدی');
+  } else await expect(chips).toHaveText(['H', 'آ', 'ب', 'س', 'ه\u200d', '#']);
 });
 
 test('delete asks, then moves to the trash with undo; the trash restores, deletes for good and empties', async ({
@@ -134,20 +190,14 @@ test('delete asks, then moves to the trash with undo; the trash restores, delete
     exact: true,
   });
   const trashOpen = async () => {
-    await page
-      .locator('.contact-row.is-open')
-      .getByRole('button', { name: 'حذف' })
-      .click();
+    await deleteChosen(page);
     await confirm.click();
   };
 
   // It asks first (cancel keeps it), then the contact goes to the trash
   // and Undo brings it back.
   await page.getByRole('button', { name: /آرش محمدی/ }).click();
-  await page
-    .locator('.contact-row.is-open')
-    .getByRole('button', { name: 'حذف' })
-    .click();
+  await deleteChosen(page);
   const dialog = page.getByRole('dialog', { name: 'حذف «آرش محمدی»؟' });
   await expect(dialog.getByRole('button', { name: 'انصراف' })).toBeFocused();
   await dialog.getByRole('button', { name: 'انصراف' }).click();
@@ -157,10 +207,10 @@ test('delete asks, then moves to the trash with undo; the trash restores, delete
   await trashOpen();
   await expect(toast).toContainText('«آرش محمدی» به سطل زباله رفت');
   await expect(page.getByRole('button', { name: /آرش محمدی/ })).toHaveCount(0);
-  await expect(page.locator('.count-chip').first()).toHaveText('۴ نفر');
+  await expectCount(page, '۴');
   await toast.getByRole('button', { name: 'بازگردانی' }).click();
   await expect(page.getByRole('button', { name: /آرش محمدی/ })).toBeVisible();
-  await expect(page.locator('.count-chip').first()).toHaveText('۵ نفر');
+  await expectCount(page, '۵');
 
   // Two in the trash; the menu shows the count and leads there.
   for (const name of ['آرش محمدی', 'آیدا کریمی']) {
@@ -196,7 +246,7 @@ test('delete asks, then moves to the trash with undo; the trash restores, delete
 
   // Empty trash deletes everything in it for good.
   await page.goto('/contacts');
-  await expect(page.locator('.count-chip').first()).toHaveText('۴ نفر');
+  await expectCount(page, '۴');
   await expect(page.getByRole('button', { name: /آیدا کریمی/ })).toBeVisible();
   await page.getByRole('button', { name: /بهار رضایی/ }).click();
   await trashOpen();
@@ -212,25 +262,99 @@ test('delete asks, then moves to the trash with undo; the trash restores, delete
   await expect(page.getByText('سطل زباله خالیه.')).toBeVisible();
 });
 
-test('duplicates are counted in the menu and the banner above the list', async ({
+test('duplicates are counted in the menu and beside the list', async ({
   page,
-  isMobile,
 }) => {
   await page.goto('/contacts');
-  const banner = page.locator('.duplicates-banner');
-  await expect(banner).toContainText('۱ گروه تکراری پیدا شد');
-  await expect(banner).toHaveAttribute('href', '/contacts/duplicates');
-  // The empty panel no longer repeats the header's add button.
-  await expect(page.locator('.panel-empty a')).toHaveCount(0);
-  await page
-    .getByRole('button', { name: isMobile ? 'منو' : 'حساب کاربری' })
-    .click();
-  const menu = page.getByRole('dialog', { name: 'منو' });
+  if (isDesk(page)) {
+    // Desktop: the sidebar's duplicates entry, and no details until a
+    // contact is chosen.
+    const entry = page
+      .locator('.desk-sidebar')
+      .getByRole('link', { name: /مخاطبین تکراری/ });
+    await expect(entry).toContainText('۱');
+    await expect(entry).toHaveAttribute('href', '/contacts/duplicates');
+    await expect(page.locator('.desk-panel.is-open')).toHaveCount(0);
+  } else {
+    const banner = page.locator('.duplicates-banner');
+    await expect(banner).toContainText('۱ گروه تکراری پیدا شد');
+    await expect(banner).toHaveAttribute('href', '/contacts/duplicates');
+  }
+  const menu = await openMenu(page);
   await expect(
     menu.getByRole('link', { name: /ادغام تکراری‌ها/ }),
   ).toContainText('۱');
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
+});
+
+test('desktop: the list in pages, a sidebar that folds, and the details menu', async ({
+  page,
+  account,
+}) => {
+  test.skip(!isDesk(page), 'Phones and tablets scroll one list instead.');
+  fixture({
+    action: 'contacts',
+    email: account.email,
+    contacts: Array.from({ length: 8 }, (_, i) => ({
+      name: `مهسا ${'ابپتثجچح'[i]}`,
+      phone: `0913000000${i}`,
+    })),
+  });
+  await page.goto('/contacts');
+  await expectCount(page, '۱۳');
+  const pages = page.locator('.desk-pages span');
+  const previous = page.getByRole('button', { name: 'صفحه قبل' });
+  const next = page.getByRole('button', { name: 'صفحه بعد' });
+  await expect(rows(page)).toHaveCount(10);
+  await expect(pages).toHaveText('صفحه ۱ از ۲');
+  await expect(previous).toBeDisabled();
+  await next.click();
+  await expect(rows(page)).toHaveCount(3);
+  await expect(pages).toHaveText('صفحه ۲ از ۲');
+  await expect(next).toBeDisabled();
+  // A search starts again from its first page.
+  await page
+    .getByRole('searchbox', { name: 'جستجوی نام یا شماره' })
+    .fill('سارا');
+  await expect(rows(page)).toHaveCount(2);
+  await expect(pages).toHaveText('صفحه ۱ از ۱');
+  await page.getByRole('searchbox', { name: 'جستجوی نام یا شماره' }).fill('');
+  await expect(rows(page)).toHaveCount(10);
+  await page.getByRole('combobox', { name: 'نمایش' }).selectOption('20');
+  await expect(rows(page)).toHaveCount(13);
+  await expect(pages).toHaveText('صفحه ۱ از ۱');
+
+  // The sidebar folds to icons and stays folded.
+  const sidebar = page.locator('.desk-sidebar');
+  await page.getByRole('button', { name: 'جمع کردن منو' }).click();
+  await expect(sidebar).toHaveClass(/is-collapsed/);
+  await page.reload();
+  await expect(sidebar).toHaveClass(/is-collapsed/);
+  await page.getByRole('button', { name: 'باز کردن منو' }).click();
+  await expect(sidebar).not.toHaveClass(/is-collapsed/);
+
+  // The details' menu: Escape closes the menu only, then the details.
+  await page.getByRole('button', { name: 'بهار رضایی' }).click();
+  const sheet = page.locator('.desk-sheet');
+  await sheet.getByRole('button', { name: 'گزینه‌های بیشتر' }).click();
+  const menu = page.getByRole('menu');
+  await expect(menu.getByRole('menuitem')).toHaveText([
+    'ویرایش مخاطب',
+    'حذف مخاطب',
+  ]);
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(
+    sheet.getByRole('button', { name: 'گزینه‌های بیشتر' }),
+  ).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+  await page.getByRole('button', { name: 'بهار رضایی' }).click();
+  await sheet.getByRole('button', { name: 'گزینه‌های بیشتر' }).click();
+  await menu.getByRole('menuitem', { name: 'ویرایش مخاطب' }).click();
+  await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}\/edit$/);
+  await expect(page.getByLabel('نام و نام خانوادگی')).toHaveValue('بهار رضایی');
 });
 
 test('deleting through the BFF is owner-scoped and needs a trusted origin', async ({
@@ -253,16 +377,15 @@ test('deleting through the BFF is owner-scoped and needs a trusted origin', asyn
   expect(crossSite.status()).toBe(403);
 });
 
-test('one form creates and edits a contact', async ({ page, isMobile }) => {
+test('one form creates and edits a contact', async ({ page }) => {
   await page.goto('/contacts');
-  await page.locator('.contacts-add').click();
+  await addButton(page).click();
   await expect(page).toHaveURL(/\/contacts\/new$/);
   await expect(page.getByRole('heading', { name: 'مخاطب جدید' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'افزودن عکس' })).toBeVisible();
   // Mobile shows the form as a page; desktop keeps the list beside it.
-  await expect(page.locator('.contacts-add')).toBeVisible({
-    visible: !isMobile,
-  });
+  if (isDesk(page)) await expect(page.locator('.desk-list')).toBeVisible();
+  else await expect(addButton(page)).toBeHidden();
 
   await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
   await expect(
@@ -300,15 +423,12 @@ test('one form creates and edits a contact', async ({ page, isMobile }) => {
   await expect(birthday).toHaveValue('۱ فروردین ۱۳۷۰');
   await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
   await expect(page).toHaveURL(/\/contacts$/);
-  await expect(page.locator('.count-chip').first()).toHaveText('۶ نفر');
+  await expectCount(page, '۶');
   await expect(page.getByRole('button', { name: 'نگار صالحی' })).toBeVisible();
 
   await page.reload();
   await page.getByRole('button', { name: 'نگار صالحی' }).click();
-  await page
-    .locator('.contact-row.is-open')
-    .getByRole('link', { name: 'ویرایش' })
-    .click();
+  await editChosen(page);
   await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}\/edit$/);
   await expect(
     page.getByRole('heading', { name: 'ویرایش مخاطب' }),
@@ -319,33 +439,30 @@ test('one form creates and edits a contact', async ({ page, isMobile }) => {
   await page.getByLabel(/یادآوری/).fill('کتاب رو پس بده');
   await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
   await expect(page).toHaveURL(/\/contacts$/);
-  if (!isMobile)
+  // Desktop shows the saved contact beside the list.
+  if (isDesk(page))
     await expect(
-      page.locator('.contact-panel').getByText('کتاب رو پس بده'),
+      page.locator('.desk-sheet').getByText('کتاب رو پس بده'),
     ).toBeVisible();
 
   // A direct load of the edit address opens the same form with saved values.
   await page.getByRole('button', { name: 'نگار صالحی' }).click();
-  const edit = page
-    .locator('.contact-row.is-open')
-    .getByRole('link', { name: 'ویرایش' });
-  await page.goto((await edit.getAttribute('href'))!);
+  await editChosen(page);
+  await expect(page).toHaveURL(/\/edit$/);
+  await page.goto(page.url());
   await expect(page.getByLabel(/یادآوری/)).toHaveValue('کتاب رو پس بده');
-  await expect(page.locator('.count-chip').first()).toHaveText('۶ نفر');
+  await expectCount(page, '۶');
 });
 
-test('cancel, close and back leave without saving', async ({
-  page,
-  isMobile,
-}) => {
+test('cancel, close and back leave without saving', async ({ page }) => {
   await page.goto('/contacts');
-  await page.locator('.contacts-add').click();
+  await addButton(page).click();
   await page.getByLabel('نام و نام خانوادگی').fill('ذخیره نشه');
   await page.getByRole('button', { name: 'انصراف' }).click();
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(page.locator('.contact-form')).toHaveCount(0);
 
-  await page.locator('.contacts-add').click();
+  await addButton(page).click();
   await page.goBack();
   await expect(page).toHaveURL(/\/contacts$/);
   await expect(page.locator('.contact-form')).toHaveCount(0);
@@ -354,10 +471,13 @@ test('cancel, close and back leave without saving', async ({
 
   await page.goto('/contacts/new');
   await page
-    .getByRole('button', { name: isMobile ? 'بازگشت' : 'بستن' })
+    .getByRole('button', {
+      name: isDesk(page) ? 'بستن' : 'بازگشت',
+      exact: true,
+    })
     .click();
   await expect(page).toHaveURL(/\/contacts$/);
-  await expect(page.locator('.count-chip').first()).toHaveText('۵ نفر');
+  await expectCount(page, '۵');
   await expect(page.getByRole('button', { name: 'ذخیره نشه' })).toHaveCount(0);
 
   await page.goto('/contacts/00000000-0000-4000-8000-000000000000/edit');
@@ -370,16 +490,14 @@ test('the details page shows one owned contact and its actions', async ({
   page,
   context,
   account,
-  isMobile,
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/contacts');
-  const link = page.getByRole('link', { name: 'جزئیات بهار رضایی' });
-  const href = await link.getAttribute('href');
+  const href = await detailsHref(page, 'بهار رضایی');
   expect(href).toMatch(/\/contacts\/[0-9a-f-]{36}$/);
-  // Desktop keeps the avatar click on the list; the address still opens the page.
-  if (isMobile) await link.click();
-  else await page.goto(href!);
+  // Desktop shows details beside the list; the address still opens the page.
+  if (isDesk(page)) await page.goto(href);
+  else await page.getByRole('link', { name: 'جزئیات بهار رضایی' }).click();
 
   await expect(page).toHaveURL(/\/contacts\/[0-9a-f-]{36}$/);
   await expect(page.getByRole('heading', { name: 'بهار رضایی' })).toBeVisible();
@@ -470,7 +588,7 @@ test('the details page shows one owned contact and its actions', async ({
         sameSite: 'Lax',
       },
     ]);
-    await page.goto(href!);
+    await page.goto(href);
     await expect(
       page.getByRole('heading', { name: 'این صفحه پیدا نشد' }),
     ).toBeVisible();
@@ -498,7 +616,7 @@ test('the details page shows one owned contact and its actions', async ({
   ).toBeVisible();
 
   // Delete on its page asks, then sends it to the trash; the list offers Undo.
-  await page.goto(href!);
+  await page.goto(href);
   await page.getByRole('button', { name: 'حذف مخاطب' }).click();
   const dialog = page.getByRole('dialog', { name: 'حذف «بهار رضایی»؟' });
   await expect(dialog).toContainText('تا ۷ روز می‌تونی برش گردونی');
@@ -573,7 +691,7 @@ test('a number already in the book is named, and saving it asks first', async ({
   page,
 }) => {
   await page.goto('/contacts');
-  await page.locator('.contacts-add').click();
+  await addButton(page).click();
   const note = page.locator('.phone-match');
   const save = page.getByRole('button', { name: 'ذخیره مخاطب' });
   const confirm = page.getByRole('dialog', { name: 'این شماره تکراریه' });
@@ -612,10 +730,7 @@ test('a number already in the book is named, and saving it asks first', async ({
     .getByRole('button', { name: /سارا احمدی/ })
     .first()
     .click();
-  await page
-    .locator('.contact-row.is-open')
-    .getByRole('link', { name: 'ویرایش' })
-    .click();
+  await editChosen(page);
   await expect(note).toContainText('«سارا احمدی»');
   await page.getByLabel('نام و نام خانوادگی').fill('سارا احمدی‌نژاد');
   await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
