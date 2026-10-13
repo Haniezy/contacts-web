@@ -5529,11 +5529,11 @@ html:has(.merge-dialog[open]) {
 @media (min-width: 1024px) {
   .contacts-page.contacts-home {
     /* The contact form, shown in the side panel, keeps its scale units. */
-    --d: min(100vw / 1600, 1px);
-    --u: 1px;
-    --side-w: clamp(248px, 19.5vw, 300px);
-    --panel-w: clamp(360px, 31vw, 480px);
-    --panel-form-w: clamp(420px, 40vw, 600px);
+    --d: min(100vw / 1600, 0.85px);
+    --u: 0.85px;
+    --side-w: clamp(220px, 16vw, 264px);
+    --panel-w: clamp(320px, 27vw, 410px);
+    --panel-form-w: clamp(380px, 36vw, 520px);
     /* The page's colours as the owner's designs show them (measured from
        the two images, 21 Mehr 1405): the palette's hues in the designs'
        own shades. */
@@ -5560,7 +5560,7 @@ html:has(.merge-dialog[open]) {
     --logo: var(--primary);
     --sprig: var(--primary);
     --nav-ink: var(--ink);
-    /* The design's grey, darkened to 3.8:1 for the 22px title. */
+    /* The design's grey, darkened to 3.8:1 for the list title. */
     --count: #8f7c75;
     /* The design's muted grey-brown, deep enough for small text on peach. */
     --ink-muted: #66524c;
@@ -5609,7 +5609,7 @@ html:has(.merge-dialog[open]) {
     --online: #6f8f60;
   }
   .contacts-home.sidebar-collapsed {
-    --side-w: 92px;
+    --side-w: 76px;
   }
   .contacts-home .contacts-decor,
   .contacts-header,
@@ -5623,9 +5623,9 @@ html:has(.merge-dialog[open]) {
     grid-area: side;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     min-height: 0;
-    padding: 22px 18px 26px;
+    padding: 18px 14px 20px;
     overflow: hidden auto;
     border-inline-end: 1px solid var(--line);
     background: var(--side);
@@ -5636,35 +5636,39 @@ html:has(.merge-dialog[open]) {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    min-height: 52px;
-    padding-inline: 8px 2px;
+    min-height: 44px;
+    padding-inline: 6px 0;
   }
   .desk-logo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
     color: var(--ink);
-    font-size: 24px;
+    font-size: 19px;
     font-weight: 700;
     white-space: nowrap;
   }
   .desk-logo svg {
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     color: var(--logo);
   }
   .desk-collapse {
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     background: none;
     color: var(--ink-muted);
+  }
+  .desk-collapse svg {
+    width: 20px;
+    height: 20px;
   }
   .desk-collapse:hover {
     background: var(--soft);
@@ -5672,27 +5676,27 @@ html:has(.merge-dialog[open]) {
   .desk-card {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 12px;
+    gap: 10px;
+    padding: 8px;
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: 18px;
     background: var(--surface);
   }
   .desk-nav {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
   }
   .desk-nav-item {
     display: flex;
     align-items: center;
-    gap: 14px;
-    min-height: 54px;
-    padding-inline: 14px;
+    gap: 10px;
+    min-height: 42px;
+    padding-inline: 12px;
     border: 1px solid transparent;
-    border-radius: 16px;
+    border-radius: 12px;
     color: var(--nav-ink);
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 500;
     transition:
       background 200ms ease,
@@ -5709,8 +5713,8 @@ html:has(.merge-dialog[open]) {
   }
   .desk-nav-item svg {
     flex-shrink: 0;
-    width: 26px;
-    height: 26px;
+    width: 20px;
+    height: 20px;
     color: var(--primary-strong);
   }
   .desk-label {
@@ -5724,26 +5728,26 @@ html:has(.merge-dialog[open]) {
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    min-width: 34px;
-    height: 30px;
-    padding-inline: 10px;
+    min-width: 26px;
+    height: 22px;
+    padding-inline: 7px;
     border-radius: 999px;
     background: var(--badge);
     color: var(--on-badge);
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 700;
   }
   .desk-add {
-    gap: 10px;
-    min-height: 58px;
-    padding-inline: 16px;
-    border-radius: 18px;
-    font-size: 18px;
+    gap: 8px;
+    min-height: 44px;
+    padding-inline: 14px;
+    border-radius: 14px;
+    font-size: 15px;
   }
   .desk-add svg {
     flex-shrink: 0;
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
   }
   .desk-add .desk-label {
     flex: 0 1 auto;
@@ -5758,7 +5762,7 @@ html:has(.merge-dialog[open]) {
     text-align: center;
   }
   .desk-art svg {
-    width: 190px;
+    width: 150px;
     max-width: 100%;
     opacity: 0.85;
   }
@@ -5766,27 +5770,28 @@ html:has(.merge-dialog[open]) {
     transform: scaleX(-1);
   }
   .desk-art figcaption {
-    max-width: 210px;
+    max-width: 180px;
     color: var(--ink-muted);
-    font-size: 15px;
+    font-size: 13px;
+    text-wrap: balance;
     line-height: 1.8;
   }
   /* Narrowed: icons only; names stay for screen readers and tooltips. */
   /* A narrower sidebar on smaller screens: the name still fits. */
   @media (max-width: 1399px) {
     .desk-sidebar {
-      padding-inline: 14px;
+      padding-inline: 12px;
     }
     .desk-brand {
       padding-inline: 4px 0;
     }
     .desk-logo {
-      gap: 10px;
-      font-size: 22px;
+      gap: 8px;
+      font-size: 18px;
     }
     .desk-logo svg {
-      width: 32px;
-      height: 32px;
+      width: 26px;
+      height: 26px;
     }
   }
   .is-collapsed .desk-brand {
@@ -5801,7 +5806,7 @@ html:has(.merge-dialog[open]) {
     clip-path: inset(50%);
   }
   .is-collapsed .desk-card {
-    padding: 8px;
+    padding: 6px;
   }
   .is-collapsed .desk-nav-item {
     position: relative;
@@ -5812,10 +5817,10 @@ html:has(.merge-dialog[open]) {
     position: absolute;
     top: 2px;
     inset-inline-end: 0;
-    min-width: 22px;
-    height: 20px;
-    padding-inline: 5px;
-    font-size: 11px;
+    min-width: 18px;
+    height: 16px;
+    padding-inline: 4px;
+    font-size: 10px;
   }
   .is-collapsed .desk-add {
     padding: 0;
@@ -5830,9 +5835,9 @@ html:has(.merge-dialog[open]) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 24px;
-    min-height: 96px;
-    padding-inline: 24px;
+    gap: 20px;
+    min-height: 72px;
+    padding-inline: 20px;
     border-block-end: 1px solid var(--line);
     background: var(--bar);
   }
@@ -5840,11 +5845,11 @@ html:has(.merge-dialog[open]) {
     display: flex;
     flex: 0 1 560px;
     align-items: center;
-    gap: 12px;
-    height: 54px;
-    padding-inline: 20px;
+    gap: 10px;
+    height: 42px;
+    padding-inline: 14px;
     border: 1px solid var(--field-line);
-    border-radius: 18px;
+    border-radius: 14px;
     background: var(--field);
     transition: border-color 200ms ease;
   }
@@ -5853,8 +5858,8 @@ html:has(.merge-dialog[open]) {
   }
   .desk-search svg {
     flex-shrink: 0;
-    width: 24px;
-    height: 24px;
+    width: 19px;
+    height: 19px;
     color: var(--ink-muted);
   }
   .desk-search input {
@@ -5864,7 +5869,7 @@ html:has(.merge-dialog[open]) {
     background: none;
     color: var(--ink);
     font: inherit;
-    font-size: 16px;
+    font-size: 14px;
     outline: none;
   }
   .desk-search input::placeholder {
@@ -5873,19 +5878,19 @@ html:has(.merge-dialog[open]) {
   .desk-controls {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 14px;
   }
   .theme-buttons {
     display: flex;
-    gap: 6px;
+    gap: 4px;
   }
   .theme-buttons button {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 10px;
     background: none;
     color: var(--primary-strong);
     transition:
@@ -5899,19 +5904,19 @@ html:has(.merge-dialog[open]) {
     color: var(--accent);
   }
   .theme-buttons svg {
-    width: 30px;
-    height: 30px;
+    width: 21px;
+    height: 21px;
   }
   .desk-divider {
     width: 1px;
-    height: 46px;
+    height: 32px;
     background: var(--line);
   }
   .desk-user {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 4px;
+    gap: 10px;
+    padding: 3px;
     border: 0;
     border-radius: 999px;
     background: none;
@@ -5923,16 +5928,16 @@ html:has(.merge-dialog[open]) {
     display: block;
   }
   .desk-user .user-avatar {
-    width: 58px;
-    height: 58px;
+    width: 42px;
+    height: 42px;
     box-shadow: none;
   }
   .desk-presence {
     position: absolute;
-    bottom: 2px;
-    inset-inline-start: 2px;
-    width: 14px;
-    height: 14px;
+    bottom: 1px;
+    inset-inline-start: 1px;
+    width: 11px;
+    height: 11px;
     border: 2px solid var(--bar);
     border-radius: 50%;
     background: var(--hint);
@@ -5944,22 +5949,22 @@ html:has(.merge-dialog[open]) {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-width: 150px;
+    max-width: 140px;
   }
   .desk-user-name {
     overflow: hidden;
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .desk-user-status {
     color: var(--ink-muted);
-    font-size: 14px;
+    font-size: 12px;
   }
   .desk-user > svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     color: var(--ink-muted);
   }
 
@@ -5970,14 +5975,14 @@ html:has(.merge-dialog[open]) {
     grid-template-columns: minmax(0, 1fr) 0px;
     column-gap: 0;
     min-height: 0;
-    padding: 20px 24px 24px;
+    padding: 16px 20px 20px;
     transition:
       grid-template-columns 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
       column-gap 320ms ease;
   }
   .contacts-main.panel-open {
     grid-template-columns: minmax(0, 1fr) var(--panel-w);
-    column-gap: 20px;
+    column-gap: 16px;
   }
   .contacts-main.panel-open:has(.desk-panel.is-form-view) {
     grid-template-columns: minmax(0, 1fr) var(--panel-form-w);
@@ -5988,19 +5993,20 @@ html:has(.merge-dialog[open]) {
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    padding: 20px;
+    padding: 16px;
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: 20px;
     background: var(--surface);
   }
   .desk-list-head {
     display: flex;
     align-items: center;
-    min-height: 46px;
-    padding-inline: 10px;
+    min-height: 36px;
+    padding-inline: 8px;
   }
   .desk-list-head h1 {
-    font-size: 22px;
+    /* Large text (bold, over 18.66px), so the grey count may be 3:1. */
+    font-size: 19px;
     font-weight: 700;
   }
   .desk-count {
@@ -6009,7 +6015,7 @@ html:has(.merge-dialog[open]) {
   .desk-rows {
     flex: 1;
     min-height: 0;
-    margin-block: 14px;
+    margin-block: 10px;
     overflow-y: auto;
     scrollbar-color: var(--soft) transparent;
     scrollbar-width: thin;
@@ -6017,19 +6023,19 @@ html:has(.merge-dialog[open]) {
   .desk-rows ul {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   .desk-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     width: 100%;
-    min-height: 76px;
-    padding-block: 8px;
-    padding-inline: 12px 20px;
+    min-height: 60px;
+    padding-block: 6px;
+    padding-inline: 10px 16px;
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: 14px;
     background: var(--row);
     color: var(--ink);
     text-align: start;
@@ -6045,26 +6051,26 @@ html:has(.merge-dialog[open]) {
     background: var(--pick);
   }
   .desk-row .avatar {
-    width: 56px;
-    height: 56px;
-    font-size: 20px;
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
   }
   .desk-row-name {
     overflow: hidden;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .desk-row-phone {
     color: var(--ink);
-    font-size: 17px;
+    font-size: 14px;
     letter-spacing: 0.02em;
     white-space: nowrap;
   }
   .desk-row-chevron {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
     color: var(--ink-muted);
     transform: rotate(-90deg);
   }
@@ -6081,33 +6087,34 @@ html:has(.merge-dialog[open]) {
     }
   }
   .desk-empty {
-    padding: 40px 12px;
+    padding: 32px 12px;
     color: var(--ink-muted);
+    font-size: 14px;
     text-align: center;
   }
   .desk-skeleton {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   .desk-row-skeleton {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 10px;
-    height: 76px;
-    padding-inline: 88px 20px;
+    gap: 8px;
+    height: 60px;
+    padding-inline: 70px 16px;
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: 14px;
     background: var(--row);
   }
   .desk-row-skeleton :first-child {
-    width: 160px;
-    height: 14px;
+    width: 130px;
+    height: 12px;
   }
   .desk-row-skeleton :last-child {
-    width: 110px;
-    height: 10px;
+    width: 90px;
+    height: 9px;
   }
   .desk-blank {
     display: flex;
@@ -6119,24 +6126,25 @@ html:has(.merge-dialog[open]) {
     text-align: center;
   }
   .desk-blank h2 {
-    margin-block-start: 20px;
-    font-size: 22px;
+    margin-block-start: 16px;
+    font-size: 19px;
     font-weight: 700;
   }
   .desk-blank p {
-    max-width: 340px;
+    max-width: 300px;
+    font-size: 14px;
     margin-block-start: 8px;
     color: var(--ink-muted);
     line-height: 1.9;
   }
   .desk-blank .blank-add {
-    margin-block-start: 24px;
+    margin-block-start: 20px;
   }
   .desk-pager {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
     padding-inline: 4px;
   }
   .desk-size {
@@ -6144,17 +6152,17 @@ html:has(.merge-dialog[open]) {
     display: flex;
     align-items: center;
     gap: 6px;
-    height: 46px;
-    padding-inline: 16px 12px;
+    height: 38px;
+    padding-inline: 12px 10px;
     border: 1px solid var(--control-line);
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--control);
     color: var(--ink-muted);
-    font-size: 15px;
+    font-size: 13px;
   }
   .desk-size select {
     appearance: none;
-    padding-inline-end: 24px;
+    padding-inline-end: 20px;
     border: 0;
     background: none;
     color: var(--ink);
@@ -6168,23 +6176,23 @@ html:has(.merge-dialog[open]) {
   }
   .desk-size svg {
     position: absolute;
-    inset-inline-end: 12px;
-    width: 18px;
-    height: 18px;
+    inset-inline-end: 10px;
+    width: 16px;
+    height: 16px;
     pointer-events: none;
   }
   .desk-pages {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     color: var(--ink-muted);
-    font-size: 15px;
+    font-size: 13px;
   }
   .desk-pages button {
     display: grid;
     place-items: center;
-    width: 46px;
-    height: 46px;
+    width: 36px;
+    height: 36px;
     border: 1px solid var(--control-line);
     border-radius: 50%;
     background: var(--control);
@@ -6194,8 +6202,8 @@ html:has(.merge-dialog[open]) {
     opacity: 0.4;
   }
   .desk-pages svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
   .desk-pages span {
     white-space: nowrap;
@@ -6215,12 +6223,12 @@ html:has(.merge-dialog[open]) {
       white-space: nowrap;
     }
     .desk-pages {
-      gap: 8px;
-      font-size: 14px;
+      gap: 6px;
+      font-size: 12.5px;
     }
     .desk-pages button {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
     }
   }
   /* Previous points back (to the start side), next onwards. */
@@ -6276,20 +6284,20 @@ html:has(.merge-dialog[open]) {
     min-height: 0;
     overflow: hidden auto;
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: 20px;
     background: var(--surface);
     scrollbar-width: thin;
   }
   .desk-sheet {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 14px;
     flex: 1;
     min-height: 0;
-    padding: 18px 22px 22px;
+    padding: 14px 18px 18px;
     overflow-y: auto;
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: 20px;
     background: var(--surface);
     scrollbar-color: var(--soft) transparent;
     scrollbar-width: thin;
@@ -6305,10 +6313,10 @@ html:has(.merge-dialog[open]) {
   .copy-icon {
     display: grid;
     place-items: center;
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
     border: 0;
-    border-radius: 12px;
+    border-radius: 10px;
     background: none;
     color: var(--ink-muted);
   }
@@ -6321,8 +6329,8 @@ html:has(.merge-dialog[open]) {
   }
   .sheet-kebab svg,
   .sheet-close svg {
-    width: 26px;
-    height: 26px;
+    width: 21px;
+    height: 21px;
   }
   /* The close arrow points out, towards the panel's outer edge. */
   [dir='rtl'] .sheet-close svg {
@@ -6338,33 +6346,33 @@ html:has(.merge-dialog[open]) {
     position: relative;
   }
   .sheet-photo .avatar-xl {
-    width: 184px;
-    height: 184px;
-    font-size: 64px;
+    width: 136px;
+    height: 136px;
+    font-size: 48px;
     box-shadow:
-      0 0 0 4px var(--soft),
-      0 18px 36px color-mix(in srgb, var(--shade) 18%, transparent);
+      0 0 0 3px var(--soft),
+      0 14px 28px color-mix(in srgb, var(--shade) 18%, transparent);
   }
   .sheet-edit {
     position: absolute;
-    bottom: 6px;
-    inset-inline-start: 4px;
+    bottom: 4px;
+    inset-inline-start: 2px;
     display: grid;
     place-items: center;
-    width: 46px;
-    height: 46px;
+    width: 36px;
+    height: 36px;
     border: 3px solid var(--surface);
     border-radius: 50%;
     background: var(--primary);
     color: var(--on-primary);
   }
   .sheet-edit svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
   .sheet-hero h2 {
-    margin-block-start: 16px;
-    font-size: 28px;
+    margin-block-start: 12px;
+    font-size: 21px;
     font-weight: 700;
     line-height: 1.5;
     overflow-wrap: anywhere;
@@ -6372,15 +6380,15 @@ html:has(.merge-dialog[open]) {
   .sheet-actions {
     display: flex;
     justify-content: center;
-    gap: 22px;
-    padding-block-end: 26px;
+    gap: 16px;
+    padding-block-end: 22px;
   }
   .sheet-actions .action {
     position: relative;
     display: grid;
     place-items: center;
-    width: 62px;
-    height: 62px;
+    width: 48px;
+    height: 48px;
     border: 0;
     border-radius: 50%;
     background: var(--soft);
@@ -6393,15 +6401,15 @@ html:has(.merge-dialog[open]) {
     box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 30%, transparent);
   }
   .sheet-actions .action svg {
-    width: 26px;
-    height: 26px;
+    width: 21px;
+    height: 21px;
   }
   .sheet-actions .action-label {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + 6px);
     left: 50%;
     color: var(--ink);
-    font-size: 15px;
+    font-size: 13px;
     white-space: nowrap;
     transform: translateX(-50%);
   }
@@ -6415,10 +6423,10 @@ html:has(.merge-dialog[open]) {
     inset-inline-start: 0;
     display: flex;
     flex-direction: column;
-    min-width: 190px;
-    padding: 6px;
+    min-width: 170px;
+    padding: 5px;
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: 14px;
     background: var(--surface);
     box-shadow: 0 18px 40px color-mix(in srgb, var(--shade) 18%, transparent);
     animation: dialog-in 160ms ease-out;
@@ -6430,15 +6438,15 @@ html:has(.merge-dialog[open]) {
   .more-list button {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    padding-inline: 12px;
+    gap: 8px;
+    min-height: 38px;
+    padding-inline: 10px;
     border: 0;
-    border-radius: 12px;
+    border-radius: 10px;
     background: none;
     color: var(--ink);
     font: inherit;
-    font-size: 15px;
+    font-size: 14px;
     text-align: start;
   }
   .more-list button:hover,
@@ -6446,17 +6454,17 @@ html:has(.merge-dialog[open]) {
     background: var(--soft);
   }
   .more-list svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     color: var(--primary-strong);
   }
   .sheet-info {
     display: flex;
     flex-direction: column;
     margin: 0;
-    padding: 4px 16px;
+    padding: 2px 14px;
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: 16px;
     background: var(--well);
   }
   .sheet-info > div {
@@ -6464,40 +6472,40 @@ html:has(.merge-dialog[open]) {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: 'icon label copy' 'icon value copy';
     align-items: center;
-    column-gap: 16px;
-    min-height: 74px;
-    padding-block: 10px;
+    column-gap: 12px;
+    min-height: 58px;
+    padding-block: 8px;
   }
   .sheet-info > div + div {
     border-block-start: 1px solid var(--line);
   }
   .sheet-info > div > svg {
     grid-area: icon;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     color: var(--primary-strong);
   }
   .sheet-info-label {
     grid-area: label;
     color: var(--ink-muted);
-    font-size: 14px;
+    font-size: 12px;
   }
   .sheet-info-value {
     grid-area: value;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 500;
   }
   .sheet-info .copy-icon {
     grid-area: copy;
   }
   .copy-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 19px;
+    height: 19px;
   }
   .sheet-note {
-    padding: 14px 16px 16px;
+    padding: 12px 14px 14px;
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: 16px;
     background: var(--well);
   }
   .sheet-note-head {
@@ -6506,22 +6514,22 @@ html:has(.merge-dialog[open]) {
     justify-content: space-between;
   }
   .sheet-note h3 {
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
   }
   .sheet-note-edit svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
   .sheet-note p {
-    margin-block-start: 10px;
-    padding: 12px 14px;
+    margin-block-start: 8px;
+    padding: 10px 12px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--note);
     color: var(--ink);
-    font-size: 15px;
-    line-height: 1.9;
+    font-size: 14px;
+    line-height: 1.8;
     white-space: pre-line;
     overflow-wrap: anywhere;
   }
@@ -6529,25 +6537,25 @@ html:has(.merge-dialog[open]) {
   /* A short screen: a smaller photo, so the reminder fits too. */
   @media (max-height: 900px) {
     .desk-sheet {
-      gap: 14px;
+      gap: 12px;
     }
     .sheet-photo .avatar-xl {
-      width: 132px;
-      height: 132px;
-      font-size: 48px;
+      width: 108px;
+      height: 108px;
+      font-size: 40px;
     }
     .sheet-edit {
       bottom: 0;
       inset-inline-start: 0;
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
     }
     .sheet-hero h2 {
-      margin-block-start: 10px;
-      font-size: 24px;
+      margin-block-start: 8px;
+      font-size: 19px;
     }
     .sheet-info > div {
-      min-height: 64px;
+      min-height: 52px;
     }
   }
 
@@ -6555,11 +6563,11 @@ html:has(.merge-dialog[open]) {
   .account-menu,
   [dir='rtl'] .account-menu {
     inset-inline: auto 24px;
-    inset-block: 92px auto;
+    inset-block: 76px auto;
   }
   .error-toast {
     position: fixed;
-    top: 112px;
+    top: 92px;
     inset-inline: calc(var(--side-w) + 48px) 48px;
     max-width: 560px;
     margin-inline: auto;

@@ -134,7 +134,9 @@ export function DeskSidebar({
           <path d="M148 22c10 6 13 17 9 27-10-6-13-17-9-27Zm0 0 9 27" />
         </svg>
         <figcaption>
-          {t('slogan')} <span className="desk-heart">♡</span>
+          {t('slogan')}
+          {'\u00a0'}
+          <span className="desk-heart">♡</span>
         </figcaption>
       </figure>
     </aside>
