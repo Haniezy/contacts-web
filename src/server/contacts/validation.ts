@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { tagColors } from '../../lib/contacts';
 
 export const digits = (value: string) =>
   value.replace(/[۰-۹٠-٩]/g, (char) =>
@@ -42,11 +43,21 @@ const reminder = z
   .nullable()
   .optional();
 export const idSchema = z.uuid().transform((value) => value.toLowerCase());
+// The tags a contact carries, all of them (an edit replaces the set). IDs
+// of tags since deleted are dropped by the API, not refused, so an edit
+// made offline still goes through.
+export const tagIds = z
+  .array(idSchema)
+  .max(30)
+  .transform((ids) => [...new Set(ids)]);
 const fields = z.object({ name, phone, birthday, reminder }).strict();
+const contactFields = fields.extend({ tagIds: tagIds.optional() }).strict();
 // A new contact may bring its own ID: the app makes one up front, so a
 // save made offline (or retried after a lost reply) is created only once.
-export const createBody = fields.extend({ id: idSchema.optional() }).strict();
-export const patchBody = fields
+export const createBody = contactFields
+  .extend({ id: idSchema.optional() })
+  .strict();
+export const patchBody = contactFields
   .partial()
   .refine((v) => Object.keys(v).length > 0);
 const page = z
@@ -69,6 +80,8 @@ export const listQuery = z
       .max(200)
       .refine((value) => !value.includes('\0'))
       .default(''),
+    // Only contacts carrying this tag.
+    tag: idSchema.optional(),
     page,
     pageSize,
   })
@@ -109,6 +122,23 @@ export const ignoreBody = z
   })
   .strict()
   .refine((v) => new Set(v.contactIds).size === v.contactIds.length);
+export const tagLimit = 30;
+const tagName = z
+  .string()
+  .trim()
+  .min(1)
+  .max(24)
+  .refine((v) =>
+    [...v].every(
+      (char) => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127,
+    ),
+  );
+export const tagBody = z
+  .object({ name: tagName, color: z.enum(tagColors) })
+  .strict();
+export const tagPatch = tagBody
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
 export const contactSelect = {
   id: true,
   name: true,
@@ -120,4 +150,5 @@ export const contactSelect = {
   shareToken: true,
   createdAt: true,
   updatedAt: true,
+  tags: { select: { tagId: true } },
 } as const;

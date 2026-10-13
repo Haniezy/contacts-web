@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import sharp from 'sharp';
-import { expect, fixture, openMenu, test } from './fixtures';
+import { expect, fixture, isDesk, openMenu, test } from './fixtures';
 
 test.beforeEach(async ({ context, account }) => {
   await context.addCookies([
@@ -39,7 +39,12 @@ test('the menu opens the profile, whose save changes only the name', async ({
   await page.getByLabel('نام و نام خانوادگی').fill('نگار  صالحی');
   await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
   await expect(page).toHaveURL(/\/contacts$/);
-  await expect((await openMenu(page)).getByText('نگار صالحی')).toBeVisible();
+  // The drawer greets with the full name; the desktop top bar shows the
+  // first name.
+  if (isDesk(page))
+    await expect(page.locator('.desk-user-name')).toHaveText('نگار');
+  else
+    await expect((await openMenu(page)).getByText('نگار صالحی')).toBeVisible();
   expect(fixture({ action: 'names', email: account.email })).toEqual({
     firstName: 'نگار',
     lastName: 'صالحی',

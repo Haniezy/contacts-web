@@ -82,6 +82,14 @@ beforeEach(async () => {
   await db.contact.deleteMany({
     where: { userId: { in: users.map((u) => u.id) } },
   });
+  // Each test starts before the default tags were made.
+  await db.tag.deleteMany({
+    where: { userId: { in: users.map((u) => u.id) } },
+  });
+  await db.user.updateMany({
+    where: { id: { in: users.map((u) => u.id) } },
+    data: { tagsSeeded: false },
+  });
   upload.mockReset().mockImplementation(async (_image, userId) => {
     const key = `contacts/${userId}/${randomUUID()}`;
     return {
@@ -116,6 +124,10 @@ test('every route requires a valid full session', async () => {
     ['delete', `/${id}`],
     ['post', `/${id}/photo`],
     ['delete', `/${id}/photo`],
+    ['get', '/tags'],
+    ['post', '/tags'],
+    ['patch', `/tags/${id}`],
+    ['delete', `/tags/${id}`],
   ]) {
     await request(app.listener)
       [method](`/api/contacts${path}`)
@@ -856,4 +868,171 @@ test('the trash hides a contact everywhere, restores it, and deletes for good', 
   });
   expect((await api('get').expect(200)).body.trashCount).toBe(0);
   expect(await db.contact.findUnique({ where: { id: kept.id } })).toBeNull();
+});
+
+const tagsOf = async (user = 0) =>
+  (await api('get', '/tags', user).expect(200)).body.tags;
+
+test('the default tags come once, in the page language, and stay deleted', async () => {
+  const tags = await tagsOf();
+  expect(tags.map((t) => [t.name, t.color, t.count])).toEqual([
+    ['خانواده', 'coral', 0],
+    ['دوستان', 'sage', 0],
+    ['همکاران', 'amber', 0],
+    ['دانشگاه', 'lilac', 0],
+    ['سایر', 'sand', 0],
+  ]);
+  // Asking again makes none; deleted, they do not come back.
+  expect(await tagsOf()).toEqual(tags);
+  for (const tag of tags)
+    await api('delete', `/tags/${tag.id}`)
+      .set('Origin', config.origin)
+      .expect(204);
+  expect(await tagsOf()).toEqual([]);
+  // An account first opened in English gets them in English.
+  const english = (
+    await api('get', '/tags', 1)
+      .set('Cookie', `${cookies[1]}; contacts-locale=en`)
+      .expect(200)
+  ).body.tags;
+  expect(english.map((t) => t.name)).toEqual([
+    'Family',
+    'Friends',
+    'Colleagues',
+    'University',
+    'Other',
+  ]);
+});
+
+test('tags are made, renamed, recoloured and deleted; names are unique per user; at most 30', async () => {
+  await tagsOf();
+  const made = await api('post', '/tags')
+    .send({ name: '  باشگاه ', color: 'teal' })
+    .expect(201);
+  expect(made.body.tag).toMatchObject({
+    name: 'باشگاه',
+    color: 'teal',
+    count: 0,
+  });
+  const id = made.body.tag.id;
+  // The same name, however spaced or cased, is taken.
+  await api('post', '/tags')
+    .send({ name: 'باشگاه', color: 'rose' })
+    .expect(409, { error: 'TAG_EXISTS' });
+  await api('post', '/tags')
+    .send({ name: 'FAMILY', color: 'rose' })
+    .expect(201);
+  await api('post', '/tags')
+    .send({ name: 'family ', color: 'rose' })
+    .expect(409);
+  for (const body of [
+    { name: '', color: 'teal' },
+    { name: 'x'.repeat(25), color: 'teal' },
+    { name: 'ok', color: '#ff0000' },
+    { name: 'ok' },
+    { name: 'ok', color: 'teal', userId: users[1].id },
+  ])
+    await api('post', '/tags').send(body).expect(400);
+  const renamed = await api('patch', `/tags/${id}`)
+    .send({ name: 'ورزش', color: 'clay' })
+    .expect(200);
+  expect(renamed.body.tag).toMatchObject({ id, name: 'ورزش', color: 'clay' });
+  await api('patch', `/tags/${id}`)
+    .send({ name: 'خانواده' })
+    .expect(409, { error: 'TAG_EXISTS' });
+  await api('patch', `/tags/${id}`).send({ name: 'ورزش' }).expect(200);
+  await api('patch', `/tags/${id}`).send({}).expect(400);
+  // Another user cannot see, change or delete it.
+  expect((await tagsOf(1)).some((t) => t.id === id)).toBe(false);
+  await api('patch', `/tags/${id}`, 1)
+    .send({ name: 'x' })
+    .expect(404, { error: 'TAG_NOT_FOUND' });
+  await api('delete', `/tags/${id}`, 1).expect(404);
+  // Thirty at most (five defaults and the two made above so far).
+  for (let i = (await tagsOf()).length; i < 30; i++)
+    await api('post', '/tags')
+      .send({ name: `برچسب ${i}`, color: 'sand' })
+      .expect(201);
+  await api('post', '/tags')
+    .send({ name: 'یکی دیگه', color: 'sand' })
+    .expect(409, { error: 'TAG_LIMIT' });
+});
+
+test('contacts carry tags: saved, replaced, filtered, counted, kept in the trash and merged', async () => {
+  const [family, friends, work] = await tagsOf();
+  const [foreign] = await tagsOf(1);
+  // Unknown and other users' tag IDs are left out, not refused.
+  const contact = await add({
+    tagIds: [family.id, friends.id, foreign.id, randomUUID(), family.id],
+  });
+  expect(contact.tagIds.sort()).toEqual([family.id, friends.id].sort());
+  const other = await add({ name: 'سارا', phone: '09121111111' });
+  expect(other.tagIds).toEqual([]);
+  expect(
+    (await api('get', `/${contact.id}`).expect(200)).body.contact.tagIds.sort(),
+  ).toEqual([family.id, friends.id].sort());
+
+  // The list carries them, and shows one tag's contacts.
+  const list = (await api('get').expect(200)).body.contacts;
+  expect(list.find((c) => c.id === contact.id).tagIds.sort()).toEqual(
+    [family.id, friends.id].sort(),
+  );
+  const tagged = (await api('get', `?tag=${family.id}`).expect(200)).body;
+  expect(tagged.contacts.map((c) => c.id)).toEqual([contact.id]);
+  expect(tagged.pagination.total).toBe(1);
+  expect(
+    (await api('get', `?tag=${foreign.id}`).expect(200)).body.contacts,
+  ).toEqual([]);
+  await api('get', '?tag=nope').expect(400);
+  const counts = Object.fromEntries(
+    (await tagsOf()).map((t) => [t.id, t.count]),
+  );
+  expect([counts[family.id], counts[friends.id], counts[work.id]]).toEqual([
+    1, 1, 0,
+  ]);
+
+  // An edit replaces the set; other fields stay.
+  const edited = (
+    await api('patch', `/${contact.id}`)
+      .send({ tagIds: [work.id] })
+      .expect(200)
+  ).body.contact;
+  expect(edited).toMatchObject({ name: 'علی', tagIds: [work.id] });
+  expect(new Date(edited.updatedAt) > new Date(contact.updatedAt)).toBe(true);
+  await api('patch', `/${contact.id}`).send({ tagIds: 'nope' }).expect(400);
+  await api('patch', `/${contact.id}`)
+    .send({ tagIds: Array.from({ length: 31 }, () => randomUUID()) })
+    .expect(400);
+  // Another user cannot tag it.
+  await api('patch', `/${contact.id}`, 1)
+    .send({ tagIds: [foreign.id] })
+    .expect(404);
+
+  // In the trash it is not counted; restored, it has its tags again.
+  await api('delete', `/${contact.id}`).expect(204);
+  expect((await tagsOf()).find((t) => t.id === work.id).count).toBe(0);
+  const restored = (
+    await api('post', `/${contact.id}/restore`).send({}).expect(200)
+  ).body.contact;
+  expect(restored.tagIds).toEqual([work.id]);
+
+  // A merge keeps every tag either had.
+  await api('patch', `/${other.id}`)
+    .send({ tagIds: [family.id, work.id] })
+    .expect(200);
+  const merged = (
+    await api('post', '/merge')
+      .send({ targetId: contact.id, sourceIds: [other.id] })
+      .expect(200)
+  ).body.contact;
+  expect(merged.tagIds.sort()).toEqual([family.id, work.id].sort());
+
+  // A deleted tag comes off its contacts.
+  await api('delete', `/tags/${work.id}`).expect(204);
+  expect(
+    (await api('get', `/${contact.id}`).expect(200)).body.contact.tagIds,
+  ).toEqual([family.id]);
+  expect(
+    (await api('get', `?tag=${work.id}`).expect(200)).body.contacts,
+  ).toEqual([]);
 });

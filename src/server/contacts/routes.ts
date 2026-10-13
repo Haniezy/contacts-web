@@ -1,6 +1,6 @@
 import { parseCookie } from 'cookie';
 import { localeCookie } from '../../i18n/config';
-import { Router, json, rateLimit, type Handler } from '../http';
+import { Router, json, rateLimit, type Handler, type Req } from '../http';
 import { getDatabase } from '../database/client';
 import { getAuthConfig } from '../auth/config';
 import { requireAuth, type AuthPrincipal } from '../auth/middleware';
@@ -16,6 +16,9 @@ import {
   mergeBody,
   ignoreBody,
   contactSelect,
+  tagBody,
+  tagLimit,
+  tagPatch,
 } from './validation';
 import {
   contactsWithPhone,
@@ -24,6 +27,10 @@ import {
   purgeTrash,
   duplicateContacts,
   ignoreDuplicates,
+  listTags,
+  seedTags,
+  setContactTags,
+  tagKey,
 } from './queries';
 import {
   cloudinaryPhotos,
@@ -81,6 +88,8 @@ export function contactsRouter(
         }
       : {}),
   });
+  const localeOf = (req: Req) =>
+    parseCookie(req.headers.cookie ?? '')[localeCookie] === 'en' ? 'en' : 'fa';
   router.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
     const origin = req.get('Origin');
@@ -133,10 +142,7 @@ export function contactsRouter(
       return;
     }
     const userId = owner(res.locals);
-    const locale =
-      parseCookie(req.headers.cookie ?? '')[localeCookie] === 'en'
-        ? 'en'
-        : 'fa';
+    const locale = localeOf(req);
     // Contacts a week in the trash go for good whenever the book is opened.
     await cleanupPhotos(photos, await purgeTrash(db(), userId));
     const [result, trashCount] = await Promise.all([
@@ -151,6 +157,81 @@ export function contactsRouter(
       ),
     });
   });
+  // Tags: the user's own labels. The default ones appear on first use.
+  const seeded = async (req: Req, userId: string) => {
+    const user = await db().user.findUnique({
+      where: { id: userId },
+      select: { tagsSeeded: true },
+    });
+    if (!user?.tagsSeeded)
+      await mutate(userId, (tx) => seedTags(tx, userId, localeOf(req)));
+  };
+  // A name another of the user's tags already has.
+  const nameTaken = async (
+    tx: Prisma.TransactionClient,
+    userId: string,
+    name: string,
+    except?: string,
+  ) =>
+    (
+      await tx.tag.findMany({
+        where: { userId, ...(except ? { id: { not: except } } : {}) },
+        select: { name: true },
+      })
+    ).some((t) => tagKey(t.name) === tagKey(name));
+  router.get('/tags', async (req, res) => {
+    const userId = owner(res.locals);
+    await seeded(req, userId);
+    res.json({ tags: await listTags(db(), userId) });
+  });
+  router.post('/tags', async (req, res) => {
+    const body = tagBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: 'INVALID_INPUT' });
+      return;
+    }
+    const userId = owner(res.locals);
+    await seeded(req, userId);
+    const tag = await mutate(userId, async (tx) => {
+      if ((await tx.tag.count({ where: { userId } })) >= tagLimit)
+        throw new ContactError(409, 'TAG_LIMIT');
+      if (await nameTaken(tx, userId, body.data.name))
+        throw new ContactError(409, 'TAG_EXISTS');
+      return tx.tag.create({
+        data: { ...body.data, userId },
+        select: { id: true, name: true, color: true },
+      });
+    });
+    res.status(201).json({ tag: { ...tag, count: 0 } });
+  });
+  router.patch('/tags/:id', validId, async (req, res) => {
+    const body = tagPatch.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: 'INVALID_INPUT' });
+      return;
+    }
+    const userId = owner(res.locals),
+      id = req.params.id as string;
+    const tags = await mutate(userId, async (tx) => {
+      if (!(await tx.tag.findFirst({ where: { id, userId } })))
+        throw new ContactError(404, 'TAG_NOT_FOUND');
+      if (body.data.name && (await nameTaken(tx, userId, body.data.name, id)))
+        throw new ContactError(409, 'TAG_EXISTS');
+      await tx.tag.update({ where: { id }, data: body.data });
+      return listTags(tx, userId);
+    });
+    res.json({ tag: tags.find((t) => t.id === id) });
+  });
+  // The tag comes off every contact that carried it.
+  router.delete('/tags/:id', validId, async (req, res) => {
+    const userId = owner(res.locals);
+    const { count } = await mutate(userId, (tx) =>
+      tx.tag.deleteMany({ where: { id: req.params.id as string, userId } }),
+    );
+    if (!count) throw new ContactError(404, 'TAG_NOT_FOUND');
+    res.status(204).end();
+  });
+
   // The trash: what is in it (a week's contacts at most), and deleting one
   // or all of it for good, photos included.
   router.get('/trash', async (_req, res) => {
@@ -272,6 +353,16 @@ export function contactsRouter(
             ].join('\n') || null;
       if (reminder && reminder.length > 2000)
         throw new ContactError(409, 'MERGE_REMINDER_TOO_LONG');
+      // The merged contact keeps every tag any of them had.
+      const tagIds = await tx.contactTag.findMany({
+        where: { contactId: { in: sourceIds } },
+        select: { tagId: true },
+      });
+      if (tagIds.length)
+        await tx.contactTag.createMany({
+          data: tagIds.map(({ tagId }) => ({ contactId: targetId, tagId })),
+          skipDuplicates: true,
+        });
       const contact = await tx.contact.update({
         where: { id: targetId, userId },
         data: {
@@ -307,7 +398,7 @@ export function contactsRouter(
       return;
     }
     const userId = owner(res.locals);
-    const { id } = body.data;
+    const { id, tagIds, ...fields } = body.data;
     const result = await mutate(userId, async (tx) => {
       // The same ID again is the same save repeated: answer with what it
       // made. Another account's ID is never touched.
@@ -322,10 +413,17 @@ export function contactsRouter(
         if (holder !== userId) throw new ContactError(409, 'CONTACT_ID_TAKEN');
         return { contact, created: false };
       }
-      const contact = await tx.contact.create({
-        data: { ...body.data, ...bodyData(body.data), userId },
+      let contact = await tx.contact.create({
+        data: { ...fields, ...bodyData(fields), id, userId },
         select: contactSelect,
       });
+      if (tagIds?.length) {
+        await setContactTags(tx, userId, contact.id, tagIds);
+        contact = await tx.contact.findUniqueOrThrow({
+          where: { id: contact.id },
+          select: contactSelect,
+        });
+      }
       return { contact, created: true };
     });
     res
@@ -354,11 +452,18 @@ export function contactsRouter(
     }
     const userId = owner(res.locals),
       id = req.params.id as string;
+    const { tagIds, ...fields } = body.data;
     const contact = await mutate(userId, async (tx) => {
       await owned(tx, id, userId);
+      if (tagIds) await setContactTags(tx, userId, id, tagIds);
       return tx.contact.update({
         where: { id, userId },
-        data: { ...body.data, ...bodyData(body.data) },
+        data: {
+          ...fields,
+          ...bodyData(fields),
+          // A change of tags alone is a change of the contact too.
+          ...(tagIds ? { updatedAt: new Date() } : {}),
+        },
         select: contactSelect,
       });
     });

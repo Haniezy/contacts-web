@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { displayDigits } from '@/lib/api';
-import { formatPhone, type Contact } from '@/lib/contacts';
+import { formatPhone, tagsOf, type Contact, type Tag } from '@/lib/contacts';
 import { Icon, type IconName } from '@/components/icon';
 import { Avatar } from './avatar';
 import {
@@ -11,6 +11,7 @@ import {
   ShareButton,
   SmsLink,
 } from './contact-actions';
+import { TagChips, TagMenu } from './tags';
 
 // A small menu under its button: edit and delete. Escape or a click
 // elsewhere closes it.
@@ -78,14 +79,20 @@ function MoreMenu({
 }
 
 // Desktop: the chosen contact beside the list. The close button sits on
-// its outer edge; the pencil on the photo and in the reminder edit it.
+// its outer edge; the pencil on the photo and in the reminder edit it, and
+// its tags come off (×) or on («+») right here.
 export function ContactSheet({
   contact,
+  tags,
+  onTags,
   onClose,
   onEdit,
   onDelete,
 }: {
   contact: Contact;
+  // All of the user's tags.
+  tags: Tag[];
+  onTags: (tagIds: string[]) => void;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -94,6 +101,7 @@ export function ContactSheet({
   const f = useFormatter();
   const locale = useLocale();
   const phone = displayDigits(formatPhone(contact.phone), locale);
+  const tagIds = contact.tagIds ?? [];
   return (
     <article className="desk-sheet" aria-labelledby="sheet-name">
       <div className="sheet-top">
@@ -201,6 +209,31 @@ export function ContactSheet({
           <bdi>{contact.reminder || t('notSet')}</bdi>
         </p>
       </section>
+      {tags.length > 0 && (
+        <section className="sheet-tags" aria-labelledby="sheet-tags-title">
+          <h3 id="sheet-tags-title">
+            <Icon name="tag" />
+            {t('tags')}
+          </h3>
+          <div className="sheet-tags-body">
+            <TagChips
+              tags={tagsOf(contact, tags)}
+              onRemove={(tag) => onTags(tagIds.filter((id) => id !== tag.id))}
+            />
+            <TagMenu
+              tags={tags}
+              value={tagIds}
+              onToggle={(tag) =>
+                onTags(
+                  tagIds.includes(tag.id)
+                    ? tagIds.filter((id) => id !== tag.id)
+                    : [...tagIds, tag.id],
+                )
+              }
+            />
+          </div>
+        </section>
+      )}
     </article>
   );
 }

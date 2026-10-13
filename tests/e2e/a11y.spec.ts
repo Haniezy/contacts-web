@@ -18,8 +18,6 @@ const designColours = [
   '.status-chip',
   '.danger-card',
   '.app-version',
-  '.menu-badge',
-  '.menu-logout',
   '.merge-cancel',
   '.button-mint',
   '.language-option.is-active',
@@ -119,6 +117,13 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
   if (isDesk(page)) {
     await page.getByRole('button', { name: 'گزینه‌های بیشتر' }).click();
     await expect(page.getByRole('menu')).toBeVisible();
+    await audit(page);
+    await page.keyboard.press('Escape');
+    // The tag dialog.
+    await page.getByRole('button', { name: 'برچسب جدید' }).click();
+    await expect(
+      page.getByRole('dialog', { name: 'برچسب جدید' }),
+    ).toBeVisible();
     await audit(page);
     await page.keyboard.press('Escape');
   }

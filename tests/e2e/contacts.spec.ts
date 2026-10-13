@@ -282,10 +282,13 @@ test('duplicates are counted in the menu and beside the list', async ({
   }
   const menu = await openMenu(page);
   await expect(
-    menu.getByRole('link', { name: /ادغام تکراری‌ها/ }),
+    menu.getByRole('link', { name: /مخاطبین تکراری/ }),
   ).toContainText('۱');
-  await page.keyboard.press('Escape');
-  await expect(menu).toBeHidden();
+  // The drawer closes with Escape; the desktop sidebar stays.
+  if (!isDesk(page)) {
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+  }
 });
 
 test('desktop: the list in pages, a sidebar that folds, and the details menu', async ({

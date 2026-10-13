@@ -1,9 +1,12 @@
 import { api, ApiError, asciiDigits, isUnreachable, upload } from './api';
 import {
   duplicateCountPath,
+  sameTags,
+  tagsPath,
   type Contact,
   type ContactPage,
   type DuplicatePage,
+  type Tag,
 } from './contacts';
 
 // The book kept on this device, so the installed app works offline: the
@@ -17,6 +20,7 @@ export type Values = {
   phone: string;
   birthday: string | null;
   reminder: string | null;
+  tagIds?: string[];
 };
 type Photo = Blob | 'remove';
 // At most one change per contact: later edits fold into it. A chosen photo
@@ -60,6 +64,9 @@ type Book = {
   contacts: Contact[] | null;
   trashCount: number;
   duplicates: number;
+  // The user's tags as the server last listed them (changing the list
+  // itself needs a connection; giving a contact tags does not).
+  tags?: Tag[];
   changes: Change[];
   // The last photo stamp handed out.
   rev?: number;
@@ -240,6 +247,9 @@ function folded(
       : { photo: earlier?.photo, photoAt: earlier?.photoAt }),
   };
 }
+// One field's value, as sent and as now (tags compare as a set).
+const sameValue = (a: unknown, b: unknown) =>
+  Array.isArray(a) && Array.isArray(b) ? sameTags(a, b) : a === b;
 // What is left of an edit once the server has `part`: fields still holding
 // the value that was sent are done; a field changed since stays, and so
 // does a photo chosen since. Nothing left: undefined.
@@ -251,7 +261,7 @@ function remainder(change: Change, part: Part): Change | undefined {
           Object.entries(change.values).filter(
             ([key, value]) =>
               !(key in part.values) ||
-              part.values[key as keyof Values] !== value,
+              !sameValue(part.values[key as keyof Values], value),
           ),
         )
       : change.values;
@@ -440,8 +450,24 @@ export class OfflineBook {
     return (this.shown = [...byId.values()]);
   }
 
+  // The tags, each with how many contacts here carry it.
+  tags(): Tag[] {
+    const contacts = this.contacts();
+    return (this.book.tags ?? []).map((tag) => ({
+      ...tag,
+      count: contacts.filter((c) => c.tagIds?.includes(tag.id)).length,
+    }));
+  }
+  hasTags = () => this.book.tags !== undefined;
+
   // A page of results like the API's: same search, same order.
-  page(q: string, page: number, pageSize: number, locale: string) {
+  page(
+    q: string,
+    page: number,
+    pageSize: number,
+    locale: string,
+    tag?: string,
+  ) {
     const name = nameKey(q);
     const phone = /^[+0-9\s().-]+$/.test(asciiDigits(q)) ? phoneDigits(q) : '';
     const rank = (value: string) =>
@@ -457,9 +483,10 @@ export class OfflineBook {
     const found = this.contacts()
       .filter(
         (c) =>
-          !q ||
-          nameKey(c.name).includes(name) ||
-          (phone !== '' && phoneDigits(c.phone).includes(phone)),
+          (!tag || c.tagIds?.includes(tag)) &&
+          (!q ||
+            nameKey(c.name).includes(name) ||
+            (phone !== '' && phoneDigits(c.phone).includes(phone))),
       )
       .sort(
         (a, b) =>
@@ -518,13 +545,20 @@ export class OfflineBook {
     }
     const duplicates = (await api<DuplicatePage>(duplicateCountPath)).pagination
       .total;
+    const { tags } = await api<{ tags: Tag[] }>(tagsPath);
     if (mark !== this.touched) return;
     await this.update((book) => ({
       ...book,
       contacts: [...byId.values()],
       trashCount,
       duplicates,
+      tags,
     }));
+  }
+
+  // The tag list as the server now has it (after a change made online).
+  keepTags(tags: Tag[]) {
+    return this.update((book) => ({ ...book, tags }));
   }
 
   // Keeps the copy current with what was just saved online.

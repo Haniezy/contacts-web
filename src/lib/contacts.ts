@@ -7,7 +7,30 @@ export type Contact = {
   reminder: string | null;
   // Code of the contact's public link, /s/<shareToken>.
   shareToken: string;
+  // The tags it carries (absent in a copy saved before tags existed).
+  tagIds?: string[];
 };
+// The colours a tag can have; the first five are the designs' own.
+export const tagColors = [
+  'coral',
+  'sage',
+  'amber',
+  'lilac',
+  'sand',
+  'rose',
+  'teal',
+  'clay',
+] as const;
+export type TagColor = (typeof tagColors)[number];
+// One of the user's own labels, with how many contacts carry it.
+export type Tag = { id: string; name: string; color: TagColor; count: number };
+export const tagsPath = 'contacts/tags';
+// A contact's tags in the order of the user's list.
+export const tagsOf = (contact: Pick<Contact, 'tagIds'>, tags: Tag[]) =>
+  tags.filter((tag) => contact.tagIds?.includes(tag.id));
+// The same set of tags, in any order.
+export const sameTags = (a: string[] = [], b: string[] = []) =>
+  a.length === b.length && a.every((id) => b.includes(id));
 // Session storage key: a contact deleted on its own page, for the list to
 // show its "moved to the trash" notice.
 export const trashedKey = 'contacts-trashed';

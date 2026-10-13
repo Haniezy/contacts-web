@@ -18,13 +18,14 @@ import {
   isUnreachable,
   upload,
 } from '@/lib/api';
-import { formatPhone, type Contact } from '@/lib/contacts';
+import { formatPhone, sameTags, type Contact, type Tag } from '@/lib/contacts';
 import { newId, type OfflineBook, type Values } from '@/lib/offline-book';
 import { serviceDown } from '@/lib/online';
 import { birthdayInput, parseBirthday } from '@/lib/jalali';
 import { Icon, type IconName } from '@/components/icon';
 import { Avatar } from './avatar';
 import { DuplicateConfirm } from './duplicate-confirm';
+import { TagPicker } from './tags';
 
 // The date picker package loads only when the calendar is first opened
 // (never on the server: it opens on a click). The list loads it ahead of
@@ -91,6 +92,7 @@ export function ContactForm({
   contact: initialContact,
   book,
   local,
+  tags,
   onClose,
   onSaved,
 }: {
@@ -98,6 +100,8 @@ export function ContactForm({
   contact?: Contact;
   book: OfflineBook | null;
   local: boolean;
+  // The user's tags to choose from.
+  tags: Tag[];
   onClose: () => void;
   onSaved: (contact: Contact) => void;
 }) {
@@ -123,6 +127,7 @@ export function ContactForm({
       : '',
     reminder: initialContact?.reminder ?? '',
   }));
+  const [tagIds, setTagIds] = useState(initialContact?.tagIds ?? []);
   const [touched, setTouched] = useState<Partial<Record<keyof Fields, true>>>(
     {},
   );
@@ -275,6 +280,8 @@ export function ContactForm({
       phone: asciiDigits(fields.phone.trim()),
       birthday: birthdayIso,
       reminder: fields.reminder.trim() || null,
+      // Tags deleted meanwhile are dropped by the API.
+      tagIds,
     };
     // What an edit changes; the API stores phones as an optional + followed
     // by digits.
@@ -287,7 +294,9 @@ export function ContactForm({
               ? normalized(values.phone) !== saved.phone
               : key === 'birthday'
                 ? value !== (saved.birthday?.slice(0, 10) ?? null)
-                : value !== saved[key as 'name' | 'reminder'],
+                : key === 'tagIds'
+                  ? !sameTags(tagIds, saved.tagIds)
+                  : value !== saved[key as 'name' | 'reminder'],
           ),
         )
       : values;
@@ -314,7 +323,10 @@ export function ContactForm({
     try {
       if (!contact) {
         const body = Object.fromEntries(
-          Object.entries(values).filter(([, value]) => value !== null),
+          Object.entries(values).filter(
+            ([, value]) =>
+              value !== null && !(Array.isArray(value) && !value.length),
+          ),
         );
         contact = (
           await api<{ contact: Contact }>('contacts', {
@@ -615,6 +627,15 @@ export function ContactForm({
             icon: 'bell',
             maxLength: 2000,
           })}
+          {tags.length > 0 && (
+            <fieldset className="contact-field tag-field">
+              <legend>
+                {t('tags')}
+                <span className="optional-chip">{t('optional')}</span>
+              </legend>
+              <TagPicker tags={tags} value={tagIds} onChange={setTagIds} />
+            </fieldset>
+          )}
         </div>
         {error && (
           <p role="alert" className="form-error">

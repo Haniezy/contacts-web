@@ -26,9 +26,13 @@ model User {
   recoveryCodeHashes       String[]          @default([])
   // Cloudinary asset of the profile photo; never exposed, only signed URLs.
   photoKey                 String?           @db.Text
+  // The default tags (family, friends…) are made once, on first use; after
+  // that the user's own changes stand, even deleting them all.
+  tagsSeeded               Boolean           @default(false)
   createdAt                DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt                DateTime          @updatedAt @db.Timestamptz(3)
   contacts                 Contact[]
+  tags                     Tag[]
   sessions                 AuthSession[]
   loginChallenges          LoginChallenge[]
   duplicateIgnores         DuplicateIgnore[]
@@ -63,23 +67,24 @@ model LoginChallenge {
 }
 
 model Contact {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @db.Uuid
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name       String    @db.VarChar(200)
-  phone      String    @db.VarChar(32)
-  photoUrl   String?   @db.Text
-  photoKey   String?   @db.Text
-  birthday   DateTime? @db.Date
-  reminder   String?   @db.Text
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @db.Uuid
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String       @db.VarChar(200)
+  phone      String       @db.VarChar(32)
+  photoUrl   String?      @db.Text
+  photoKey   String?      @db.Text
+  birthday   DateTime?    @db.Date
+  reminder   String?      @db.Text
   // Random code for the contact's public link (/s/<code>); anyone with the
   // link sees the name, number and photo, nothing else.
-  shareToken String    @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)")) @db.VarChar(32)
+  shareToken String       @unique @default(dbgenerated("replace((gen_random_uuid())::text, '-'::text, ''::text)")) @db.VarChar(32)
   // Set when moved to the trash: hidden everywhere, and deleted for good
   // after a week (or sooner from the trash page).
-  deletedAt  DateTime? @db.Timestamptz(3)
-  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt  DateTime?    @db.Timestamptz(3)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+  tags       ContactTag[]
 
   // Both indexes also support userId-only lookups via their leading column.
   @@index([userId, name])
@@ -100,4 +105,29 @@ model DuplicateIgnore {
   createdAt  DateTime @default(now()) @db.Timestamptz(3)
 
   @@id([userId, by, value])
+}
+
+// The user's own labels for contacts (family, friends…), each with one of
+// the app's tag colours. Shown in the order they were made.
+model Tag {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @db.Uuid
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String       @db.VarChar(24)
+  color     String       @db.VarChar(16)
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  contacts  ContactTag[]
+
+  @@index([userId, createdAt])
+}
+
+// Which contacts carry which tag; goes with either.
+model ContactTag {
+  contactId String  @db.Uuid
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tagId     String  @db.Uuid
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@index([tagId])
 }

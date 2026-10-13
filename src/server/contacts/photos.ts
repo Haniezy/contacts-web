@@ -113,13 +113,19 @@ export function cloudinaryPhotos(): PhotoStore {
 
 // Call only after owner-scoped queries; never persist or expose internal keys.
 export async function presentContact<
-  T extends { photoKey: string | null; photoUrl: string | null },
+  T extends {
+    photoKey: string | null;
+    photoUrl: string | null;
+    tags?: { tagId: string }[];
+  },
 >(contact: T, userId: string, photos: () => PhotoStore) {
-  const { photoKey, ...publicFields } = contact;
+  const { photoKey, tags, ...publicFields } = contact;
   if (photoKey && !photoKey.startsWith(`contacts/${userId}/`))
     throw new ContactError(503, 'INVALID_PHOTO_REFERENCE');
   return {
     ...publicFields,
+    // The list query reads them as `tagIds` already.
+    ...(tags ? { tagIds: tags.map((t) => t.tagId) } : {}),
     photoUrl: photoKey ? await photos().url(photoKey) : contact.photoUrl,
   };
 }

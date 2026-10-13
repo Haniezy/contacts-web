@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Page } from '@playwright/test';
 import { test, expect, fixture, openMenu } from './fixtures';
 
-// Logout lives in the drawer (mobile) or the account dropdown (desktop).
+// Logout lives in the drawer (mobile) or the sidebar (desktop).
 async function logout(page: Page) {
   await openMenu(page);
   await page.getByRole('button', { name: 'خروج', exact: true }).click();

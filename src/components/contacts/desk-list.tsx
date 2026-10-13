@@ -15,6 +15,8 @@ export function DeskList({
   contacts,
   total,
   emptyBook,
+  title,
+  empty,
   page,
   pages,
   size,
@@ -29,6 +31,10 @@ export function DeskList({
   total?: number;
   // No contacts at all (not a search with no results).
   emptyBook: boolean;
+  // The tag shown, when the list is one tag's; otherwise «All contacts».
+  title?: string;
+  // What an empty search or tag says.
+  empty: string;
   page: number;
   pages: number;
   size: number;
@@ -45,7 +51,7 @@ export function DeskList({
     <section className="desk-list" aria-labelledby="desk-list-title">
       <header className="desk-list-head">
         <h1 id="desk-list-title">
-          {t('listTitle')}{' '}
+          {title ? <bdi>{title}</bdi> : t('listTitle')}{' '}
           {total !== undefined && (
             <span className="desk-count">
               {t('listCount', { count: total })}
@@ -82,7 +88,7 @@ export function DeskList({
             )}
           </div>
         ) : contacts.length === 0 ? (
-          <p className="desk-empty">{t('noResults')}</p>
+          <p className="desk-empty">{empty}</p>
         ) : (
           <ul>
             {contacts.map((contact) => {

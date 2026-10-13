@@ -17,9 +17,11 @@ import {
   groupByInitial,
   showInitial,
   pageSize,
+  tagsPath,
   type Contact,
   type ContactPage,
   type DuplicatePage,
+  type Tag,
   trashedKey,
 } from '@/lib/contacts';
 import { keepForOffline } from '@/lib/offline';
@@ -28,20 +30,27 @@ import { Icon } from '@/components/icon';
 import { ContactRow } from './contact-row';
 import { ContactSheet } from './contact-sheet';
 import { DeskList } from './desk-list';
-import { DeskSidebar, useSidebarCollapsed } from './desk-sidebar';
+import { DeskSidebar, SideDrawer, useSidebarCollapsed } from './sidebar';
 import { DeskTopbar } from './desk-topbar';
-import { AccountMenu, UserAvatar, type AccountUser } from './account-menu';
+import { UserAvatar, type AccountUser } from './account-menu';
 import { DeleteDialog } from './delete-dialog';
 import { UndoToast, type TrashNote } from './undo-toast';
 import { ContactForm, loadCalendar } from './contact-form';
 import { SyncToast, useOfflineBook, type SyncState } from './offline-sync';
+import { TagDialog, type TagEdit } from './tag-dialog';
+import { TagDot, tagStyle } from './tags';
 
 const searchDelay = 300;
 // Same alphabetical order as the API (ICU collation).
 const collator = new Intl.Collator('fa');
 export type FormState = { mode: 'new' } | { mode: 'edit'; contact: Contact };
-// First page (null when it could not be read) and the duplicate group count.
-export type InitialContacts = { page: ContactPage | null; duplicates: number };
+// First page (null when it could not be read), the duplicate group count
+// and the tags (null when they could not be read).
+export type InitialContacts = {
+  page: ContactPage | null;
+  duplicates: number;
+  tags: Tag[] | null;
+};
 const editPath = /^\/contacts\/([0-9a-f-]{36})\/edit$/i;
 const skeletonRows = 6;
 // How long the desktop side panel takes to slide in or out (the CSS).
@@ -136,6 +145,12 @@ export function ContactsApp({
   const [collapsed, toggleSidebar] = useSidebarCollapsed();
   // The contact last chosen, for when its page is no longer the one shown.
   const [chosen, setChosen] = useState<Contact | null>(null);
+  // The user's tags as the server lists them; the list shows only the
+  // contacts with `tagFilter`, when set.
+  const [tagList, setTagList] = useState<Tag[]>();
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [tagEdit, setTagEdit] = useState<TagEdit | null>(null);
+  const tagRef = useRef(tagFilter);
   // True when the form was opened in place (history entry pushed here).
   const pushed = useRef(false);
   const search = useRef<AbortController | null>(null);
@@ -145,13 +160,18 @@ export function ContactsApp({
   const load = useCallback(
     async (q: string, page: number, signal?: AbortSignal, size = pageSize) => {
       const { book, local, locale } = mode.current;
-      if (book && local) return book.page(q, page, size, locale);
+      const tag = tagRef.current ?? undefined;
+      if (book && local) return book.page(q, page, size, locale, tag);
       try {
-        return await api<ContactPage>(
-          `contacts?${new URLSearchParams({ q, page: String(page), pageSize: String(size) })}`,
-          undefined,
-          { signal },
-        );
+        const query = new URLSearchParams({
+          q,
+          page: String(page),
+          pageSize: String(size),
+        });
+        if (tag) query.set('tag', tag);
+        return await api<ContactPage>(`contacts?${query}`, undefined, {
+          signal,
+        });
       } catch (error) {
         // The service cannot be reached: the copy on this device. (One
         // failed request while the service is up shows the error toast.)
@@ -161,7 +181,7 @@ export function ContactsApp({
           !signal?.aborted &&
           (await serviceDown())
         )
-          return book.page(q, page, size, locale);
+          return book.page(q, page, size, locale, tag);
         throw error;
       }
     },
@@ -180,6 +200,33 @@ export function ContactsApp({
     setFailed(false);
   }, [load]);
 
+  // Choosing a tag (or none) shows that list from its first page.
+  const firstTag = useRef(true);
+  useEffect(() => {
+    tagRef.current = tagFilter;
+    if (firstTag.current) {
+      firstTag.current = false;
+      return;
+    }
+    setDeskPage(1);
+    setExpandedId(null);
+    reload().catch(() => setFailed(true));
+  }, [tagFilter, reload]);
+
+  // The tags and their counts again, after a change made online (offline,
+  // the book counts them itself).
+  const refreshTags = useCallback(async () => {
+    const { book, local } = mode.current;
+    if (local) return;
+    try {
+      const { tags } = await api<{ tags: Tag[] }>(tagsPath);
+      setTagList(tags);
+      await book?.keepTags(tags);
+    } catch {
+      // The counts stay as they were until the next change.
+    }
+  }, []);
+
   // Going offline, coming back, or syncing switches the list between the
   // server and this device's book.
   const wasLocal = useRef(false);
@@ -191,8 +238,10 @@ export function ContactsApp({
       // server sent (the saved copy of this page, offline).
       if (local && !book.hasCopy()) await book.seed((await initial).page);
       await reload().catch(() => {});
+      // Back on the server (after a sync, say): its counts.
+      if (!local) void refreshTags();
     })();
-  }, [book, local, initial, reload]);
+  }, [book, local, initial, reload, refreshTags]);
 
   // Without a form this is the list's own page. Offline, the service
   // worker answers /contacts/new (or an edit address) with the saved list
@@ -283,6 +332,8 @@ export function ContactsApp({
     setData((current) => (current === undefined ? first.page : current));
     setDuplicates((current) => current ?? first.duplicates);
     setTrashCount((current) => current ?? first.page?.trashCount ?? 0);
+    setTagList((current) => current ?? first.tags ?? undefined);
+    if (first.tags) void mode.current.book?.keepTags(first.tags);
   }, []);
 
   // Debounced search; a newer query aborts the request of an older one.
@@ -351,7 +402,7 @@ export function ContactsApp({
   }, [data, loadingMore, load, query]);
 
   // Desktop pages past what the phone list has read come from the API.
-  const deskKey = `${shownQuery}|${deskPage}|${deskSize}`;
+  const deskKey = `${shownQuery}|${tagFilter}|${deskPage}|${deskSize}`;
   useEffect(() => {
     if (!data) return;
     const end = deskPage * deskSize;
@@ -483,6 +534,7 @@ export function ContactsApp({
       // The local copy above stays until the next search or reload.
     }
     void refreshDuplicates();
+    void refreshTags();
   }
 
   function removed(id: string) {
@@ -499,6 +551,7 @@ export function ContactsApp({
     if (selectedId === id) setSelectedId(null);
     if (expandedId === id) setExpandedId(null);
     void refreshDuplicates();
+    void refreshTags();
   }
 
   // Moves a contact to the trash; offline (or with changes waiting) the
@@ -517,6 +570,82 @@ export function ContactsApp({
       if (!(error instanceof ApiError && error.status === 404)) throw error;
     }
     await book?.forget(contact.id);
+  }
+
+  // Shows a contact as it now is wherever it appears.
+  function replaced(contact: Contact) {
+    const swap = (list: Contact[]) =>
+      list.map((c) => (c.id === contact.id ? contact : c));
+    setData(
+      (current) => current && { ...current, contacts: swap(current.contacts) },
+    );
+    setDeskFetched(
+      (current) =>
+        current && {
+          ...current,
+          page: { ...current.page, contacts: swap(current.page.contacts) },
+        },
+    );
+    setChosen((current) => (current?.id === contact.id ? contact : current));
+  }
+
+  // Gives a contact another set of tags straight from its details; offline
+  // (or with changes waiting) it waits in the book like any edit.
+  async function retag(contact: Contact, tagIds: string[]) {
+    replaced({ ...contact, tagIds });
+    const keep = async () =>
+      replaced(await book!.save(contact.id, false, { tagIds }));
+    if (book && mode.current.local) return keep();
+    try {
+      const { contact: next } = await api<{ contact: Contact }>(
+        `contacts/${contact.id}`,
+        { tagIds },
+        { method: 'PATCH' },
+      );
+      await book?.remember(next);
+      replaced(next);
+      void refreshTags();
+      // Under a tag, a contact that lost it leaves the list.
+      if (tagRef.current) void reload().catch(() => {});
+    } catch (error) {
+      if (book && isUnreachable(error)) {
+        void serviceDown();
+        return keep();
+      }
+      if (error instanceof ApiError && error.status === 401)
+        return router.replace('/login');
+      replaced(contact);
+      setFailed(true);
+    }
+  }
+
+  // A tag made or changed in its dialog.
+  function tagSaved(tag: Tag) {
+    setTagEdit(null);
+    setTagList((list = []) =>
+      list.some((t) => t.id === tag.id)
+        ? list.map((t) => (t.id === tag.id ? tag : t))
+        : [...list, tag],
+    );
+    void refreshTags();
+  }
+  // A tag deleted: it comes off every contact shown, and its list closes.
+  function tagDeleted(tag: Tag) {
+    setTagEdit(null);
+    setTagList((list = []) => list.filter((t) => t.id !== tag.id));
+    const without = (list: Contact[]) =>
+      list.map((c) =>
+        c.tagIds?.includes(tag.id)
+          ? { ...c, tagIds: c.tagIds.filter((id) => id !== tag.id) }
+          : c,
+      );
+    setData(
+      (current) =>
+        current && { ...current, contacts: without(current.contacts) },
+    );
+    setChosen((current) => current && without([current])[0]);
+    if (tagFilter === tag.id) setTagFilter(null);
+    void refreshTags();
   }
 
   // Once the dialog has moved it to the trash: Undo for a few seconds.
@@ -543,6 +672,7 @@ export function ContactsApp({
       setTrashCount((count) => Math.max(0, (count ?? 1) - 1));
       setData(await load(shownQuery, 1));
       void refreshDuplicates();
+      void refreshTags();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401)
         return router.replace('/login');
@@ -587,8 +717,14 @@ export function ContactsApp({
     return () => clearTimeout(timer);
   }, []);
 
-  if (data && !shownQuery && data.pagination.total !== bookTotal)
+  if (data && !shownQuery && !tagFilter && data.pagination.total !== bookTotal)
     setBookTotal(data.pagination.total);
+  // Offline (or with changes waiting) the book counts the tags itself.
+  const tags = (local && book?.hasTags() ? book.tags() : tagList) ?? [];
+  const currentTag = tags.find((tag) => tag.id === tagFilter);
+  // Nothing at all in the book (not a search or a tag with no results).
+  const emptyBook = (page: ContactPage | null) =>
+    page?.pagination.total === 0 && !shownQuery && !query.trim() && !tagFilter;
   const selected = selectedId
     ? (data?.contacts.find((c) => c.id === selectedId) ??
       (deskFetched?.page.contacts.find((c) => c.id === selectedId) ||
@@ -712,20 +848,33 @@ export function ContactsApp({
       </header>
       {loaded(
         <DeskSidebar
+          user={user}
           collapsed={collapsed}
           onToggle={toggleSidebar}
           addLink={addLink}
+          tags={tags}
+          tagFilter={tagFilter}
+          onTag={setTagFilter}
+          onNewTag={() => setTagEdit({ mode: 'new' })}
+          onEditTag={(tag) => setTagEdit({ mode: 'edit', tag })}
         />,
         (page, first) => (
           <DeskSidebar
+            user={user}
             total={
-              bookTotal ?? (shownQuery ? undefined : page?.pagination.total)
+              bookTotal ??
+              (shownQuery || tagFilter ? undefined : page?.pagination.total)
             }
             duplicates={duplicates ?? first}
             trash={trashCount ?? page?.trashCount}
             collapsed={collapsed}
             onToggle={toggleSidebar}
             addLink={addLink}
+            tags={tags}
+            tagFilter={tagFilter}
+            onTag={setTagFilter}
+            onNewTag={() => setTagEdit({ mode: 'new' })}
+            onEditTag={(tag) => setTagEdit({ mode: 'edit', tag })}
           />
         ),
       )}
@@ -734,8 +883,6 @@ export function ContactsApp({
         onQuery={setQuery}
         user={user}
         online={online}
-        menuOpen={menuOpen}
-        onMenu={() => setMenuOpen(true)}
       />
       <main className={`contacts-main${panelOpen ? ' panel-open' : ''}`}>
         <section className="contacts-column" aria-labelledby="contacts-title">
@@ -764,6 +911,21 @@ export function ContactsApp({
               </Link>
             ) : null,
           )}
+          {/* Phones and tablets: the tag chosen in the drawer, with a way
+              back to everyone. */}
+          {currentTag && (
+            <button
+              type="button"
+              className="tag-chip tag-current"
+              style={tagStyle(currentTag.color)}
+              aria-label={t('clearTag', { name: currentTag.name })}
+              onClick={() => setTagFilter(null)}
+            >
+              <TagDot color={currentTag.color} />
+              <bdi>{currentTag.name}</bdi>
+              <Icon name="close" />
+            </button>
+          )}
           <div className="contacts-scroll">
             {loaded(
               <>
@@ -783,9 +945,7 @@ export function ContactsApp({
                 </p>
               </>,
               (page) =>
-                !page ? null : page.pagination.total === 0 &&
-                  !shownQuery &&
-                  !query.trim() ? (
+                !page ? null : emptyBook(page) ? (
                   <div className="contacts-blank">
                     <span className="blank-avatar" aria-hidden="true">
                       <Icon name="user" />
@@ -803,7 +963,9 @@ export function ContactsApp({
                     <span className="sphere sphere-2" aria-hidden="true" />
                   </div>
                 ) : page.contacts.length === 0 ? (
-                  <p className="contacts-empty">{t('noResults')}</p>
+                  <p className="contacts-empty">
+                    {t(tagFilter && !shownQuery ? 'tagEmpty' : 'noResults')}
+                  </p>
                 ) : (
                   groupByInitial(page.contacts).map((group) => (
                     <section key={group.letter} className="contact-group">
@@ -847,9 +1009,9 @@ export function ContactsApp({
             <DeskList
               contacts={view.contacts}
               total={view.total}
-              emptyBook={
-                page?.pagination.total === 0 && !shownQuery && !query.trim()
-              }
+              emptyBook={emptyBook(page)}
+              title={currentTag?.name}
+              empty={t(tagFilter && !shownQuery ? 'tagEmpty' : 'noResults')}
               page={view.page ?? 1}
               pages={view.pages}
               size={deskSize}
@@ -890,6 +1052,7 @@ export function ContactsApp({
                   }
                   book={book}
                   local={local}
+                  tags={tags}
                   onClose={closeForm}
                   onSaved={saved}
                 />
@@ -898,6 +1061,8 @@ export function ContactsApp({
               <ContactSheet
                 key={panelContact.id}
                 contact={panelContact}
+                tags={tags}
+                onTags={(tagIds) => retag(panelContact, tagIds)}
                 onClose={() => setSelectedId(null)}
                 onEdit={() => openForm({ mode: 'edit', contact: panelContact })}
                 onDelete={() => setDeleting(panelContact)}
@@ -928,12 +1093,26 @@ export function ContactsApp({
         ) : null,
       )}
       <div className="contacts-fade" aria-hidden="true" />
-      <AccountMenu
+      <SideDrawer
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         user={user}
+        total={bookTotal}
         duplicates={duplicates ?? 0}
         trash={trashCount ?? 0}
+        addLink={addLink}
+        tags={tags}
+        tagFilter={tagFilter}
+        onTag={setTagFilter}
+        onNewTag={() => setTagEdit({ mode: 'new' })}
+        onEditTag={(tag) => setTagEdit({ mode: 'edit', tag })}
+      />
+      <TagDialog
+        edit={tagEdit}
+        online={online && !local}
+        onClose={() => setTagEdit(null)}
+        onSaved={tagSaved}
+        onDeleted={tagDeleted}
       />
       <DeleteDialog
         contact={deleting}

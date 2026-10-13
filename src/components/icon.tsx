@@ -100,6 +100,7 @@ const paths = {
     </>
   ),
   close: <path d="M18 6 6 18M6 6l12 12" />,
+  check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   smartphone: (
     <>
       <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
@@ -141,6 +142,12 @@ const paths = {
   ),
   sync: (
     <path d="M20.5 12a8.5 8.5 0 0 0-14.7-5.8L3.5 8.5m0-5v5h5M3.5 12a8.5 8.5 0 0 0 14.7 5.8l2.3-2.3m0 5v-5h-5" />
+  ),
+  tag: (
+    <>
+      <path d="M3 12.6V4a1 1 0 0 1 1-1h8.6a1 1 0 0 1 .7.3l7.4 7.4a1 1 0 0 1 0 1.4l-8.6 8.6a1 1 0 0 1-1.4 0l-7.4-7.4a1 1 0 0 1-.3-.7Z" />
+      <circle cx="7.5" cy="7.5" r="1.5" />
+    </>
   ),
 };
 export type IconName = keyof typeof paths;

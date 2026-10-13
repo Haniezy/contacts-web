@@ -25,13 +25,12 @@ export const test = base.extend<{
 });
 export { expect };
 
-// The menu opens from «منو» on mobile and tablet and from «حساب کاربری» on
-// desktop.
+// The menu: the sidebar on desktop (always there), the drawer from «منو» on
+// phones and tablets. Both hold the sections, tags and the account.
 export async function openMenu(page: Page) {
-  await page
-    .getByRole('button', { name: /^(منو|حساب کاربری)$/ })
-    .filter({ visible: true })
-    .click();
+  if (isDesk(page))
+    return page.getByRole('complementary', { name: 'بخش‌های دفترچه' });
+  await page.getByRole('button', { name: 'منو' }).click();
   return page.getByRole('dialog', { name: 'منو' });
 }
 

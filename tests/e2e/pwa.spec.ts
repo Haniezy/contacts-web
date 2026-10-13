@@ -526,6 +526,52 @@ test.describe('exact sync', () => {
       .toBeGreaterThan(0);
   const allSynced = 'همه‌ی تغییرات بدون اینترنتت توی حسابت ثبت شد';
 
+  test('tags given offline show one tag offline, and reach the server on sync', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await expect(page.locator('.offline-note')).toBeVisible();
+    await page.getByRole('button', { name: /سارا احمدی/ }).click();
+    await editChosen(page);
+    await page
+      .locator('.tag-picker')
+      .getByRole('button', { name: 'همکاران' })
+      .click();
+    await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
+    await expect(page).toHaveURL(/\/contacts$/);
+    // The book shows one tag's contacts by itself.
+    await (
+      await openMenu(page)
+    )
+      .locator('.desk-tags')
+      .getByRole('button', { name: 'دوستان', exact: true })
+      .click();
+    await expect(rows(page)).toHaveCount(0);
+    await (
+      await openMenu(page)
+    )
+      .locator('.desk-tags')
+      .getByRole('button', { name: 'همکاران', exact: true })
+      .click();
+    await expect(rows(page)).toHaveCount(1);
+
+    await context.setOffline(false);
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    const { tags } = (await (
+      await page.request.get('/api/contacts/tags')
+    ).json()) as { tags: { id: string; name: string }[] };
+    const work = tags.find((t) => t.name === 'همکاران')!;
+    const [saved] = (await (await page.request.get('/api/contacts')).json())
+      .contacts as { tagIds: string[] }[];
+    expect(saved.tagIds).toEqual([work.id]);
+    expect(await waiting(page)).toEqual([]);
+  });
+
   test('a lost reply, then an edit: the edit reaches the server', async ({
     page,
   }) => {

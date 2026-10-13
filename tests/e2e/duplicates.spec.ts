@@ -47,7 +47,7 @@ test('merging keeps one complete record with the chosen fields', async ({
 }) => {
   await page.goto('/contacts');
   const link = (await openMenu(page)).getByRole('link', {
-    name: /ادغام تکراری‌ها/,
+    name: /مخاطبین تکراری/,
   });
   // The badge counts groups: two phone groups and one name group.
   await expect(link).toContainText('۳');

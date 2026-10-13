@@ -42,24 +42,30 @@ export async function contactsWithPhone(
   );
 }
 
-const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "photoKey", "birthday", "reminder", "shareToken", "createdAt", "updatedAt"`;
-type PublicContact = Pick<Contact, keyof typeof contactSelect>;
+const columns = Prisma.sql`"id", "name", "phone", "photoUrl", "photoKey", "birthday", "reminder", "shareToken", "createdAt", "updatedAt",
+  ARRAY(SELECT ct."tagId"::text FROM "ContactTag" ct WHERE ct."contactId" = "Contact"."id") AS "tagIds"`;
+type PublicContact = Pick<
+  Contact,
+  Exclude<keyof typeof contactSelect, 'tags'>
+> & { tagIds: string[] };
 
 export async function listContacts(
   db: PrismaClient,
   userId: string,
-  query: { q: string; page: number; pageSize: number },
+  query: { q: string; tag?: string; page: number; pageSize: number },
   // Names in the page's own script come first, then the other script, then
   // names starting with a digit or symbol (the # group).
   locale: 'fa' | 'en' = 'fa',
 ) {
-  const { q, page, pageSize } = query;
+  const { q, tag, page, pageSize } = query;
   const script = Prisma.sql`CASE WHEN "name" ~ ${arabicFirst} THEN ${locale === 'fa' ? 0 : 1}::int
     WHEN "name" ~ ${latinFirst} THEN ${locale === 'fa' ? 1 : 0}::int ELSE 2 END`;
   const name = normalizeName(q);
   const phone = /^[+0-9\s().-]+$/.test(digits(q)) ? normalizePhone(q) : '';
   const filter = Prisma.sql`"userId" = ${userId}::uuid AND "deletedAt" IS NULL AND
-    (${q === ''} OR position(${name} in ${nameKey}) > 0 OR (${phone !== ''} AND position(${phone} in ${phoneDigits}) > 0))`;
+    (${q === ''} OR position(${name} in ${nameKey}) > 0 OR (${phone !== ''} AND position(${phone} in ${phoneDigits}) > 0))
+    AND (${tag ?? null}::uuid IS NULL OR EXISTS (SELECT 1 FROM "ContactTag" ct
+      WHERE ct."contactId" = "Contact"."id" AND ct."tagId" = ${tag ?? null}::uuid))`;
   // One statement: the window count and the page share a snapshot and a
   // single database round trip.
   const rows = await db.$queryRaw<(PublicContact & { total: bigint })[]>(
@@ -226,4 +232,92 @@ export async function listTrash(db: PrismaClient, userId: string) {
     ...c,
     purgeAt: new Date(c.deletedAt!.getTime() + trashDays * 24 * 60 * 60 * 1000),
   }));
+}
+
+// The tags a new account starts with, in the language it first opens in.
+const defaultTags = {
+  fa: ['خانواده', 'دوستان', 'همکاران', 'دانشگاه', 'سایر'],
+  en: ['Family', 'Friends', 'Colleagues', 'University', 'Other'],
+};
+const defaultColors = ['coral', 'sage', 'amber', 'lilac', 'sand'];
+
+// Makes the default tags the first time; never again, even once the user
+// has deleted them. Runs under the user's lock (see `mutate`).
+export async function seedTags(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  locale: 'fa' | 'en',
+) {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: { tagsSeeded: true },
+  });
+  if (!user || user.tagsSeeded) return;
+  // A millisecond apart, so they keep this order.
+  const now = Date.now();
+  await tx.tag.createMany({
+    data: defaultTags[locale].map((name, i) => ({
+      userId,
+      name,
+      color: defaultColors[i],
+      createdAt: new Date(now + i),
+    })),
+  });
+  await tx.user.update({
+    where: { id: userId },
+    data: { tagsSeeded: true },
+  });
+}
+
+// The user's tags in the order they were made, each with how many contacts
+// (outside the trash) carry it.
+export async function listTags(
+  db: PrismaClient | Prisma.TransactionClient,
+  userId: string,
+) {
+  const tags = await db.tag.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      name: true,
+      color: true,
+      _count: {
+        select: { contacts: { where: { contact: { deletedAt: null } } } },
+      },
+    },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+  });
+  return tags.map(({ _count, ...tag }) => ({
+    ...tag,
+    count: _count.contacts,
+  }));
+}
+
+// Two tag names are the same tag when they match after tidying.
+export const tagKey = (name: string) => normalizeName(name);
+
+// Gives a contact exactly these tags; IDs that are not this user's tags
+// (deleted meanwhile, say) are left out.
+export async function setContactTags(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  contactId: string,
+  tagIds: string[],
+) {
+  const valid = tagIds.length
+    ? (
+        await tx.tag.findMany({
+          where: { userId, id: { in: tagIds } },
+          select: { id: true },
+        })
+      ).map((t) => t.id)
+    : [];
+  await tx.contactTag.deleteMany({
+    where: { contactId, tagId: { notIn: valid } },
+  });
+  if (valid.length)
+    await tx.contactTag.createMany({
+      data: valid.map((tagId) => ({ contactId, tagId })),
+      skipDuplicates: true,
+    });
 }

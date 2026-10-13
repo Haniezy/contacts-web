@@ -5,14 +5,28 @@ import { useRouter } from 'next/navigation';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Icon } from '@/components/icon';
 import { displayDigits } from '@/lib/api';
-import { formatPhone, trashedKey, type Contact } from '@/lib/contacts';
+import {
+  formatPhone,
+  tagsOf,
+  trashedKey,
+  type Contact,
+  type Tag,
+} from '@/lib/contacts';
 import { Avatar } from './avatar';
 import { CallLink, ShareButton, SmsLink } from './contact-actions';
 import { DeleteDialog } from './delete-dialog';
+import { TagChips } from './tags';
 
 // Standalone contact page opened from the mobile avatar (and by its address
 // on every size). The list's desktop panel shows the same facts in place.
-export function ContactDetails({ contact }: { contact: Contact }) {
+export function ContactDetails({
+  contact,
+  tags,
+}: {
+  contact: Contact;
+  // All of the user's tags (its own are shown by name).
+  tags: Tag[];
+}) {
   const t = useTranslations('Contacts');
   const a = useTranslations('Auth');
   const f = useFormatter();
@@ -123,6 +137,17 @@ export function ContactDetails({ contact }: { contact: Contact }) {
                 </p>
               </div>
             </div>
+            {tagsOf(contact, tags).length > 0 && (
+              <div className="info-card info-tags-card">
+                <span className="info-icon">
+                  <Icon name="tag" />
+                </span>
+                <div>
+                  <p>{t('tags')}</p>
+                  <TagChips tags={tagsOf(contact, tags)} />
+                </div>
+              </div>
+            )}
           </div>
           <div className="panel-buttons">
             <Link

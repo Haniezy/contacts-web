@@ -6,9 +6,11 @@ import { backendFetch } from '@/lib/backend';
 import {
   duplicateCountPath,
   pageSize,
+  tagsPath,
   type Contact,
   type ContactPage,
   type DuplicatePage,
+  type Tag,
 } from '@/lib/contacts';
 import {
   ContactsApp,
@@ -25,8 +27,9 @@ export async function ContactsView({
 }) {
   const user = await requireUser();
   const cookie = (await cookies()).toString();
-  // The list and the duplicate count stream in behind the real header (the
-  // page shows skeletons meanwhile); a failure becomes the retry toast.
+  // The list, the duplicate count and the tags stream in behind the real
+  // header (the page shows skeletons meanwhile); a failed list becomes the
+  // retry toast.
   const initial: Promise<InitialContacts> = Promise.all([
     backendFetch(`contacts?page=1&pageSize=${pageSize}`, cookie)
       .then(async (list) =>
@@ -40,7 +43,12 @@ export async function ContactsView({
           : 0,
       )
       .catch(() => 0),
-  ]).then(([page, duplicates]) => ({ page, duplicates }));
+    backendFetch(tagsPath, cookie)
+      .then(async (response) =>
+        response.ok ? ((await response.json()) as { tags: Tag[] }).tags : null,
+      )
+      .catch(() => null),
+  ]).then(([page, duplicates, tags]) => ({ page, duplicates, tags }));
   const edited =
     form?.mode === 'edit'
       ? await backendFetch(`contacts/${encodeURIComponent(form.id)}`, cookie)

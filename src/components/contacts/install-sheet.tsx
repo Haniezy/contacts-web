@@ -7,9 +7,15 @@ import { install, installState, runningInstalled } from '@/lib/install';
 
 const subscribeNothing = () => () => {};
 
-// "Install the app" in the menu, only where the browser offers installing
+// "Install the app" in the sidebar, only where the browser offers installing
 // (Chrome, Edge, Samsung) and not when already running as the installed app.
-export function InstallMenuItem() {
+export function InstallMenuItem({
+  className,
+  collapsed = false,
+}: {
+  className: string;
+  collapsed?: boolean;
+}) {
   const t = useTranslations('Install');
   const [open, setOpen] = useState(false);
   const installed = useSyncExternalStore(
@@ -25,18 +31,18 @@ export function InstallMenuItem() {
   // Kept while open so the "installed" note can show after the offer is used.
   if (installed || (!offer && !open)) return null;
   return (
-    <li>
-      <button type="button" className="menu-link" onClick={() => setOpen(true)}>
-        <span className="menu-icon icon-install">
-          <Icon name="download" />
-        </span>
-        <span className="menu-text">
-          {t('menu')}
-          <span className="menu-subtext">{t('menuHelp')}</span>
-        </span>
+    <>
+      <button
+        type="button"
+        className={className}
+        title={collapsed ? t('menu') : undefined}
+        onClick={() => setOpen(true)}
+      >
+        <Icon name="download" />
+        <span className="desk-label">{t('menu')}</span>
       </button>
       {open && <InstallSheet onClose={() => setOpen(false)} />}
-    </li>
+    </>
   );
 }
 
