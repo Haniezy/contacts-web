@@ -55,7 +55,7 @@ export function LanguageSwitch() {
         </span>
       </button>
       {error && (
-        <p role="alert" className="text-sm text-ink2">
+        <p role="alert" className="text-sm text-ink-muted">
           {t('error')}
         </p>
       )}

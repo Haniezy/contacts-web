@@ -18,6 +18,11 @@ const designColours = [
   '.language-option.is-active',
   '.theme-switch',
   '.error-toast',
+  // The primary buttons: palette cream on terracotta, 4.25:1 in the light
+  // theme, kept by the owner's choice (21 Mehr 1405); 4.71:1 in the dark.
+  '.button-primary',
+  '.button-danger-solid',
+  '.contacts-add',
 ];
 
 async function audit(page: Page) {

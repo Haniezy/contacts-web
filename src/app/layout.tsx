@@ -21,11 +21,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// The browser and app bars take the page background of each theme.
+// The browser and app bars take the page background of each theme (light:
+// the palette's peach, 28%, over its cream; see globals.css).
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f3fafc' },
-    { media: '(prefers-color-scheme: dark)', color: '#161c27' },
+    { media: '(prefers-color-scheme: light)', color: '#fbe9dd' },
+    { media: '(prefers-color-scheme: dark)', color: '#191614' },
   ],
 };
 

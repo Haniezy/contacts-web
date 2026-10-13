@@ -5,10 +5,10 @@
 import sharp from 'sharp';
 
 const book = (scale, offset) =>
-  `<g transform="translate(${offset} ${offset}) scale(${scale})" fill="none" stroke="#3e9c7c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5a2 2 0 0 1 2-2h13v17H7a2 2 0 0 0-2 2"/><path d="M9 7h7M9 11h5"/></g>`;
+  `<g transform="translate(${offset} ${offset}) scale(${scale})" fill="none" stroke="#b85c46" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5a2 2 0 0 1 2-2h13v17H7a2 2 0 0 0-2 2"/><path d="M9 7h7M9 11h5"/></g>`;
 const svg = (radius, scale, offset) =>
   Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e3f7ef"/><stop offset="1" stop-color="#c9ede0"/></linearGradient></defs>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff7ef"/><stop offset="1" stop-color="#f2c6ae"/></linearGradient></defs>
   <rect width="512" height="512" rx="${radius}" fill="url(#bg)"/>${book(scale, offset)}</svg>`);
 
 const any = svg(112, 11.67, 116);

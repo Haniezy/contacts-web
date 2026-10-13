@@ -5,23 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>دفترچه تلفن</title>
     <style>
+      /* The app's two palettes (src/app/globals.css), by role. */
       :root {
-        --page: #f3fafc;
-        --card: #ffffff;
-        --ink: #3e4a5e;
-        --ink2: #56627a;
-        --mint: #daf4ea;
-        --mint-t: #3e9c7c;
-        --button: linear-gradient(180deg, #93cde2, #68aecb);
+        --page: #fbe9dd;
+        --card: #fff7ef;
+        --ink: #3c2925;
+        --ink2: #713d32;
+        --soft: #f2c6ae;
+        --soft-t: #713d32;
+        --button: #b85c46;
+        --on-button: #fff7ef;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --page: #161c27;
-          --card: #181f2b;
-          --ink: #eaf0f6;
-          --ink2: #8c97ac;
-          --mint: #1e3b33;
-          --mint-t: #7fe0bc;
+          --page: #191614;
+          --card: #28211d;
+          --ink: #f7ebdd;
+          --ink2: #e8b49b;
+          --soft: #493129;
+          --soft-t: #e8b49b;
+          --button: #c16b52;
+          --on-button: #191614;
         }
       }
       body {
@@ -49,8 +53,8 @@
         height: 64px;
         margin: 0 auto 16px;
         border-radius: 18px;
-        background: var(--mint);
-        color: var(--mint-t);
+        background: var(--soft);
+        color: var(--soft-t);
       }
       h1 {
         margin: 0 0 8px;
@@ -67,7 +71,7 @@
         border: 0;
         border-radius: 999px;
         background: var(--button);
-        color: #fff;
+        color: var(--on-button);
         font: inherit;
         font-weight: 700;
       }
