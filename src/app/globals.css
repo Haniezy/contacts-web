@@ -5378,7 +5378,9 @@ html:has(.merge-dialog[open]) {
   opacity: 1;
 }
 .sync-confirm {
+  display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
   min-height: 36px;
   padding-inline: 16px;
   border: 0;

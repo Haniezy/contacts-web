@@ -1,4 +1,5 @@
-import type { Page } from '@playwright/test';
+import type { Page, Route } from '@playwright/test';
+import sharp from 'sharp';
 import { expect, fixture, openMenu, test } from './fixtures';
 
 test('the app can be installed: manifest, icons and an uncached service worker', async ({
@@ -734,5 +735,267 @@ test.describe('exact sync', () => {
     expect(sent).toEqual(['POST']);
     const names = (await onServer(page)).map((c) => c.name);
     expect(names.sort()).toEqual(['آفلاین دوم', 'سارا احمدی'].sort());
+  });
+
+  // A small PNG of one colour, so two photos have different bytes.
+  const png = async (background: string) => ({
+    name: 'photo.png',
+    mimeType: 'image/png',
+    buffer: await sharp({
+      create: { width: 8, height: 8, channels: 3, background },
+    })
+      .png()
+      .toBuffer(),
+  });
+  // Photo requests are answered here, as the server would (with the
+  // contact and a stand-in photo), so tests leave nothing in the real
+  // photo storage. Each records its method, contact and bytes.
+  async function answerPhotos(page: Page, delay = 0) {
+    const seen: { method: string; id: string; body: Buffer }[] = [];
+    await page.route(
+      /\/api\/contacts\/[0-9a-f-]{36}\/photo$/,
+      async (route) => {
+        const request = route.request();
+        const id = new URL(request.url()).pathname.split('/')[3];
+        seen.push({
+          method: request.method(),
+          id,
+          body: request.postDataBuffer() ?? Buffer.alloc(0),
+        });
+        if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+        const { contact } = (await (
+          await page.request.get(`/api/contacts/${id}`)
+        ).json()) as { contact: Record<string, unknown> };
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            contact: {
+              ...contact,
+              photoUrl:
+                request.method() === 'DELETE'
+                  ? null
+                  : 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
+            },
+          }),
+        });
+      },
+    );
+    return seen;
+  }
+  const choosePhoto = async (
+    page: Page,
+    photo: Awaited<ReturnType<typeof png>>,
+  ) => page.locator('.photo-field input[type="file"]').setInputFiles(photo);
+  async function editPhoto(
+    page: Page,
+    name: string,
+    photo: Awaited<ReturnType<typeof png>>,
+  ) {
+    await page.getByRole('button', { name: new RegExp(name) }).click();
+    await page
+      .locator('.contact-row.is-open')
+      .getByRole('link', { name: 'ویرایش' })
+      .click();
+    await choosePhoto(page, photo);
+    await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
+    await expect(page).toHaveURL(/\/contacts$/);
+  }
+
+  test('a photo chosen offline for a new contact is uploaded once it exists', async ({
+    page,
+    context,
+  }) => {
+    const photo = await png('#4a90a4');
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await page.locator('.contacts-add').click();
+    await page.getByLabel('نام و نام خانوادگی').fill('با عکس');
+    await page.getByLabel('شماره تلفن').fill('09121110011');
+    await choosePhoto(page, photo);
+    await page.getByRole('button', { name: 'ذخیره مخاطب' }).click();
+    const avatar = page
+      .locator('.contact-row')
+      .filter({ hasText: 'با عکس' })
+      .locator('img.avatar');
+    await expect(avatar).toHaveAttribute('src', /^blob:/);
+    // Another change re-reads the book: the picture keeps its address.
+    const shown = await avatar.getAttribute('src');
+    await addContact(page, 'بی عکس', '09121110015');
+    await expect(avatar).toHaveAttribute('src', shown!);
+    await context.setOffline(false);
+    // The photo waits on this device, across a reload too.
+    await page.reload();
+    await expect(avatar).toHaveAttribute('src', /^blob:/);
+
+    const uploads = await answerPhotos(page);
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    const made = (await onServer(page)).find((c) => c.name === 'با عکس')!;
+    expect((await onServer(page)).map((c) => c.name).sort()).toEqual(
+      ['با عکس', 'بی عکس', 'سارا احمدی'].sort(),
+    );
+    expect(uploads.map((u) => [u.method, u.id])).toEqual([['POST', made.id]]);
+    expect(uploads[0].body.includes(photo.buffer)).toBe(true);
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('a photo replaced before syncing is uploaded once, the last one', async ({
+    page,
+    context,
+  }) => {
+    const [first, last] = [await png('#d9756e'), await png('#3e9c7c')];
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await editPhoto(page, 'سارا احمدی', first);
+    await editPhoto(page, 'سارا احمدی', last);
+    await context.setOffline(false);
+
+    const uploads = await answerPhotos(page);
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText(allSynced);
+    expect(uploads).toHaveLength(1);
+    expect(uploads[0].body.includes(last.buffer)).toBe(true);
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('a photo chosen while another is uploading is uploaded after it', async ({
+    page,
+    context,
+  }) => {
+    const [first, second] = [await png('#d9756e'), await png('#3e9c7c')];
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await editPhoto(page, 'سارا احمدی', first);
+    await context.setOffline(false);
+
+    const uploads = await answerPhotos(page, 3000);
+    const started = page.waitForRequest((request) =>
+      request.url().endsWith('/photo'),
+    );
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await started;
+    await editPhoto(page, 'سارا احمدی', second);
+    await expect(notice).toContainText(allSynced, { timeout: 30000 });
+    expect(uploads).toHaveLength(2);
+    expect(uploads[0].body.includes(first.buffer)).toBe(true);
+    expect(uploads[1].body.includes(second.buffer)).toBe(true);
+    expect(await waiting(page)).toEqual([]);
+  });
+
+  test('two windows syncing at once send each change once', async ({
+    context,
+  }) => {
+    const one = await context.newPage();
+    const two = await context.newPage();
+    await one.goto('/contacts');
+    await copied(one);
+    await two.goto('/contacts');
+    await context.setOffline(true);
+    await addContact(one, 'از پنجره اول', '09121110012');
+    await editContact(one, 'سارا احمدی', /یادآوری/, 'از پنجره اول');
+    await context.setOffline(false);
+
+    // The other window learns of the waiting changes by itself.
+    const notices = [one, two].map((page) => page.locator('.sync-toast'));
+    for (const notice of notices)
+      await expect(notice).toContainText('۲ تغییری');
+    const sent: string[] = [];
+    context.on('request', (request) => {
+      if (request.url().includes('/api/contacts') && request.method() !== 'GET')
+        sent.push(request.method());
+    });
+    await Promise.all(
+      notices.map((notice) =>
+        notice.getByRole('button', { name: 'تأیید' }).click(),
+      ),
+    );
+    for (const notice of notices) await expect(notice).toContainText(allSynced);
+    expect(sent.sort()).toEqual(['PATCH', 'POST']);
+    const saved = await onServer(one);
+    expect(saved.filter((c) => c.name === 'از پنجره اول')).toHaveLength(1);
+    expect(saved.find((c) => c.name === 'سارا احمدی')?.reminder).toBe(
+      'از پنجره اول',
+    );
+  });
+
+  test('a session that ends mid-sync is reported; the changes wait and those set aside are named', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await editContact(page, 'سارا احمدی', /یادآوری/, 'یادداشت');
+    await addContact(page, 'بعد از ورود', '09121110013');
+    await context.setOffline(false);
+    // Sara is deleted elsewhere (her edit is set aside), and then the
+    // session ends before the new contact is sent.
+    const { id } = (await onServer(page)).find((c) => c.name === 'سارا احمدی')!;
+    expect((await page.request.delete(`/api/contacts/${id}`)).ok()).toBe(true);
+    await page.route('**/api/contacts', (route: Route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({
+            status: 401,
+            contentType: 'application/json',
+            body: '{"error":"UNAUTHENTICATED"}',
+          })
+        : route.fallback(),
+    );
+
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await expect(notice).toContainText('دوباره وارد شو');
+    await expect(notice).toContainText('«سارا احمدی»');
+    await expect(notice).not.toContainText(allSynced);
+    await expect(page).toHaveURL(/\/contacts$/);
+    expect(await waiting(page)).toEqual(['create:بعد از ورود']);
+    // The session really has ended now; the link leads to signing in.
+    await context.clearCookies();
+    await notice.getByRole('link', { name: 'ورود' }).click();
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test('undoing a delete while it is being sent brings the contact back', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/contacts');
+    await copied(page);
+    await context.setOffline(true);
+    await addContact(page, 'منتظر', '09121110014');
+    await context.setOffline(false);
+    // The server answers slowly, so the delete is still on its way when
+    // Undo is pressed.
+    await page.route(
+      (url) => url.pathname.startsWith('/api/contacts'),
+      async (route) => {
+        if (['POST', 'DELETE'].includes(route.request().method()))
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+        await route.fallback();
+      },
+    );
+    const notice = page.locator('.sync-toast');
+    await notice.getByRole('button', { name: 'تأیید' }).click();
+    await deleteContact(page, 'سارا احمدی');
+    await page.waitForRequest((request) => request.method() === 'DELETE');
+    await page
+      .locator('.undo-toast')
+      .getByRole('button', { name: 'بازگردانی' })
+      .click();
+    await expect(
+      page.getByRole('button', { name: /سارا احمدی/ }),
+    ).toBeVisible();
+
+    await expect(notice).toContainText(allSynced, { timeout: 30000 });
+    const names = (await onServer(page)).map((c) => c.name);
+    expect(names.sort()).toEqual(['سارا احمدی', 'منتظر'].sort());
+    expect(await onServer(page, '/api/contacts/trash')).toEqual([]);
+    expect(await waiting(page)).toEqual([]);
   });
 });

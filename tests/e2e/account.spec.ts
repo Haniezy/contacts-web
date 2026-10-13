@@ -122,6 +122,9 @@ test('the password changes only through its own form, which checks the current p
   )
     .getByRole('button', { name: 'خروج', exact: true })
     .click();
+  // Signing out has finished once the app is on the sign-in page; going
+  // there sooner races the sign-out request.
+  await expect(page).toHaveURL(/\/login$/);
   await login(page, account.email, account.password);
   await expect(page.getByRole('alert')).toBeVisible();
   await login(page, account.email, password);

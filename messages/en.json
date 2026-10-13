@@ -423,6 +423,8 @@
     "syncing": "Syncing…",
     "failed": "Syncing didn't finish; the unsaved changes are kept.",
     "retry": "Retry",
+    "expired": "Your session has ended; the unsaved changes stay on this device. Sign in again to sync them.",
+    "signIn": "Sign in",
     "doneTitle": "Changes synced",
     "done": "Everything you changed offline is now in your account.",
     "partialTitle": "Some changes weren't saved",

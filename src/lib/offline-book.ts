@@ -44,9 +44,16 @@ type Change =
     }
   // `before` is what the delete replaced, so Undo can bring it back. A
   // contact created offline and deleted again never reaches the server.
-  // `sent`: the delete is on its way (or its reply was lost); Undo then
-  // goes through the server instead.
-  | { kind: 'delete'; id: string; before?: Change; sent?: true };
+  // `sent`: the delete is on its way (or its reply was lost). Undo then
+  // sets `restore`: once that request is over the contact is restored on
+  // the server, and what `before` holds is sent after it.
+  | {
+      kind: 'delete';
+      id: string;
+      before?: Change;
+      sent?: true;
+      restore?: true;
+    };
 type Book = {
   userId: string;
   // Null until the server's list has been read once on this device.
@@ -63,7 +70,8 @@ type Part =
   | { kind: 'create' }
   | { kind: 'values'; values: Partial<Values> }
   | { kind: 'photo'; photoAt?: number }
-  | { kind: 'delete' };
+  | { kind: 'delete' }
+  | { kind: 'restore' };
 
 const dbName = 'dafarche-offline';
 const storeName = 'books';
@@ -133,13 +141,31 @@ const arabicFirst = /^\s*[ء-يٮ-ۓۺ-ۿ]/;
 const latinFirst = /^\s*[A-Za-zÀ-ɏ]/;
 const collator = new Intl.Collator('fa');
 
-const photoUrls = new WeakMap<Blob, string>();
-function photoUrl(photo: Blob) {
-  let url = photoUrls.get(photo);
-  if (!url) photoUrls.set(photo, (url = URL.createObjectURL(photo)));
+// One address per waiting photo, by contact and stamp: the book is read
+// again from storage after every change, as new Blob objects, and a new
+// address each time would reload the picture and never be released.
+const photoUrls = new Map<
+  string,
+  { stamp?: number; blob: Blob; url: string }
+>();
+function photoUrl(id: string, photo: Blob, stamp?: number) {
+  const kept = photoUrls.get(id);
+  if (
+    kept &&
+    (stamp === undefined ? kept.blob === photo : kept.stamp === stamp)
+  )
+    return kept.url;
+  if (kept) URL.revokeObjectURL(kept.url);
+  const url = URL.createObjectURL(photo);
+  photoUrls.set(id, { stamp, blob: photo, url });
   return url;
 }
-function shaped(base: Contact, values: Partial<Values>, photo?: Photo) {
+function shaped(
+  base: Contact,
+  values: Partial<Values>,
+  photo?: Photo,
+  stamp?: number,
+) {
   const { birthday, ...rest } = values;
   return {
     ...base,
@@ -149,7 +175,11 @@ function shaped(base: Contact, values: Partial<Values>, photo?: Photo) {
       ? { birthday: birthday && `${birthday}T00:00:00.000Z` }
       : {}),
     photoUrl:
-      photo === 'remove' ? null : photo ? photoUrl(photo) : base.photoUrl,
+      photo === 'remove'
+        ? null
+        : photo
+          ? photoUrl(base.id, photo, stamp)
+          : base.photoUrl,
   };
 }
 // Errors worth trying again later; anything else can never succeed (the
@@ -255,10 +285,19 @@ export class OfflineBook {
   private shown: Contact[] | null = null;
   // Bumped by saves made online, so an older full read never undoes them.
   private touched = 0;
+  // Other windows of the app on this account (the installed app beside a
+  // browser tab): each change here is announced, and theirs re-read here.
+  private channel: BroadcastChannel | null = null;
+  private others = new Set<() => void>();
   private constructor(
     private book: Book,
     private stored: boolean,
-  ) {}
+  ) {
+    if (!stored || typeof BroadcastChannel === 'undefined') return;
+    this.channel = new BroadcastChannel(`dafarche-book-${book.userId}`);
+    this.channel.onmessage = () =>
+      void this.reload().then(() => this.others.forEach((other) => other()));
+  }
 
   static async open(userId: string) {
     try {
@@ -290,6 +329,19 @@ export class OfflineBook {
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  };
+  // When the page that opened it goes away.
+  close() {
+    this.channel?.close();
+    this.channel = null;
+    this.others.clear();
+  }
+  // Called after another window changed the book (already re-read here).
+  onOtherWindow = (listener: () => void) => {
+    this.others.add(listener);
+    return () => {
+      this.others.delete(listener);
+    };
   };
   // Changes waiting to be synced.
   pending = () => this.book.changes.filter((c) => !isTombstone(c)).length;
@@ -331,6 +383,7 @@ export class OfflineBook {
       if (!this.stored) return;
       try {
         await request((await store('readwrite')).put(this.book));
+        this.channel?.postMessage('changed');
       } catch {
         // Full or unavailable: the copy in memory still serves this visit.
       }
@@ -352,7 +405,11 @@ export class OfflineBook {
   contacts() {
     if (this.shown) return this.shown;
     const byId = new Map((this.book.contacts ?? []).map((c) => [c.id, c]));
-    for (const change of this.book.changes) {
+    for (const waiting of this.book.changes) {
+      // A delete being undone shows what it replaced, or the contact.
+      const change =
+        waiting.kind === 'delete' && waiting.restore ? waiting.before : waiting;
+      if (!change) continue;
       const base = byId.get(change.id);
       if (change.kind === 'delete') byId.delete(change.id);
       else if (change.kind === 'create')
@@ -369,12 +426,16 @@ export class OfflineBook {
               },
               change.values,
               change.photo,
+              change.photoAt,
             ),
             change.edits ?? {},
           ),
         );
       else if (base)
-        byId.set(change.id, shaped(base, change.values, change.photo));
+        byId.set(
+          change.id,
+          shaped(base, change.values, change.photo, change.photoAt),
+        );
     }
     return (this.shown = [...byId.values()]);
   }
@@ -509,7 +570,13 @@ export class OfflineBook {
       const stamp = (book.rev ?? 0) + 1;
       const change = create
         ? newContact(id, values as Values, photo, stamp, sent)
-        : folded(before, id, values, photo, stamp);
+        : before?.kind === 'delete' && before.restore
+          ? // Its delete is being undone: the edit waits behind that.
+            {
+              ...before,
+              before: folded(before.before, id, values, photo, stamp),
+            }
+          : folded(before, id, values, photo, stamp);
       return {
         ...book,
         rev: stamp,
@@ -522,7 +589,11 @@ export class OfflineBook {
   remove(id: string) {
     return this.update((book) => {
       const before = book.changes.find((c) => c.id === id);
-      const change: Change = { kind: 'delete', id, before };
+      const change: Change =
+        before?.kind === 'delete' && before.restore
+          ? // Deleted again while that delete was being undone.
+            { ...before, restore: undefined }
+          : { kind: 'delete', id, before };
       return {
         ...book,
         changes: [...book.changes.filter((c) => c.id !== id), change],
@@ -531,14 +602,23 @@ export class OfflineBook {
     });
   }
 
-  // Undo of a delete waiting here; false when there is none, or when it is
-  // already on its way to the server (then the server restores it).
+  // Undo of a delete waiting here; false when there is none (it is done,
+  // and the server restores it). A delete already on its way is not
+  // called back: the contact is restored on the server once it is over.
   async undo(id: string) {
     let undone = false;
     await this.update((book) => {
       const change = book.changes.find((c) => c.id === id);
-      if (change?.kind !== 'delete' || change.sent) return book;
+      if (change?.kind !== 'delete' || change.restore) return book;
       undone = true;
+      if (change.sent)
+        return {
+          ...book,
+          changes: book.changes.map((c) =>
+            c === change ? { ...change, restore: true as const } : c,
+          ),
+          trashCount: book.trashCount - 1,
+        };
       const changes = book.changes.filter((c) => c.id !== id);
       return {
         ...book,
@@ -556,7 +636,17 @@ export class OfflineBook {
   // changes set aside because they can no longer apply (the contact was
   // deleted elsewhere, say) and, when it stopped before the queue was
   // empty, the error that stopped it.
+  // One window syncs at a time (a lock shared by the account's windows):
+  // a second one waits, then finds what the first already sent gone.
   async sync(): Promise<{ skipped: string[]; error?: unknown }> {
+    const run = () => this.syncNow();
+    if (typeof navigator === 'undefined' || !navigator.locks) return run();
+    return await navigator.locks.request(
+      `dafarche-sync-${this.book.userId}`,
+      run,
+    );
+  }
+  private async syncNow(): Promise<{ skipped: string[]; error?: unknown }> {
     const skipped: string[] = [];
     await this.reload();
     for (
@@ -573,8 +663,10 @@ export class OfflineBook {
         if (retryable(error)) return { skipped, error };
         const gone = error instanceof ApiError && error.status === 404;
         const latest = this.book.changes.find((c) => c.id === id);
-        // Deleted here and gone there: what was wanted happened.
-        if (!(gone && latest?.kind === 'delete')) skipped.push(name);
+        // Deleted here and gone there: what was wanted happened (unless
+        // the delete was being undone).
+        if (!(gone && latest?.kind === 'delete' && !latest.restore))
+          skipped.push(name);
         // Gone, or a new contact refused: nothing of it can apply. An edit
         // refused: that request's part is set aside, what was changed here
         // since stays.
@@ -618,17 +710,34 @@ export class OfflineBook {
               ? { ...change, before: confirmed(change.before) }
               : confirmed(change);
         else if (part.kind === 'delete')
-          next = change.kind === 'delete' ? undefined : change;
+          next =
+            change.kind !== 'delete'
+              ? change
+              : change.restore
+                ? change
+                : undefined;
+        else if (part.kind === 'restore')
+          next =
+            change.kind !== 'delete' || !change.restore
+              ? change
+              : contact === 'kept'
+                ? // Never created: its creation is sent again.
+                  change.before
+                : change.before && confirmed(change.before);
         else if (change.kind === 'delete' && change.before)
           next = { ...change, before: remainder(change.before, part) };
         else next = remainder(change, part);
         return next ? [next] : [];
       });
+      // Deleted there, but being undone here: the copy keeps it.
+      const restoring = changes.some(
+        (c) => c.id === id && c.kind === 'delete' && c.restore,
+      );
       return {
         ...book,
         changes,
         contacts:
-          contact === 'kept'
+          contact === 'kept' || (contact === 'gone' && restoring)
             ? book.contacts
             : contact === 'gone'
               ? book.contacts && others
@@ -641,6 +750,7 @@ export class OfflineBook {
   // its answer.
   private async push(change: Change) {
     const { id } = change;
+    if (change.kind === 'delete' && change.restore) return this.restore(change);
     if (change.kind === 'delete') {
       const part: Part = { kind: 'delete' };
       this.sending = part;
@@ -708,6 +818,35 @@ export class OfflineBook {
           change.photo,
         )
       ).contact;
+    return this.settle(id, contact, part);
+  }
+
+  // An undone delete that may have reached the server: restore it there.
+  // Not in the trash (404) means the delete never arrived, so the contact
+  // is checked; if it was made here and never created, its creation waits
+  // to be sent again.
+  private async restore(change: Change) {
+    const { id } = change;
+    const part: Part = { kind: 'restore' };
+    this.sending = part;
+    let contact: Contact | 'kept';
+    try {
+      ({ contact } = await api<{ contact: Contact }>(
+        `contacts/${id}/restore`,
+        {},
+      ));
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 404)) throw error;
+      try {
+        ({ contact } = await api<{ contact: Contact }>(`contacts/${id}`));
+      } catch (missing) {
+        const made =
+          change.kind === 'delete' && change.before?.kind === 'create';
+        if (!(missing instanceof ApiError && missing.status === 404) || !made)
+          throw missing;
+        contact = 'kept';
+      }
+    }
     return this.settle(id, contact, part);
   }
 

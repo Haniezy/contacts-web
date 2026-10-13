@@ -182,6 +182,15 @@ export function ContactsApp({
     });
   }, []);
 
+  // Another window changed the book: show the list as it now is.
+  useEffect(
+    () =>
+      book?.onOtherWindow(() => {
+        if (mode.current.local) void reload().catch(() => {});
+      }),
+    [book, reload],
+  );
+
   // Back to the front: another window may have changed the book.
   useEffect(() => {
     if (!book) return;
@@ -488,8 +497,10 @@ export function ContactsApp({
     const { skipped, error } = await book.sync();
     void refreshDuplicates();
     if (error) {
+      // The session ended: say so here (the changes wait on this device
+      // for the same account) rather than leaving for the login page.
       if (error instanceof ApiError && error.status === 401)
-        return router.replace('/login');
+        return setSyncState({ kind: 'expired', skipped });
       if (isUnreachable(error)) void serviceDown();
       return setSyncState({ kind: 'failed', skipped });
     }
