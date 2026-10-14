@@ -1,5 +1,6 @@
 // Dafarche's service worker: the installed app opens without a connection.
-// - Built assets (/_next/static, icons) never change: cache first.
+// - Built assets (/_next/static, icons) never change: cache first. When an
+//   icon does change (v4: blue icons), the version below goes up.
 // - Pages: network first; offline, when the server fails or is slow, the
 //   last copy, or offline.html for a page never seen (see networkFirst).
 // - Nothing else is stored: no API calls (the contacts page keeps its own
@@ -9,7 +10,7 @@
 // - The contacts page asks for itself and the files it runs on to be kept
 //   (the 'keep' message): it is usually reached without a full page load
 //   (after signing in), and its first files load before this worker runs.
-const version = 'v3';
+const version = 'v4';
 const assets = `assets-${version}`;
 const pages = `pages-${version}`;
 const fallback = '/offline.html';
