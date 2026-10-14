@@ -3,7 +3,7 @@
 export const palettes = ['slate', 'forest', 'terracotta'] as const;
 export type Palette = (typeof palettes)[number];
 export const paletteCookie = 'contacts-palette';
-export const defaultPalette: Palette = 'terracotta';
+export const defaultPalette: Palette = 'slate';
 export const isPalette = (value: unknown): value is Palette =>
   palettes.includes(value as Palette);
 

@@ -139,25 +139,26 @@ test('a colour theme chosen in Settings covers the whole app and stays', async (
   await page.goto('/settings');
   const html = page.locator('html');
   const themes = page.getByRole('group', { name: 'تم رنگی' });
-  await expect(html).toHaveAttribute('data-palette', 'terracotta');
-  await expect(themes.getByRole('radio', { name: 'سفالی' })).toBeChecked();
+  // Slate blue unless another is chosen.
+  await expect(html).toHaveAttribute('data-palette', 'slate');
+  await expect(themes.getByRole('radio', { name: 'آبی سنگی' })).toBeChecked();
   const accent = () =>
     page.evaluate(() =>
       getComputedStyle(document.documentElement)
         .getPropertyValue('--primary')
         .trim(),
     );
-  expect(await accent()).toBe('#b85c46');
+  expect(await accent()).toBe('#2f6feb');
 
   // Applied at once, kept across a reload and on other pages.
-  await themes.getByRole('radio', { name: 'آبی سنگی' }).check();
-  await expect(html).toHaveAttribute('data-palette', 'slate');
-  expect(await accent()).toBe('#2f6feb');
+  await themes.getByRole('radio', { name: 'سفالی' }).check();
+  await expect(html).toHaveAttribute('data-palette', 'terracotta');
+  expect(await accent()).toBe('#b85c46');
   await page.reload();
-  await expect(html).toHaveAttribute('data-palette', 'slate');
-  await expect(themes.getByRole('radio', { name: 'آبی سنگی' })).toBeChecked();
+  await expect(html).toHaveAttribute('data-palette', 'terracotta');
+  await expect(themes.getByRole('radio', { name: 'سفالی' })).toBeChecked();
   await page.goto('/contacts');
-  await expect(html).toHaveAttribute('data-palette', 'slate');
+  await expect(html).toHaveAttribute('data-palette', 'terracotta');
 
   // Each theme has its dark mode too.
   await page.evaluate(() => localStorage.setItem('contacts-theme', 'dark'));
@@ -165,6 +166,6 @@ test('a colour theme chosen in Settings covers the whole app and stays', async (
   await themes.getByRole('radio', { name: 'سبز جنگلی' }).check();
   await expect(html).toHaveAttribute('data-theme', 'dark');
   expect(await accent()).toBe('#98704b');
-  await themes.getByRole('radio', { name: 'سفالی' }).check();
-  expect(await accent()).toBe('#c16b52');
+  await themes.getByRole('radio', { name: 'آبی سنگی' }).check();
+  expect(await accent()).toBe('#6ea8fe');
 });

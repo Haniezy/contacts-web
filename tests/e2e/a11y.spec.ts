@@ -184,7 +184,7 @@ test('the other colour themes pass the accessibility checks', async ({
       sameSite: 'Lax',
     },
   ]);
-  for (const palette of ['slate', 'forest'])
+  for (const palette of ['terracotta', 'forest'])
     for (const theme of ['light', 'dark']) {
       await context.addCookies([
         {
