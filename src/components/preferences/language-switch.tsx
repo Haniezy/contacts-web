@@ -4,9 +4,10 @@ import { useOptimistic, useState, useTransition } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { setLocale } from '@/i18n/actions';
 import type { Locale } from '@/i18n/config';
+import { PreferenceIcon } from './icons';
 
-// One button, like the theme switch: a click anywhere flips the language.
-// It is named after the language it switches to.
+// The language everywhere (the landing header, the sidebar, the phone
+// drawer): one button, a globe and the name of the language it switches to.
 export function LanguageSwitch() {
   const locale = useLocale() as Locale;
   const t = useTranslations('Preferences');
@@ -14,10 +15,12 @@ export function LanguageSwitch() {
   const [shown, setShown] = useOptimistic(locale);
   const [error, setError] = useState(false);
   const next: Locale = locale === 'fa' ? 'en' : 'fa';
+  // What the button offers: at once the other language after a click, and
+  // back again if the change fails.
+  const offer: Locale = shown === 'fa' ? 'en' : 'fa';
   function change() {
     setError(false);
     startTransition(async () => {
-      // The knob slides at once; it slides back if the change fails.
       setShown(next);
       try {
         await setLocale(next);
@@ -30,29 +33,15 @@ export function LanguageSwitch() {
     <div>
       <button
         type="button"
-        className={`language-switch is-${shown}`}
-        lang={next}
-        aria-label={next === 'en' ? 'English' : 'فارسی'}
+        className="language-switch"
+        lang={offer}
+        dir={offer === 'en' ? 'ltr' : 'rtl'}
         aria-busy={pending}
         disabled={pending}
-        dir="ltr"
         onClick={change}
       >
-        <span className="language-knob" aria-hidden="true" />
-        <span
-          className={`language-option${shown === 'en' ? ' is-active' : ''}`}
-          lang="en"
-          aria-hidden="true"
-        >
-          EN
-        </span>
-        <span
-          className={`language-option${shown === 'fa' ? ' is-active' : ''}`}
-          lang="fa"
-          aria-hidden="true"
-        >
-          فارسی
-        </span>
+        <PreferenceIcon name="globe" />
+        <span>{offer === 'en' ? 'English' : 'فارسی'}</span>
       </button>
       {error && (
         <p role="alert" className="text-sm text-ink-muted">

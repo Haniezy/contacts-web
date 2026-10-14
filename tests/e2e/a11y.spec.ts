@@ -20,7 +20,6 @@ const designColours = [
   '.app-version',
   '.merge-cancel',
   '.button-mint',
-  '.language-option.is-active',
   '.error-toast',
   // The primary buttons: palette cream on terracotta, 4.25:1 in the light
   // theme, kept by the owner's choice (21 Mehr 1405); 4.71:1 in the dark.

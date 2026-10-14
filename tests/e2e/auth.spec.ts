@@ -275,8 +275,8 @@ test('landing sections: FAQ opens one answer at a time; the header switches them
   await moon.click();
   await expect(moon).toHaveAttribute('aria-pressed', 'true');
   await expect(html).toHaveAttribute('data-theme', 'dark');
-  // Clicking the side already showing the language still flips it.
-  await header.locator('.language-option.is-active').click();
+  // The language button offers the other language.
+  await header.getByRole('button', { name: 'English', exact: true }).click();
   await expect(html).toHaveAttribute('lang', 'en');
   await expect(
     page.getByRole('heading', { level: 2, name: 'Frequently asked questions' }),

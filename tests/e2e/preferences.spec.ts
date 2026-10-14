@@ -75,8 +75,10 @@ test('theme and language persist and translate the document', async ({
   await expect(html).toHaveAttribute('dir', 'ltr');
   scope = await preferences(page);
   await expectDark(page, true);
-  // One button: in English it offers Persian, with the knob under EN.
-  await expect(scope.locator('.language-option.is-active')).toHaveText('EN');
+  // One button, named after the language it offers: in English, Persian.
+  await expect(
+    scope.getByRole('button', { name: 'فارسی', exact: true }),
+  ).toHaveAttribute('lang', 'fa');
   await expect(
     scope.getByRole('button', { name: 'English', exact: true }),
   ).toHaveCount(0);
