@@ -33,6 +33,8 @@
   --tag-teal: #3f7d78;
   --tag-clay: #8f5d43;
   --chip-mix: 24%;
+  /* The theme's wash over the sign-in picture (login, landing). */
+  --photo-tint: var(--primary);
 }
 
 [data-theme='dark'] {
@@ -631,7 +633,6 @@ button:disabled {
 .auth-card {
   /* Which way "towards the end side" is. */
   --dir: 1;
-  --hero-tint: var(--primary);
   --hero-ink: var(--surface);
   --hero-on: var(--ink);
   position: relative;
@@ -650,8 +651,8 @@ button:disabled {
   --hero-on: var(--page);
 }
 /* Forest's accent is a tan; its green suits the mountains better. */
-[data-palette='forest'] .auth-card {
-  --hero-tint: #465743;
+[data-palette='forest'] {
+  --photo-tint: #465743;
 }
 .auth-card-bg {
   position: relative;
@@ -669,7 +670,7 @@ button:disabled {
   inset: 0;
 }
 .auth-card-bg::before {
-  background: var(--hero-tint);
+  background: var(--photo-tint);
   mix-blend-mode: color;
   opacity: 0.45;
 }
@@ -1396,60 +1397,56 @@ button:disabled {
   }
 }
 
-/* Landing — 1440 × 900 artboard; horizontal geometry scales with the viewport. */
-.landing {
-  position: relative;
-  isolation: isolate;
-  overflow: clip;
-  height: 100dvh;
-  min-height: 640px;
-  padding: 42px 20px 0;
-  text-align: center;
-}
-.landing-decor {
-  position: absolute;
+/* Landing: the first screen holds the title and the two buttons in its
+   middle; the whole page sits on the sign-in picture, softly blurred under
+   a veil (a blurred copy, so the browser does no blurring of its own). Text
+   right on the picture takes the full ink, darker still in light mode. */
+.landing-backdrop {
+  position: fixed;
   inset: 0;
   z-index: -1;
-  pointer-events: none;
+  background: url('/landing/backdrop.webp') center / cover no-repeat;
 }
-.landing-circle {
+.landing,
+.landing-more,
+.landing-footer {
+  --on-photo: color-mix(in srgb, var(--ink) 70%, #000);
+}
+[data-theme='dark'] :is(.landing, .landing-more, .landing-footer) {
+  --on-photo: var(--ink);
+}
+.landing-backdrop::before,
+.landing-backdrop::after {
+  content: '';
   position: absolute;
-  inset-inline-end: -15.14vw;
-  top: -24.38vw;
-  width: 55vw;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--primary);
-  opacity: 0.4;
+  inset: 0;
 }
-.landing-mint {
-  position: absolute;
-  inset-inline: 9.3vw 9.17vw;
-  top: 487px;
-  height: 42vw;
-  border-start-start-radius: 43% 50%;
-  border-start-end-radius: 57% 50%;
-  border-end-start-radius: 43% 50%;
-  border-end-end-radius: 57% 50%;
-  background: color-mix(in srgb, var(--soft) 55%, transparent);
-  box-shadow: 0 16px 48px color-mix(in srgb, var(--shade) 8%, transparent);
+.landing-backdrop::before {
+  background: var(--photo-tint);
+  mix-blend-mode: color;
+  opacity: 0.45;
 }
-.landing .sphere-1 {
-  inset-inline-end: 6.94vw;
-  top: 210px;
-  width: 44px;
+/* In light mode the picture's dark foot gets a thicker veil. */
+.landing-backdrop::after {
+  background: linear-gradient(
+    color-mix(in srgb, var(--page) 45%, transparent),
+    color-mix(in srgb, var(--page) 80%, transparent)
+  );
 }
-.landing .sphere-2 {
-  inset-inline-end: 11.74vw;
-  top: 401px;
-  width: 24px;
+[data-theme='dark'] .landing-backdrop::after {
+  background: color-mix(in srgb, var(--page) 45%, transparent);
 }
-.landing .sphere-3 {
-  display: block;
-  inset-inline-start: 9.1vw;
-  top: 104px;
-  width: 85px;
+.landing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 48px 20px;
+  color: var(--on-photo);
+  text-align: center;
 }
+
 .landing-copy {
   position: relative;
   z-index: 2;
@@ -1480,7 +1477,6 @@ button:disabled {
 }
 .landing-subtitle {
   margin-block-start: 13px;
-  color: var(--ink-muted);
   font-size: 19px;
   line-height: 1.5;
 }
@@ -1493,126 +1489,10 @@ button:disabled {
 .landing-actions a {
   min-width: 172px;
 }
-.landing-preview {
-  position: absolute;
-  inset-inline: 0;
-  /* Clear of the buttons even when the active phone rises and grows. */
-  top: 376px;
-  bottom: 0;
-  z-index: 1;
-}
-.landing-phones {
-  display: flex;
-  justify-content: center;
-  gap: 2.5vw;
-}
-.preview-phone {
-  position: relative;
-  width: min(23.75vw, 342px);
-  flex-shrink: 0;
-  aspect-ratio: 812 / 1720;
-  overflow: hidden;
-  border-radius: 12.56% / 5.93%;
-  box-shadow: 0 20px 40px color-mix(in srgb, var(--shade) 16%, transparent);
-  transform-origin: 50% 0;
-  transition:
-    transform 0.6s ease,
-    opacity 0.6s ease,
-    filter 0.6s ease;
-  animation: phone-enter 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-  animation-delay: 0.45s;
-}
-.preview-phone:nth-child(2) {
-  animation-delay: 0.25s;
-}
-.preview-phone img {
-  position: absolute;
-  top: -3.256%;
-  left: -6.897%;
-  width: 113.79%;
-  max-width: none;
-  height: auto;
-}
-.preview-dark {
-  display: none;
-}
-[data-theme='dark'] .preview-light {
-  display: none;
-}
-[data-theme='dark'] .preview-dark {
-  display: block;
-}
-.has-focus .preview-phone {
-  opacity: 0.6;
-  filter: blur(1.5px);
-}
-.has-focus .preview-phone.is-active {
-  opacity: 1;
-  filter: none;
-  transform: translateY(-17px) scale(1.15);
-  z-index: 1;
-}
-.landing-fade {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 2;
-  height: 140px;
-  background: linear-gradient(transparent, var(--page));
-  pointer-events: none;
-}
-.preview-caption {
-  position: absolute;
-  bottom: 36px;
-  left: 50%;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 17px;
-  height: 44px;
-  padding-inline: 16px 24px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  box-shadow: 0 10px 30px color-mix(in srgb, var(--shade) 14%, transparent);
-  color: var(--ink-muted);
-  font-size: 15px;
-  white-space: nowrap;
-  backdrop-filter: blur(12px);
-  transform: translateX(-50%);
-  transition:
-    opacity 0.4s ease,
-    visibility 0.4s;
-}
-.preview-caption:not(.is-visible) {
-  opacity: 0;
-  visibility: hidden;
-}
-.preview-dots {
-  display: flex;
-  gap: 6px;
-}
-.preview-dots button {
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: var(--soft);
-  transition: width 0.4s ease;
-}
-.preview-dots button[aria-pressed='true'] {
-  width: 30px;
-  background: var(--primary);
-}
-@keyframes phone-enter {
-  from {
-    opacity: 0;
-    transform: translateY(80px);
-  }
-}
+
 @media (max-width: 767px) {
   .landing {
-    padding: 30px 20px 0;
+    padding: 40px 20px;
   }
   .landing h1 {
     margin-block-start: 14px;
@@ -1633,54 +1513,9 @@ button:disabled {
     min-height: 46px;
     padding-inline: 16px;
   }
-  .landing-preview {
-    top: auto;
-    height: 58%;
-  }
-  .landing-phones {
-    gap: 3vw;
-  }
-  .preview-phone {
-    width: 40vw;
-  }
-  .landing-mint {
-    top: auto;
-    bottom: -12vw;
-  }
-  .landing .sphere-1,
-  .landing .sphere-2 {
-    display: none;
-  }
-  .landing .sphere-3 {
-    top: 12px;
-    width: 40px;
-  }
-  .preview-caption {
-    bottom: 20px;
-    max-width: calc(100% - 32px);
-    font-size: 13px;
-  }
 }
-@media (prefers-reduced-motion: reduce) {
-  .preview-phone,
-  .preview-caption,
-  .preview-dots button {
-    animation: none;
-    transition: none;
-  }
-}
-
 /* Landing sections below the hero. No artboard: built from the settings
-   cards (row surface, tinted icon tiles) on the page's end colour, which the
-   hero's fade already blends into. */
-.landing {
-  /* Keeps the hero's gradient now that the page scrolls past it. */
-  background: linear-gradient(135deg, var(--page), var(--page));
-}
-.landing-more,
-.landing-footer {
-  background: var(--page);
-}
+   cards (row surface, tinted icon tiles), over the same blurred picture. */
 .landing-more {
   padding: 24px 20px 0;
 }
@@ -1691,13 +1526,14 @@ button:disabled {
   text-align: center;
 }
 .landing-section h2 {
+  color: var(--on-photo);
   font-size: clamp(24px, 2.5vw, 34px);
   font-weight: 700;
   line-height: 1.5;
 }
 .landing-lead {
   margin-block-start: 8px;
-  color: var(--ink-muted);
+  color: var(--on-photo);
   font-size: 17px;
   line-height: 1.7;
 }
@@ -1881,9 +1717,9 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 16px;
+  color: var(--on-photo);
 }
 .footer-version {
-  color: var(--ink-muted);
   font-size: 13px;
 }
 .footer-preferences {
@@ -1894,13 +1730,6 @@ button:disabled {
 @media (max-width: 1023px) {
   .feature-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-/* On portrait tablets the full-height hero ended far below its phones,
-   leaving an empty band above the sections: stop it under the phones. */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .landing {
-    max-height: calc(376px + 23.75vw * 1720 / 812 + 48px);
   }
 }
 @media (max-width: 767px) {

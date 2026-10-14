@@ -112,10 +112,6 @@
   "Landing": {
     "title": "All your contacts, together and organized",
     "subtitle": "Quick search, no duplicate contacts, and secure two-factor sign-in.",
-    "preview": "Contacts website preview",
-    "captionLogin": "Secure sign-in with two-factor authentication",
-    "captionContacts": "Sorted contacts and fast search",
-    "captionDetail": "Birthdays and a note for every contact",
     "featuresTitle": "Everything a phonebook needs",
     "featuresSubtitle": "Simple for every day, complete for when your contacts add up.",
     "features": {

@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Icon } from '@/components/icon';
-import { LandingPreview } from '@/components/auth/landing-preview';
 import {
   LandingFooter,
   LandingSections,
@@ -24,15 +23,10 @@ function Landing() {
   const a = useTranslations('Auth');
   return (
     <>
+      {/* The sign-in picture behind the whole page, blurred and matte. */}
+      <div className="landing-backdrop" aria-hidden="true" />
       <main>
         <section className="landing">
-          <div className="landing-decor" aria-hidden="true">
-            <span className="landing-circle" />
-            <span className="landing-mint" />
-            <span className="sphere sphere-1" />
-            <span className="sphere sphere-2" />
-            <span className="sphere sphere-3" />
-          </div>
           <div className="landing-copy">
             <p className="landing-logo">
               <span>
@@ -51,7 +45,6 @@ function Landing() {
               </Link>
             </div>
           </div>
-          <LandingPreview />
         </section>
         <LandingSections />
       </main>
