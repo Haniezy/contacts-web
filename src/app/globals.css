@@ -1407,12 +1407,14 @@ button:disabled {
   z-index: -1;
   background: url('/landing/backdrop.webp') center / cover no-repeat;
 }
+.landing-header,
 .landing,
 .landing-more,
 .landing-footer {
   --on-photo: color-mix(in srgb, var(--ink) 70%, #000);
 }
-[data-theme='dark'] :is(.landing, .landing-more, .landing-footer) {
+[data-theme='dark']
+  :is(.landing-header, .landing, .landing-more, .landing-footer) {
   --on-photo: var(--ink);
 }
 .landing-backdrop::before,
@@ -1436,13 +1438,42 @@ button:disabled {
 [data-theme='dark'] .landing-backdrop::after {
   background: color-mix(in srgb, var(--page) 45%, transparent);
 }
+/* The header, like the footer: the brand, and the language and theme
+   switches, over the top of the first screen; it scrolls away. */
+.landing-header {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 10;
+  padding: 16px 20px 0;
+  color: var(--on-photo);
+}
+.landing-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-block-end: 16px;
+  /* Looks like the footer's line: the picture is darker up here, so the
+     same faint line takes a see-through, lighter tone. */
+  border-block-end: 1px solid color-mix(in srgb, var(--soft) 55%, transparent);
+}
+[data-theme='dark'] .landing-header-inner {
+  border-block-end-color: color-mix(in srgb, var(--ink) 15%, transparent);
+}
+.landing-preferences {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .landing {
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-height: 100dvh;
-  padding: 48px 20px;
+  padding: 96px 20px;
   color: var(--on-photo);
   text-align: center;
 }
@@ -1470,7 +1501,6 @@ button:disabled {
   color: var(--primary-strong);
 }
 .landing h1 {
-  margin-block: 11px 0;
   font-size: clamp(30px, 4.1667vw, 60px);
   font-weight: 700;
   line-height: 1.5;
@@ -1492,10 +1522,9 @@ button:disabled {
 
 @media (max-width: 767px) {
   .landing {
-    padding: 40px 20px;
+    padding: 88px 20px;
   }
   .landing h1 {
-    margin-block-start: 14px;
     font-size: 24px;
     text-wrap: balance;
   }
@@ -1721,11 +1750,6 @@ button:disabled {
 }
 .footer-version {
   font-size: 13px;
-}
-.footer-preferences {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 @media (max-width: 1023px) {
   .feature-grid {

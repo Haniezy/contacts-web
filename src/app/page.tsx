@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Icon } from '@/components/icon';
 import {
   LandingFooter,
+  LandingHeader,
   LandingSections,
 } from '@/components/auth/landing-sections';
 import { getUser } from '@/lib/session';
@@ -25,15 +25,10 @@ function Landing() {
     <>
       {/* The sign-in picture behind the whole page, blurred and matte. */}
       <div className="landing-backdrop" aria-hidden="true" />
+      <LandingHeader />
       <main>
         <section className="landing">
           <div className="landing-copy">
-            <p className="landing-logo">
-              <span>
-                <Icon name="book" />
-              </span>
-              {a('brand')}
-            </p>
             <h1>{t('title')}</h1>
             <p className="landing-subtitle">{t('subtitle')}</p>
             <div className="landing-actions">

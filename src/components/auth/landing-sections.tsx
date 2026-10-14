@@ -102,6 +102,27 @@ export function LandingSections() {
   );
 }
 
+// Like the footer: the brand, and the language and theme switches.
+export function LandingHeader() {
+  const a = useTranslations('Auth');
+  return (
+    <header className="landing-header">
+      <div className="landing-header-inner">
+        <p className="landing-logo">
+          <span>
+            <Icon name="book" />
+          </span>
+          {a('brand')}
+        </p>
+        <div className="landing-preferences">
+          <LanguageSwitch />
+          <ThemeSwitch />
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export function LandingFooter({ version }: { version: string }) {
   const a = useTranslations('Auth');
   const s = useTranslations('Account');
@@ -119,10 +140,6 @@ export function LandingFooter({ version }: { version: string }) {
           <p className="footer-version">
             {s('version', { version: displayDigits(version, locale) })}
           </p>
-        </div>
-        <div className="footer-preferences">
-          <LanguageSwitch />
-          <ThemeSwitch />
         </div>
       </div>
     </footer>

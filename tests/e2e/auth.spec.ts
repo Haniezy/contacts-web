@@ -16,7 +16,9 @@ test('landing → signup → QR → verification → recovery codes → contacts
   const password = 'Browser test 12!';
   try {
     await page.goto('/');
-    await expect(page.locator('header')).toHaveCount(0);
+    // The header holds only the brand and the switches; signing up and in
+    // stay in the page itself.
+    await expect(page.getByRole('banner').getByRole('link')).toHaveCount(0);
     await page.getByRole('link', { name: 'ساخت حساب', exact: true }).click();
     await page.getByLabel('نام', { exact: true }).fill('سارا');
     await page.getByLabel('نام خانوادگی', { exact: true }).fill('احمدی');
@@ -233,7 +235,7 @@ test('sign-in and sign-up are one card: the other form slides in and the address
   await expect(title('ورود')).toBeVisible();
 });
 
-test('landing sections: FAQ opens one answer at a time; footer switches theme and language with one click', async ({
+test('landing sections: FAQ opens one answer at a time; the header switches theme and language with one click', async ({
   page,
 }) => {
   await page.goto('/');
@@ -267,17 +269,18 @@ test('landing sections: FAQ opens one answer at a time; footer switches theme an
     page.getByRole('link', { name: /@gmail\.com$/ }),
   ).toHaveAttribute('href', /^mailto:/);
   const html = page.locator('html');
-  const toggle = footer.getByRole('switch');
+  const header = page.getByRole('banner');
+  const toggle = header.getByRole('switch');
   await expect(toggle).toBeEnabled();
   await toggle.click();
   await expect(html).toHaveAttribute('data-theme', 'dark');
   // Clicking the side already showing the language still flips it.
-  await footer.locator('.language-option.is-active').click();
+  await header.locator('.language-option.is-active').click();
   await expect(html).toHaveAttribute('lang', 'en');
   await expect(
     page.getByRole('heading', { level: 2, name: 'Frequently asked questions' }),
   ).toBeVisible();
-  await footer.getByRole('button', { name: 'فارسی', exact: true }).click();
+  await header.getByRole('button', { name: 'فارسی', exact: true }).click();
   await expect(html).toHaveAttribute('lang', 'fa');
 });
 
