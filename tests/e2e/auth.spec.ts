@@ -129,7 +129,7 @@ test('landing → signup → QR → verification → recovery codes → contacts
   }
 });
 
-test('a signed-in visitor gets one button into the book on the landing page', async ({
+test('a signed-in visitor goes straight into the book; signed out, the landing page offers sign-up and sign-in', async ({
   page,
   context,
   account,
@@ -144,14 +144,19 @@ test('a signed-in visitor gets one button into the book on the landing page', as
       sameSite: 'Lax',
     },
   ]);
+  // No landing page in between, and none left in the history.
+  await page.goto('/contacts/trash');
   await page.goto('/');
-  const actions = page.locator('.landing-actions');
-  await expect(actions.getByRole('link')).toHaveCount(1);
-  await actions.getByRole('link', { name: 'ورود به دفترچه' }).click();
+  await expect(page).toHaveURL(/\/contacts$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/contacts\/trash$/);
+  await page.goto('/');
   await expect(page).toHaveURL(/\/contacts$/);
   await logout(page);
   await expect(page).toHaveURL(/\/login$/);
   await page.goto('/');
+  await expect(page).toHaveURL(/\/$/);
+  const actions = page.locator('.landing-actions');
   await expect(
     actions.getByRole('link', { name: 'ساخت حساب', exact: true }),
   ).toBeVisible();
