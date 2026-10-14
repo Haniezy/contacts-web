@@ -1,12 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getUser } from '@/lib/session';
-import { AuthShell } from '@/components/auth/auth-shell';
-import { AccountForm } from '@/components/auth/account-form';
+import { AuthCard } from '@/components/auth/auth-card';
 export default async function Signup() {
   if (await getUser()) redirect('/contacts');
-  return (
-    <AuthShell variant="signup">
-      <AccountForm signup />
-    </AuthShell>
-  );
+  return <AuthCard initial="signup" />;
 }

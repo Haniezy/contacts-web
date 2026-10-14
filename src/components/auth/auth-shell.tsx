@@ -2,16 +2,16 @@ import { useTranslations, useFormatter } from 'next-intl';
 import Link from 'next/link';
 import { Icon } from '@/components/icon';
 
+// The two-step verification pages (sign-in and sign-up have their own card).
 export function AuthShell({
   children,
   variant,
 }: {
   children: React.ReactNode;
-  variant: 'login' | 'signup' | 'verify' | 'setup';
+  variant: 'verify' | 'setup';
 }) {
   const t = useTranslations('Auth');
   const f = useFormatter();
-  const account = variant === 'login' || variant === 'signup';
   return (
     <main className={`auth-shell auth-${variant}`}>
       <div className="auth-decor" aria-hidden="true">
@@ -30,35 +30,9 @@ export function AuthShell({
         >
           <Icon name="book" />
         </Link>
-        <h2>
-          {t(
-            account
-              ? 'brand'
-              : variant === 'setup'
-                ? 'setupBrand'
-                : 'verifyBrand',
-          )}
-        </h2>
-        {account ? (
-          <p>
-            <span className="only-desktop">{t('tagline')}</span>
-            <span className="only-mobile">{t('taglineMobile')}</span>
-          </p>
-        ) : (
-          <p>{t(variant === 'setup' ? 'setupTagline' : 'verifyTagline')}</p>
-        )}
-        {account ? (
-          <ul className="brand-features">
-            {(['search', 'users', 'shield'] as const).map((icon, i) => (
-              <li key={icon}>
-                <span className="icon-disc">
-                  <Icon name={icon} />
-                </span>
-                {t(`feature${i + 1}`)}
-              </li>
-            ))}
-          </ul>
-        ) : variant === 'setup' ? (
+        <h2>{t(variant === 'setup' ? 'setupBrand' : 'verifyBrand')}</h2>
+        <p>{t(variant === 'setup' ? 'setupTagline' : 'verifyTagline')}</p>
+        {variant === 'setup' ? (
           <ol className="brand-features">
             {[1, 2, 3].map((i) => (
               <li key={i}>
@@ -73,18 +47,7 @@ export function AuthShell({
           </span>
         )}
       </aside>
-      <section className="auth-content">
-        {account && (
-          <Link
-            href="/"
-            className="auth-home icon-disc"
-            aria-label={t('backHome')}
-          >
-            <Icon name="back" />
-          </Link>
-        )}
-        {children}
-      </section>
+      <section className="auth-content">{children}</section>
     </main>
   );
 }

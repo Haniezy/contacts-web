@@ -15,11 +15,6 @@
     "brand": "Contacts",
     "home": "Home",
     "backHome": "Back to the home page",
-    "tagline": "All your contacts, together and organized",
-    "taglineMobile": "Your contacts, in one tidy place",
-    "feature1": "Find any contact in seconds",
-    "feature2": "No duplicates, always organized",
-    "feature3": "Secure sign-in with two-factor authentication",
     "setupBrand": "A secure start",
     "setupTagline": "Enable two-factor authentication in three simple steps",
     "verifyBrand": "One step to sign in",
@@ -42,8 +37,6 @@
     "hidePassword": "Hide password",
     "working": "Please wait…",
     "createAccount": "Create account",
-    "haveAccount": "Have an account?",
-    "noAccount": "No account yet?",
     "back": "Back",
     "code": "Six-digit verification code",
     "digit": "Digit {number}",
@@ -80,7 +73,11 @@
     "manualHint": "In the app, choose \"Enter a setup key\". This key is not for signing in to the site.",
     "keyCopied": "Key copied",
     "setupCodeHelp": "Enter the six-digit code your authenticator app shows now; it changes every 30 seconds.",
-    "codesCopied": "Codes copied"
+    "codesCopied": "Codes copied",
+    "heroLoginTitle": "Hello there",
+    "heroLoginText": "New here? Make your own phonebook and keep everyone in one place.",
+    "heroSignupTitle": "Welcome back",
+    "heroSignupText": "Sign in to see your contacts and keep them tidy."
   },
   "Errors": {
     "email": "Enter a valid email address.",

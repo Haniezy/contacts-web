@@ -451,27 +451,7 @@ button:disabled {
   width: 30px;
   height: 30px;
 }
-/* Back to the landing page: a blue disc at the far end of the title row on
-   phones and tablets. */
-.auth-home {
-  position: absolute;
-  top: 1.5px;
-  inset-inline-end: 0;
-  width: 48px;
-  height: 48px;
-  background: var(--primary);
-  color: var(--on-primary);
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 28%, transparent);
-}
-.auth-home svg {
-  width: 20px;
-  height: 20px;
-}
-/* Points away from the form, toward the landing page: left in Persian,
-   right in English. */
-[dir='rtl'] .auth-home svg {
-  transform: scaleX(-1);
-}
+
 .auth-brand h2 {
   margin-block-start: 12px;
   font-size: 26px;
@@ -488,22 +468,7 @@ button:disabled {
   z-index: 1;
   display: flow-root;
 }
-.auth-login {
-  --top: 319.5px;
-  --h1-gap: 26.5px;
-  --field-gap: 20px;
-  --actions-gap: 10px;
-  --actions-inner: 21.5px;
-}
-/* Signup shares the login header (mint shape, brand and spheres) so the
-   tagline stays inside the mint shape; the form starts at the same line. */
-.auth-signup {
-  --top: 319.5px;
-  --h1-gap: 20.5px;
-  --field-gap: 20px;
-  --actions-gap: 10.1px;
-  --actions-inner: 18.5px;
-}
+
 .auth-verify {
   --top: 54px;
   --actions-gap: 0px;
@@ -635,6 +600,361 @@ button:disabled {
 }
 .auth-actions .button-primary {
   min-height: 56px;
+}
+
+/* Sign-in and sign-up: one card (the owner's design, 22 Mehr 1405). The
+   picture half invites to the other form and slides across when chosen,
+   while the forms trade places; on phones the picture sits on top and the
+   forms trade places where they are. The picture (misty mountains by
+   Adrien Tutin, Unsplash) gets a soft wash of the theme's colour. */
+.auth-page {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 76px 16px 32px;
+  background: var(--page);
+}
+.auth-card-home {
+  position: absolute;
+  top: 20px;
+  inset-inline-start: 20px;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  color: var(--primary-strong);
+}
+.auth-card-home svg {
+  width: 20px;
+  height: 20px;
+}
+.auth-card {
+  /* Which way "towards the end side" is. */
+  --dir: 1;
+  --hero-tint: var(--primary);
+  --hero-ink: var(--surface);
+  --hero-on: var(--ink);
+  position: relative;
+  width: min(760px, 100%);
+  overflow: hidden;
+  border: 8px solid var(--surface);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 12px 80px color-mix(in srgb, var(--shade) 12%, transparent);
+}
+[dir='rtl'] .auth-card {
+  --dir: -1;
+}
+[data-theme='dark'] .auth-card {
+  --hero-ink: var(--ink);
+  --hero-on: var(--page);
+}
+/* Forest's accent is a tan; its green suits the mountains better. */
+[data-palette='forest'] .auth-card {
+  --hero-tint: #465743;
+}
+.auth-card-bg {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 18px;
+  background: url('/auth/hero.webp') center / cover no-repeat;
+}
+/* The theme's hue, softly, then a shade that deepens downwards so the
+   light text reads. */
+.auth-card-bg::before,
+.auth-card-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.auth-card-bg::before {
+  background: var(--hero-tint);
+  mix-blend-mode: color;
+  opacity: 0.45;
+}
+.auth-card-bg::after {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--shade) 25%, transparent),
+    color-mix(in srgb, var(--shade) 70%, transparent)
+  );
+}
+.auth-hero,
+.auth-panel {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.65s ease-in-out,
+    visibility 0.65s ease-in-out,
+    translate 0.65s ease-in-out;
+}
+.auth-hero.for-login,
+.auth-panel.for-login,
+.auth-card.is-signup :is(.auth-hero, .auth-panel).for-signup {
+  opacity: 1;
+  visibility: visible;
+}
+.auth-card.is-signup :is(.auth-hero, .auth-panel).for-login {
+  opacity: 0;
+  visibility: hidden;
+}
+.auth-hero {
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 24px;
+  color: var(--hero-ink);
+  text-align: center;
+}
+.auth-hero h2 {
+  font-size: 24px;
+  font-weight: 700;
+}
+.auth-hero p {
+  max-width: 280px;
+  margin: 0 0 6px;
+  opacity: 0.85;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.auth-switch {
+  padding: 11px 40px;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--hero-ink) 12%, transparent);
+  backdrop-filter: blur(4px);
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.3s,
+    color 0.3s;
+}
+.auth-switch:hover {
+  background: var(--hero-ink);
+  color: var(--hero-on);
+}
+.auth-switch:focus-visible {
+  outline: 2px solid var(--hero-ink);
+  outline-offset: 3px;
+}
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 28px;
+}
+.auth-panel h1 {
+  margin-block-end: 18px;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+.auth-panel .account-form {
+  gap: 12px;
+}
+.auth-panel .auth-field label {
+  margin-block-end: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.auth-panel .field-line {
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft) 45%, var(--surface));
+}
+.auth-panel .field-line:focus-within {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.auth-panel .field-line input {
+  height: 42px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+.auth-panel .field-line:has(.password-toggle) input {
+  padding-inline-end: 44px;
+}
+.auth-panel .password-toggle {
+  inset-block: 3px;
+  height: auto;
+  margin-inline-end: 4px;
+  color: var(--ink-muted);
+}
+.auth-panel .name-fields {
+  gap: 12px;
+}
+.auth-panel .field-error {
+  margin-block-start: 4px;
+  font-size: 12px;
+}
+.auth-panel .form-error {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.auth-panel .auth-actions {
+  margin-block-start: 6px;
+}
+.auth-panel .auth-actions .button-primary {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 12px;
+  font-size: 16px;
+  box-shadow: none;
+}
+/* Wide enough for two halves: the card is the whole page, and the picture
+   slides from one half to the other. */
+@media (min-width: 768px) {
+  .auth-page {
+    display: block;
+    padding: 0;
+  }
+  .auth-card-home {
+    z-index: 5;
+    top: 28px;
+    inset-inline-start: 28px;
+  }
+  .auth-card {
+    width: 100%;
+    height: 100dvh;
+    min-height: 620px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  /* Edge to edge: the picture covers its whole half. */
+  .auth-card-bg {
+    border-radius: 0;
+  }
+  .auth-panel {
+    align-items: center;
+    padding: 40px 32px;
+  }
+  .auth-panel > * {
+    width: min(400px, 100%);
+  }
+  .auth-panel h1 {
+    margin-block-end: 26px;
+    font-size: 32px;
+  }
+  .auth-panel .account-form {
+    gap: 16px;
+  }
+  .auth-panel .auth-field label {
+    font-size: 14px;
+  }
+  .auth-panel .field-line input {
+    height: 48px;
+    font-size: 15px;
+  }
+  .auth-panel .auth-actions .button-primary {
+    min-height: 52px;
+    font-size: 17px;
+  }
+  .auth-hero {
+    gap: 18px;
+    padding: 0 48px;
+  }
+  .auth-hero h2 {
+    font-size: 36px;
+  }
+  .auth-hero p {
+    max-width: 380px;
+    font-size: 16px;
+  }
+  .auth-switch {
+    padding: 13px 52px;
+    font-size: 16px;
+  }
+  .auth-card-bg {
+    position: absolute;
+    z-index: 2;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 50%;
+    translate: calc(100% * var(--dir)) 0;
+    transition: translate 0.65s ease-in-out;
+  }
+  .auth-card.is-signup .auth-card-bg {
+    translate: 0 0;
+  }
+  .auth-hero,
+  .auth-panel {
+    position: absolute;
+    inset-block: 0;
+    width: 50%;
+  }
+  .auth-panel {
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .auth-hero.for-login {
+    inset-inline-start: 50%;
+    translate: 0;
+  }
+  .auth-card.is-signup .auth-hero.for-login {
+    translate: calc(100% * var(--dir)) 0;
+  }
+  .auth-hero.for-signup {
+    inset-inline-start: 0;
+    translate: calc(-100% * var(--dir)) 0;
+  }
+  .auth-card.is-signup .auth-hero.for-signup {
+    translate: 0;
+  }
+  .auth-panel.for-login {
+    inset-inline-start: 0;
+    translate: 0;
+  }
+  .auth-card.is-signup .auth-panel.for-login {
+    translate: calc(100% * var(--dir)) 0;
+  }
+  .auth-panel.for-signup {
+    inset-inline-start: 50%;
+    translate: calc(-100% * var(--dir)) 0;
+  }
+  .auth-card.is-signup .auth-panel.for-signup {
+    translate: 0;
+  }
+}
+/* Phones: the picture on top, the form under it. */
+@media (max-width: 767px) {
+  .auth-card {
+    display: grid;
+    grid-template-areas: 'top' 'form';
+  }
+  .auth-card-bg,
+  .auth-hero {
+    position: relative;
+    grid-area: top;
+  }
+  .auth-card-bg {
+    z-index: 0;
+  }
+  .auth-hero {
+    z-index: 1;
+    min-height: 220px;
+    padding: 28px 20px;
+  }
+  .auth-panel {
+    grid-area: form;
+    padding: 22px 10px 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-card-bg,
+  .auth-hero,
+  .auth-panel,
+  .auth-switch {
+    transition: none;
+  }
 }
 
 /* Two-factor verification and setup */
@@ -836,18 +1156,7 @@ button:disabled {
     min-height: max(100dvh, calc(760 * var(--d)));
     padding: var(--top) calc(80 * var(--d)) calc(60 * var(--d));
   }
-  .auth-login {
-    --top: calc(113.67 * var(--d));
-    --h1-gap: calc(32.67 * var(--u));
-    --field-gap: calc(31.67 * var(--u));
-    --actions-gap: calc(6.33 * var(--u));
-  }
-  .auth-signup {
-    --top: calc(64.67 * var(--d));
-    --h1-gap: calc(23.67 * var(--u));
-    --field-gap: calc(23.67 * var(--u));
-    --actions-gap: calc(15.1 * var(--u));
-  }
+
   .auth-verify {
     --top: calc(131 * var(--d));
     --desc-gap: calc(-27 * var(--u));
@@ -906,20 +1215,7 @@ button:disabled {
   .brand-mobile-icon {
     display: none;
   }
-  /* Desktop: just outside the form, level with the email label. */
-  .auth-home {
-    top: calc(81.5 * var(--u));
-    inset-inline-end: calc(-72 * var(--d));
-    width: calc(48 * var(--u));
-    height: calc(48 * var(--u));
-  }
-  .auth-home svg {
-    width: calc(20 * var(--u));
-    height: calc(20 * var(--u));
-  }
-  .auth-signup .auth-home {
-    top: calc(159.5 * var(--u));
-  }
+
   .brand-dash {
     display: block;
     width: calc(132 * var(--u));
@@ -1029,9 +1325,7 @@ button:disabled {
     padding-inline: calc(32 * var(--u));
     font-size: calc(21 * var(--u));
   }
-  .account-form.is-signup .button-primary {
-    min-width: calc(200 * var(--u));
-  }
+
   .auth-verify .auth-actions .button-primary {
     min-width: calc(190 * var(--u));
   }

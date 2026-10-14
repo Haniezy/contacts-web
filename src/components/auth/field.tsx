@@ -1,5 +1,10 @@
 'use client';
-import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import {
+  useId,
+  useState,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { useTranslations } from 'next-intl';
 import { Icon } from '@/components/icon';
 export function Field({
@@ -12,18 +17,20 @@ export function Field({
   error?: ReactNode;
 }) {
   const [visible, setVisible] = useState(false);
+  // Unique even with two forms on the page (sign-in and sign-up slide).
+  const id = useId();
   const t = useTranslations('Auth');
   const password = props.type === 'password';
   return (
     <div className="auth-field">
-      <label htmlFor={props.name}>{label}</label>
+      <label htmlFor={id}>{label}</label>
       <div className="field-line">
         <input
           {...props}
-          id={props.name}
+          id={id}
           type={password && visible ? 'text' : props.type}
           aria-invalid={!!error}
-          aria-describedby={error ? `${props.name}-error` : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
         />
         {password && (
           <button
@@ -38,7 +45,7 @@ export function Field({
         )}
       </div>
       {error && (
-        <p className="field-error" id={`${props.name}-error`}>
+        <p className="field-error" id={`${id}-error`}>
           {error}
         </p>
       )}

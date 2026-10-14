@@ -1,6 +1,5 @@
 'use client';
 import { useState, type FormEvent, type ReactNode } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api, errorKey } from '@/lib/api';
@@ -187,12 +186,6 @@ export function AccountForm({
           <button className="button-primary" disabled={busy}>
             {t(busy ? 'working' : signup ? 'createAccount' : 'login')}
           </button>
-          <p>
-            {t(signup ? 'haveAccount' : 'noAccount')}{' '}
-            <Link href={signup ? '/login' : '/signup'}>
-              {t(signup ? 'login' : 'signup')}
-            </Link>
-          </p>
         </div>
       </form>
     </>

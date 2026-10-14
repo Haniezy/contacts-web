@@ -205,6 +205,34 @@ test('login and signup lead back to the landing page', async ({ page }) => {
   }
 });
 
+test('sign-in and sign-up are one card: the other form slides in and the address follows', async ({
+  page,
+}) => {
+  const title = (name: string) =>
+    page.getByRole('heading', { level: 1, name, exact: true });
+  // The form left behind goes once the slide is over.
+  const settled = () => expect(page.locator('.auth-panel form')).toHaveCount(1);
+  await page.goto('/login');
+  await expect(title('ورود')).toBeVisible();
+  await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
+  await expect(page).toHaveURL(/\/signup$/);
+  await expect(title('ثبت‌نام')).toBeVisible();
+  await settled();
+  await expect(page.getByLabel('نام', { exact: true })).toBeVisible();
+  // Back slides back.
+  await page.goBack();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(title('ورود')).toBeVisible();
+  await settled();
+  // The address to return to after signing in stays on the way back.
+  await page.goto('/login?next=/settings');
+  await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
+  await settled();
+  await page.getByRole('button', { name: 'ورود', exact: true }).click();
+  await expect(page).toHaveURL(/\/login\?next=%2Fsettings$/);
+  await expect(title('ورود')).toBeVisible();
+});
+
 test('landing sections: FAQ opens one answer at a time; footer switches theme and language with one click', async ({
   page,
 }) => {
