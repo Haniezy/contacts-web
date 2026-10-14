@@ -309,6 +309,44 @@ button:disabled {
   color: var(--primary);
   box-shadow: 0 10px 22px color-mix(in srgb, var(--shade) 10%, transparent);
 }
+/* The soft hover's timing; the hover itself is at the end of this file so
+   it wins over every card's and button's own rules. */
+:is(
+  .button-primary,
+  .button-danger-solid,
+  .danger-button,
+  .contacts-add,
+  .button-secondary,
+  .button-mint,
+  .button-danger,
+  .menu-button,
+  .action,
+  a.icon-disc,
+  button.icon-disc,
+  .form-cancel,
+  .profile-cancel,
+  .merge-cancel
+) {
+  transition:
+    transform 200ms ease,
+    filter 200ms ease,
+    color 200ms ease;
+}
+:is(
+  .landing-card,
+  .faq-item,
+  .about-card,
+  .settings-card,
+  .palette-card,
+  .danger-card,
+  .duplicate-card,
+  .info-card
+) {
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease,
+    border-color 250ms ease;
+}
 .sphere {
   position: absolute;
   aspect-ratio: 1;
@@ -7208,5 +7246,93 @@ button.side-logout:hover {
   .more-list {
     animation: none;
     transition: none;
+  }
+}
+
+/* A soft hover on every button and card (the owner's request, 22 Mehr
+   1405): buttons lighten (the pale ones darken a touch, lighten in dark
+   mode) and rise a pixel; text buttons take the main ink; cards deepen
+   their shadow and take a hint of the theme on their border, and the
+   landing page's cards rise a little. Only with a real pointer, and
+   without movement when motion is reduced. */
+@media (hover: hover) {
+  :is(.button-primary, .button-danger-solid, .danger-button, .contacts-add):not(
+      :disabled
+    ):hover {
+    filter: brightness(1.07);
+  }
+  :is(
+      .button-secondary,
+      .button-mint,
+      .button-danger,
+      .menu-button,
+      .action,
+      a.icon-disc,
+      button.icon-disc
+    ):not(:disabled):hover {
+    filter: brightness(0.96);
+  }
+  [data-theme='dark']
+    :is(
+      .button-secondary,
+      .button-mint,
+      .button-danger,
+      .menu-button,
+      .action,
+      a.icon-disc,
+      button.icon-disc
+    ):not(:disabled):hover {
+    filter: brightness(1.15);
+  }
+  :is(.form-cancel, .profile-cancel, .merge-cancel):hover {
+    color: var(--ink);
+  }
+  :is(
+    .landing-card,
+    .faq-item,
+    .about-card,
+    .settings-card,
+    .palette-card,
+    .danger-card,
+    .duplicate-card,
+    .info-card
+  ):hover {
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+    box-shadow: 0 14px 32px color-mix(in srgb, var(--shade) 14%, transparent);
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :is(
+      .button-primary,
+      .button-danger-solid,
+      .danger-button,
+      .contacts-add,
+      .button-secondary,
+      .button-mint,
+      .button-danger,
+      .menu-button,
+      .action,
+      a.icon-disc,
+      button.icon-disc
+    ):not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  :is(
+      .button-primary,
+      .button-danger-solid,
+      .danger-button,
+      .contacts-add,
+      .button-secondary,
+      .button-mint,
+      .button-danger,
+      .menu-button,
+      .action,
+      a.icon-disc,
+      button.icon-disc
+    ):not(:disabled):active {
+    transform: none;
+  }
+  :is(.landing-card, .faq-item, .about-card):hover {
+    transform: translateY(-3px);
   }
 }
