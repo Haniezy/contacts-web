@@ -1643,29 +1643,16 @@ button:disabled {
   width: 22px;
   height: 22px;
 }
-.tint-mint {
-  background: var(--soft);
-  color: var(--primary-strong);
-}
-.tint-sky {
-  background: var(--soft);
-  color: var(--primary-strong);
-}
-.tint-lilac {
-  background: var(--soft);
-  color: var(--primary-strong);
-}
-.tint-coral {
-  background: var(--soft);
-  color: var(--primary-strong);
-}
-.tint-amber {
-  background: var(--soft);
-  color: var(--primary);
-}
+/* Every card's icon in the same colours (the phone and the globe had
+   their own, which differed in some colour themes). */
+.tint-mint,
+.tint-sky,
+.tint-lilac,
+.tint-coral,
+.tint-amber,
 .tint-slate {
   background: var(--soft);
-  color: var(--ink-muted);
+  color: var(--primary-strong);
 }
 .faq-list {
   display: grid;

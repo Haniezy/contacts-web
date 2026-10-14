@@ -110,9 +110,9 @@
   },
   "Landing": {
     "title": "All your contacts, together and organized",
-    "subtitle": "Your contacts and their details live in your account, not on your phone, so they're there on any device.",
-    "featuresTitle": "Everything a phonebook needs",
-    "featuresSubtitle": "Simple for every day, complete for when your contacts add up.",
+    "subtitle": "Your contacts and their details live in your account, not on your phone, so they're there on any device",
+    "featuresTitle": "Everything a phonebook needs…",
+    "featuresSubtitle": "Simple for every day, complete for when your contacts add up",
     "features": {
       "tags": {
         "title": "Organized with tags",
