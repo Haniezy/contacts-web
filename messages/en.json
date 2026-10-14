@@ -421,7 +421,14 @@
     "signOutDevice": "Sign out",
     "signOutDeviceLabel": "Sign out {device}",
     "devicesFailed": "Couldn't load your devices.",
-    "devicesLoading": "Loading devices…"
+    "devicesLoading": "Loading devices…",
+    "palette": "Colour theme",
+    "paletteHelp": "The colours of the whole app. Each comes in light and dark, switched from the menu as before.",
+    "palettes": {
+      "slate": "Slate blue",
+      "forest": "Forest green",
+      "terracotta": "Terracotta"
+    }
   },
   "Shared": {
     "note": "This contact was sent to you with Contacts.",

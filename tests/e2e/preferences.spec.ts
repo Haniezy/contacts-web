@@ -156,3 +156,39 @@ test('keyboard controls and reduced motion work', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 });
+
+test('a colour theme chosen in Settings covers the whole app and stays', async ({
+  page,
+}) => {
+  await page.goto('/settings');
+  const html = page.locator('html');
+  const themes = page.getByRole('group', { name: 'تم رنگی' });
+  await expect(html).toHaveAttribute('data-palette', 'terracotta');
+  await expect(themes.getByRole('radio', { name: 'سفالی' })).toBeChecked();
+  const accent = () =>
+    page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--primary')
+        .trim(),
+    );
+  expect(await accent()).toBe('#b85c46');
+
+  // Applied at once, kept across a reload and on other pages.
+  await themes.getByRole('radio', { name: 'آبی سنگی' }).check();
+  await expect(html).toHaveAttribute('data-palette', 'slate');
+  expect(await accent()).toBe('#2f6feb');
+  await page.reload();
+  await expect(html).toHaveAttribute('data-palette', 'slate');
+  await expect(themes.getByRole('radio', { name: 'آبی سنگی' })).toBeChecked();
+  await page.goto('/contacts');
+  await expect(html).toHaveAttribute('data-palette', 'slate');
+
+  // Each theme has its dark mode too.
+  await page.evaluate(() => localStorage.setItem('contacts-theme', 'dark'));
+  await page.goto('/settings');
+  await themes.getByRole('radio', { name: 'سبز جنگلی' }).check();
+  await expect(html).toHaveAttribute('data-theme', 'dark');
+  expect(await accent()).toBe('#98704b');
+  await themes.getByRole('radio', { name: 'سفالی' }).check();
+  expect(await accent()).toBe('#c16b52');
+});

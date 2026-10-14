@@ -421,7 +421,14 @@
     "signOutDevice": "خروج",
     "signOutDeviceLabel": "خروج از {device}",
     "devicesFailed": "فهرست دستگاه‌ها بارگذاری نشد.",
-    "devicesLoading": "در حال بارگذاری دستگاه‌ها…"
+    "devicesLoading": "در حال بارگذاری دستگاه‌ها…",
+    "palette": "تم رنگی",
+    "paletteHelp": "رنگ‌های کل برنامه. هر تم حالت روشن و تیره داره که مثل قبل از منو عوض می‌شه.",
+    "palettes": {
+      "slate": "آبی سنگی",
+      "forest": "سبز جنگلی",
+      "terracotta": "سفالی"
+    }
   },
   "Shared": {
     "note": "این مخاطب با دفترچه برات فرستاده شده.",

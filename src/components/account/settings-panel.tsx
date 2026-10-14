@@ -7,14 +7,19 @@ import { api, ApiError, asciiDigits, displayDigits } from '@/lib/api';
 import { Icon } from '@/components/icon';
 import { Field } from '@/components/auth/field';
 import { DeviceList } from './device-list';
+import { PaletteChooser } from './palette-chooser';
+import type { Palette } from '@/lib/palette';
 import { forgetOfflineData } from '@/lib/offline';
 
 export function SettingsPanel({
   twoFactor: initialTwoFactor,
   version,
+  palette,
 }: {
   twoFactor: boolean;
   version: string;
+  // The colour theme now in use.
+  palette: Palette;
 }) {
   const t = useTranslations('Account');
   const locale = useLocale();
@@ -62,6 +67,7 @@ export function SettingsPanel({
   return (
     <>
       <h1 className="settings-title">{t('settingsTitle')}</h1>
+      <PaletteChooser initial={palette} />
       <ul className="settings-list">
         <li>
           {/* On: turning it off needs the password and a code. Off: the

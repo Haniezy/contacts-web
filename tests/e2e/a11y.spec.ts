@@ -166,6 +166,51 @@ test('signed-in pages, menus and dialogs pass the accessibility checks', async (
   await audit(page);
 });
 
+test('the other colour themes pass the accessibility checks', async ({
+  page,
+  context,
+  account,
+}) => {
+  fixture({
+    action: 'contacts',
+    email: account.email,
+    contacts: [{ name: 'بهار رضایی', phone: '09123456789' }],
+  });
+  await context.addCookies([
+    {
+      name: 'contacts_session',
+      value: account.token,
+      domain: '127.0.0.1',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  for (const palette of ['slate', 'forest'])
+    for (const theme of ['light', 'dark']) {
+      await context.addCookies([
+        {
+          name: 'contacts-palette',
+          value: palette,
+          domain: '127.0.0.1',
+          path: '/',
+        },
+      ]);
+      await page.goto('/contacts');
+      await page.evaluate(
+        (t) => localStorage.setItem('contacts-theme', t),
+        theme,
+      );
+      await page.reload();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+      await page.getByRole('button', { name: /بهار رضایی/ }).click();
+      await audit(page);
+      await page.goto('/settings');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await audit(page);
+    }
+});
+
 test('the empty book and the error toast pass the accessibility checks', async ({
   page,
   context,

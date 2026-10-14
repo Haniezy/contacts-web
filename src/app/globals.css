@@ -60,6 +60,77 @@
   --chip-mix: 35%;
 }
 
+/* The other two colour themes (Settings › Colour theme; the one above is
+   «terracotta», the default), from the owner's palettes. They replace the
+   same roles; `--danger` (delete) is the accent unless a theme has its own.
+   Slate blue, by the roles its sheet gives:
+   Light: #f6f8fa #e6ebf1 #d3dbe4 #14202b #55657a #2f6feb #2358c4 #b3261e.
+   Dark: #0f1419 #1a222c #2a3644 #e6eaf0 #9aa7b6 #6ea8fe #ff8a8a.
+   Forest, by lightness like the terracotta palettes:
+   Light: #faf5ec #e8d8c3 #c49a6c #78866b #35483c.
+   Dark: #171e19 #25352b #465743 #98704b #c5a77d (text: the light cream). */
+[data-palette='slate'] {
+  --page: #f6f8fa;
+  --surface: #e6ebf1;
+  --soft: color-mix(in srgb, #2f6feb 14%, #e6ebf1);
+  --line: #d3dbe4;
+  --primary: #2f6feb;
+  --primary-strong: #2358c4;
+  --on-primary: #f6f8fa;
+  --ink: #14202b;
+  --ink-muted: #55657a;
+  --hint: color-mix(in srgb, #14202b 55%, #f6f8fa);
+  --shade: #14202b;
+  --scrim: color-mix(in srgb, #14202b 35%, transparent);
+  --danger: #b3261e;
+  --on-danger: #f6f8fa;
+}
+[data-palette='slate'][data-theme='dark'] {
+  --page: #0f1419;
+  --surface: #1a222c;
+  --soft: color-mix(in srgb, #6ea8fe 16%, #1a222c);
+  --line: #2a3644;
+  --primary: #6ea8fe;
+  --primary-strong: #6ea8fe;
+  --on-primary: #0f1419;
+  --ink: #e6eaf0;
+  --ink-muted: #9aa7b6;
+  --hint: color-mix(in srgb, #e6eaf0 55%, #1a222c);
+  --shade: #05080b;
+  --scrim: color-mix(in srgb, #0f1419 70%, transparent);
+  --danger: #ff8a8a;
+  --on-danger: #0f1419;
+}
+/* Light text on the tan would read badly: dark green instead. */
+[data-palette='forest'] {
+  --page: color-mix(in srgb, #e8d8c3 28%, #faf5ec);
+  --surface: #faf5ec;
+  --soft: #e8d8c3;
+  --line: #e8d8c3;
+  --primary: #c49a6c;
+  --primary-strong: color-mix(in srgb, #78866b 55%, #35483c);
+  --on-primary: #35483c;
+  --ink: #35483c;
+  --ink-muted: color-mix(in srgb, #78866b 50%, #35483c);
+  --hint: color-mix(in srgb, #35483c 55%, #faf5ec);
+  --shade: #35483c;
+  --scrim: color-mix(in srgb, #35483c 35%, transparent);
+}
+[data-palette='forest'][data-theme='dark'] {
+  --page: #171e19;
+  --surface: #25352b;
+  --soft: #465743;
+  --line: #465743;
+  --primary: #98704b;
+  --primary-strong: #c5a77d;
+  --on-primary: #faf5ec;
+  --ink: #faf5ec;
+  --ink-muted: #c5a77d;
+  --hint: color-mix(in srgb, #faf5ec 58%, #25352b);
+  --shade: #0b0f0c;
+  --scrim: color-mix(in srgb, #171e19 70%, transparent);
+}
+
 @theme inline {
   --font-sans: 'Vazirmatn', sans-serif;
   --color-page: var(--page);
@@ -179,7 +250,9 @@ button:disabled {
   min-width: 40px;
   min-height: 24px;
   padding-inline: 8px;
-  color: var(--ink-muted);
+  /* The main text colour: the muted one is too faint on the switch's
+     background in some colour themes. */
+  color: var(--ink);
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -2300,8 +2373,8 @@ button:disabled {
   font-weight: 700;
 }
 .button-danger-solid {
-  background: var(--primary);
-  color: var(--on-primary);
+  background: var(--danger, var(--primary));
+  color: var(--on-danger, var(--on-primary));
   box-shadow: 0 12px 24px color-mix(in srgb, var(--shade) 25%, transparent);
 }
 .button-mint {
@@ -3936,6 +4009,80 @@ html:has(.merge-dialog[open]) {
   line-height: 1.5;
 }
 
+/* Settings › Colour theme: three cards, each with its colours; the chosen
+   one framed in the accent. */
+.palette-card {
+  min-width: 0;
+  margin: 25px 0 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--shade) 8%, transparent);
+}
+/* Floated, the legend sits inside the card like a heading. */
+.palette-card legend {
+  float: inline-start;
+  width: 100%;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.palette-card .settings-help {
+  clear: both;
+  padding-block-start: 2px;
+}
+.palette-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-block-start: 14px;
+}
+.palette-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 6px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--page);
+  text-align: center;
+  cursor: pointer;
+}
+.palette-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.palette-option:has(input:checked) {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.palette-option:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.palette-swatches {
+  display: flex;
+}
+.palette-swatches span {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+}
+.palette-swatches span + span {
+  margin-inline-start: -7px;
+}
+.palette-name {
+  font-size: 13px;
+  font-weight: 700;
+}
 .settings-list {
   display: grid;
   gap: 24px;
@@ -5616,9 +5763,50 @@ html:has(.merge-dialog[open]) {
 .contact-panel.is-form.is-closing {
   display: none;
 }
-/* The page's colours, on every size (the drawer on phones shares the
-   desktop sidebar's look). */
+/* The contacts page's own shades, on every size (the drawer on phones
+   shares the desktop sidebar's look). In the other colour themes they
+   follow from the theme's tokens; terracotta has them measured from the
+   owner's designs (below). */
 .contacts-home {
+  --bar: var(--surface);
+  --side: var(--page);
+  --row: var(--surface);
+  --well: color-mix(in srgb, var(--page) 50%, var(--surface));
+  --note: color-mix(in srgb, var(--page) 30%, var(--surface));
+  --field: color-mix(in srgb, var(--page) 60%, var(--surface));
+  --field-line: var(--line);
+  --control: color-mix(in srgb, var(--soft) 40%, var(--surface));
+  --control-line: var(--line);
+  --pick: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  --pick-line: color-mix(in srgb, var(--primary) 45%, transparent);
+  --badge: color-mix(in srgb, var(--primary) 30%, var(--surface));
+  --on-badge: var(--ink);
+  --accent: var(--primary);
+  --logo: var(--primary);
+  --sprig: var(--primary);
+  --nav-ink: var(--ink);
+  --count: var(--ink-muted);
+  --placeholder: var(--hint);
+  --online: #6f8f60;
+}
+[data-theme='dark'] .contacts-home {
+  --bar: color-mix(in srgb, var(--surface) 55%, var(--page));
+  --row: color-mix(in srgb, var(--surface) 65%, var(--page));
+  --well: color-mix(in srgb, var(--surface) 80%, var(--page));
+  --note: color-mix(in srgb, var(--soft) 30%, var(--surface));
+  --field: color-mix(in srgb, var(--soft) 40%, var(--surface));
+  --control: color-mix(in srgb, var(--soft) 30%, var(--surface));
+  --control-line: var(--soft);
+  --pick: color-mix(in srgb, var(--primary) 30%, var(--surface));
+  --pick-line: color-mix(in srgb, var(--primary) 60%, transparent);
+  --badge: var(--primary-strong);
+  --on-badge: var(--page);
+  --accent: var(--primary-strong);
+  --logo: var(--primary-strong);
+  --sprig: color-mix(in srgb, var(--primary-strong) 55%, var(--page));
+  --count: var(--primary-strong);
+}
+[data-palette='terracotta'] .contacts-home {
   /* As the owner's designs show them (measured from
      the two images, 21 Mehr 1405): the palette's hues in the designs'
      own shades. */
@@ -5652,7 +5840,7 @@ html:has(.merge-dialog[open]) {
   --placeholder: #b0a098;
   --online: #6f8f60;
 }
-[data-theme='dark'] .contacts-home {
+[data-palette='terracotta'][data-theme='dark'] .contacts-home {
   --page: #110c0a;
   --bar: #1f1713;
   --side: #140e0c;
