@@ -9,7 +9,7 @@ import { displayDigits } from '@/lib/api';
 const contactEmail = 'mshzolfaghari@gmail.com';
 
 const features = [
-  ['anywhere', 'book', 'mint'],
+  ['tags', 'book', 'mint'],
   ['search', 'search', 'sky'],
   ['duplicates', 'users', 'lilac'],
   ['birthday', 'calendar', 'coral'],
@@ -24,12 +24,11 @@ const security = [
 ] as const;
 const questions = [
   'what',
+  'add',
+  'import',
   'devices',
-  'newPhone',
-  'duplicates',
   'twoFactor',
   'birthday',
-  'deleteAccount',
 ] as const;
 
 export function LandingSections() {

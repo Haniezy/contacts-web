@@ -244,16 +244,17 @@ test('landing sections: FAQ opens one answer at a time; footer switches theme an
     'درباره دفترچه',
   ])
     await expect(page.getByRole('heading', { level: 2, name })).toBeVisible();
-  const first = page.getByRole('button', { name: 'دفترچه چیه؟' });
+  const first = page.getByRole('button', {
+    name: 'دفترچه چیه و به درد کی می‌خوره؟',
+  });
   const second = page.getByRole('button', {
-    name: 'روی گوشی هم کار می‌کنه؟',
+    name: 'روی گوشی و کامپیوتر کار می‌کنه؟',
   });
   await first.click();
   await expect(first).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.getByRole('region', { name: 'دفترچه چیه؟' })).toHaveCSS(
-    'opacity',
-    '1',
-  );
+  await expect(
+    page.getByRole('region', { name: 'دفترچه چیه و به درد کی می‌خوره؟' }),
+  ).toHaveCSS('opacity', '1');
   await second.click();
   await expect(second).toHaveAttribute('aria-expanded', 'true');
   await expect(first).toHaveAttribute('aria-expanded', 'false');
