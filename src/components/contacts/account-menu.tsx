@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { api, ApiError } from '@/lib/api';
 import { forgetOfflineData } from '@/lib/offline';
 import { Icon } from '@/components/icon';
-import { ThemeSwitch } from '@/components/preferences/theme-switch';
+import { ThemeButtons } from '@/components/preferences/theme-switch';
 import { LanguageSwitch } from '@/components/preferences/language-switch';
 import { PreferenceIcon } from '@/components/preferences/icons';
 
@@ -46,7 +46,7 @@ export function PreferenceRow({ kind }: { kind: 'theme' | 'language' }) {
     <div className="side-pref">
       <PreferenceIcon name={kind === 'theme' ? 'sun' : 'globe'} />
       <span className="desk-label">{p(kind)}</span>
-      {kind === 'theme' ? <ThemeSwitch /> : <LanguageSwitch />}
+      {kind === 'theme' ? <ThemeButtons /> : <LanguageSwitch />}
     </div>
   );
 }

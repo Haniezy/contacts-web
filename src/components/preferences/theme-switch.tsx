@@ -7,38 +7,8 @@ import { PreferenceIcon } from './icons';
 
 const subscribe = () => () => {};
 
-export function ThemeSwitch() {
-  const mounted = useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false,
-  );
-  const { resolvedTheme, setTheme } = useTheme();
-  const t = useTranslations('Preferences');
-  const dark = mounted && resolvedTheme === 'dark';
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-label={t('darkMode')}
-      aria-checked={dark}
-      disabled={!mounted}
-      className="theme-switch"
-      onClick={() => setTheme(dark ? 'light' : 'dark')}
-    >
-      <span className="theme-knob">
-        <span className="sun-icon">
-          <PreferenceIcon name="sun" />
-        </span>
-        <span className="moon-icon">
-          <PreferenceIcon name="moon" />
-        </span>
-      </span>
-    </button>
-  );
-}
-
-// The desktop top bar: a sun and a moon, the current theme's one lit.
+// The theme everywhere (the top bar, the phone drawer, the landing page):
+// a sun and a moon, the current theme's one lit.
 export function ThemeButtons() {
   const mounted = useSyncExternalStore(
     subscribe,

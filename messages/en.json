@@ -7,7 +7,6 @@
   "Preferences": {
     "title": "Appearance and language",
     "theme": "Theme",
-    "darkMode": "Dark mode",
     "language": "Language",
     "error": "Could not change language. Please try again."
   },

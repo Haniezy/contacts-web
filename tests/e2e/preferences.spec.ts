@@ -1,9 +1,9 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { expect, isDesk, test } from './fixtures';
 
-// Phones and tablets: both switches in the drawer from «منو». Desktop: the
-// language switch in the sidebar, the theme as two buttons in the top bar
-// (the moon first).
+// Phones and tablets: the language switch and the theme buttons in the
+// drawer from «منو». Desktop: the language switch in the sidebar, the theme
+// buttons in the top bar. The moon first, then the sun.
 async function preferences(page: Page) {
   // Wait for the contacts page.
   await page.getByRole('searchbox').waitFor();
@@ -11,34 +11,22 @@ async function preferences(page: Page) {
   await page.getByRole('button', { name: /^(منو|Menu)$/ }).click();
   return page.getByRole('dialog');
 }
+// The closed drawer has them too on desktop; only the shown ones count.
 const themeButton = (page: Page, dark: boolean) =>
-  page.locator('.theme-buttons button').nth(dark ? 0 : 1);
-async function setDark(page: Page, scope: Locator, dark: boolean) {
-  if (isDesk(page)) {
-    await themeButton(page, dark).click();
-    await expect(themeButton(page, dark)).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-  } else {
-    await scope.getByRole('switch').click();
-    await expect(scope.getByRole('switch')).toBeChecked({ checked: dark });
-  }
+  page
+    .locator('.theme-buttons')
+    .filter({ visible: true })
+    .locator('button')
+    .nth(dark ? 0 : 1);
+async function setDark(page: Page, dark: boolean) {
+  await themeButton(page, dark).click();
+  await expectDark(page, dark);
 }
-async function expectDark(page: Page, scope: Locator, dark: boolean) {
-  if (isDesk(page))
-    await expect(themeButton(page, dark)).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-  else await expect(scope.getByRole('switch')).toBeChecked({ checked: dark });
-}
-// The switch's knob, on phones and tablets.
-async function knob(page: Page, scope: Locator, x: number) {
-  if (isDesk(page)) return;
-  await expect(scope.locator('.theme-knob')).toHaveCSS(
-    'transform',
-    `matrix(1, 0, 0, 1, ${x}, 0)`,
+async function expectDark(page: Page, dark: boolean) {
+  await expect(themeButton(page, dark)).toHaveAttribute('aria-pressed', 'true');
+  await expect(themeButton(page, !dark)).toHaveAttribute(
+    'aria-pressed',
+    'false',
   );
 }
 
@@ -55,7 +43,7 @@ test.beforeEach(async ({ context, account }) => {
   ]);
 });
 
-test('theme and language persist, retain physical knob positions and translate the document', async ({
+test('theme and language persist and translate the document', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -70,10 +58,9 @@ test('theme and language persist, retain physical knob positions and translate t
   await expect(html).toHaveAttribute('data-theme', 'light');
   await expect(page.getByRole('heading', { name: 'مخاطبین' })).toBeVisible();
   let scope = await preferences(page);
-  await knob(page, scope, 28);
-  await setDark(page, scope, true);
+  await expectDark(page, false);
+  await setDark(page, true);
   await expect(html).toHaveAttribute('data-theme', 'dark');
-  await knob(page, scope, 0);
   await scope.getByRole('button', { name: 'English', exact: true }).click();
   await expect(html).toHaveAttribute('lang', 'en');
   await expect(html).toHaveAttribute('dir', 'ltr');
@@ -87,21 +74,20 @@ test('theme and language persist, retain physical knob positions and translate t
   await expect(html).toHaveAttribute('data-theme', 'dark');
   await expect(html).toHaveAttribute('dir', 'ltr');
   scope = await preferences(page);
-  await expectDark(page, scope, true);
+  await expectDark(page, true);
   // One button: in English it offers Persian, with the knob under EN.
   await expect(scope.locator('.language-option.is-active')).toHaveText('EN');
   await expect(
     scope.getByRole('button', { name: 'English', exact: true }),
   ).toHaveCount(0);
-  await setDark(page, scope, false);
-  await knob(page, scope, 28);
+  await setDark(page, false);
   await scope.getByRole('button', { name: 'فارسی', exact: true }).click();
   await expect(html).toHaveAttribute('dir', 'rtl');
   await page.reload();
   await expect(html).toHaveAttribute('data-theme', 'light');
   await expect(html).toHaveAttribute('lang', 'fa');
   scope = await preferences(page);
-  await expectDark(page, scope, false);
+  await expectDark(page, false);
   await page.evaluate(() => document.fonts.ready);
   expect(
     await page.evaluate(() =>
@@ -135,23 +121,11 @@ test('keyboard controls and reduced motion work', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/contacts');
   const scope = await preferences(page);
-  if (isDesk(page)) {
-    await themeButton(page, true).focus();
-    await page.keyboard.press('Enter');
-    await expect(themeButton(page, true)).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-  } else {
-    const toggle = scope.getByRole('switch');
-    await toggle.focus();
-    await page.keyboard.press('Space');
-    await expect(toggle).toBeChecked();
-    await expect(scope.locator('.theme-knob')).toHaveCSS(
-      'transition-duration',
-      '0s',
-    );
-  }
+  const moon = themeButton(page, true);
+  await moon.focus();
+  await page.keyboard.press('Enter');
+  await expect(moon).toHaveAttribute('aria-pressed', 'true');
+  await expect(moon).toHaveCSS('transition-duration', '0s');
   await scope.getByRole('button', { name: 'English', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');

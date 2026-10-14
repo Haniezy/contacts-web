@@ -3,7 +3,7 @@ import { Icon } from '@/components/icon';
 import { LandingFaq } from '@/components/auth/landing-faq';
 import { PreferenceIcon } from '@/components/preferences/icons';
 import { LanguageSwitch } from '@/components/preferences/language-switch';
-import { ThemeSwitch } from '@/components/preferences/theme-switch';
+import { ThemeButtons } from '@/components/preferences/theme-switch';
 import { displayDigits } from '@/lib/api';
 
 const contactEmail = 'mshzolfaghari@gmail.com';
@@ -102,7 +102,7 @@ export function LandingSections() {
   );
 }
 
-// Like the footer: the brand, and the language and theme switches.
+// Like the footer: the brand, the theme buttons and the language switch.
 export function LandingHeader() {
   const a = useTranslations('Auth');
   return (
@@ -115,8 +115,8 @@ export function LandingHeader() {
           {a('brand')}
         </p>
         <div className="landing-preferences">
+          <ThemeButtons />
           <LanguageSwitch />
-          <ThemeSwitch />
         </div>
       </div>
     </header>

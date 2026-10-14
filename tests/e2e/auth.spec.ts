@@ -270,9 +270,10 @@ test('landing sections: FAQ opens one answer at a time; the header switches them
   ).toHaveAttribute('href', /^mailto:/);
   const html = page.locator('html');
   const header = page.getByRole('banner');
-  const toggle = header.getByRole('switch');
-  await expect(toggle).toBeEnabled();
-  await toggle.click();
+  const moon = header.getByRole('button', { name: 'تم تیره' });
+  await expect(moon).toBeEnabled();
+  await moon.click();
+  await expect(moon).toHaveAttribute('aria-pressed', 'true');
   await expect(html).toHaveAttribute('data-theme', 'dark');
   // Clicking the side already showing the language still flips it.
   await header.locator('.language-option.is-active').click();
