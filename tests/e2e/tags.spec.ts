@@ -112,7 +112,7 @@ test('desktop: tags are made, changed and deleted in the sidebar, and given from
 }) => {
   test.skip(!isDesk(page), 'The sidebar and details panel are desktop only.');
   await page.goto('/contacts');
-  const sidebar = page.locator('.desk-tags');
+  const sidebar = page.locator('.desk-sidebar .desk-tags');
   const dialog = page.getByRole('dialog');
 
   // A new tag, in a colour of its own; a name in use is refused.

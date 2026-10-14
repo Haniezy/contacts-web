@@ -41,9 +41,10 @@ export const isDesk = (page: Page) => (page.viewportSize()?.width ?? 0) >= 1024;
 export const rows = (page: Page) =>
   page.locator(isDesk(page) ? '.desk-row' : '.contact-row');
 
-// The add button: in the header on phones, in the sidebar on desktop.
+// The add button: in the header on phones, in the sidebar on desktop (the
+// phone drawer, closed there, holds another).
 export const addButton = (page: Page) =>
-  page.locator(isDesk(page) ? '.desk-add' : '.contacts-add');
+  page.locator(isDesk(page) ? '.desk-sidebar .desk-add' : '.contacts-add');
 
 // The book's size: «۵ نفر» on phones, «(۵)» after the desktop title.
 export async function expectCount(page: Page, count: string) {
