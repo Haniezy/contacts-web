@@ -1126,11 +1126,18 @@ button:disabled {
 .landing-header,
 .landing,
 .landing-more,
-.landing-footer {
+.landing-footer,
+.settings-page {
   --on-photo: color-mix(in srgb, var(--ink) 70%, #000);
 }
 [data-theme='dark']
-  :is(.landing-header, .landing, .landing-more, .landing-footer) {
+  :is(
+    .landing-header,
+    .landing,
+    .landing-more,
+    .landing-footer,
+    .settings-page
+  ) {
   --on-photo: var(--ink);
 }
 .landing-backdrop::before,
@@ -3720,8 +3727,7 @@ html:has(.merge-dialog[open]) {
   align-items: center;
   text-align: center;
 }
-.profile-head h1,
-.settings-title {
+.profile-head h1 {
   margin-block-start: 63px;
   font-size: 20px;
   font-weight: 700;
@@ -3869,44 +3875,80 @@ html:has(.merge-dialog[open]) {
   line-height: 1.5;
 }
 
-/* Settings › Colour theme: three cards, each with its colours; the chosen
-   one framed in the accent. */
+/* Settings (the owner's choice, 25 Mehr 1405): a narrow column on the
+   landing page's blurred picture; compact cards, the same size on every
+   screen. */
+.settings-page {
+  position: relative;
+  min-height: 100dvh;
+  padding: 20px 16px 40px;
+}
+.settings-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(500px, 100%);
+  margin-inline: auto;
+}
+.settings-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block-end: 4px;
+  color: var(--on-photo);
+}
+.settings-back {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--primary-strong);
+}
+.settings-back svg {
+  width: 18px;
+  height: 18px;
+}
+.settings-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+/* Colour theme: three options, each with its colours; the chosen one
+   framed in the accent. */
 .palette-card {
   min-width: 0;
-  margin: 25px 0 0;
-  padding: 16px;
+  margin: 0;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--shade) 8%, transparent);
 }
 /* Floated, the legend sits inside the card like a heading. */
 .palette-card legend {
   float: inline-start;
   width: 100%;
   padding: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 .palette-card .settings-help {
   clear: both;
-  padding-block-start: 2px;
 }
 .palette-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-block-start: 14px;
+  gap: 8px;
+  margin-block-start: 10px;
 }
 .palette-option {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px 6px;
+  gap: 6px;
+  padding: 8px 4px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   background: var(--page);
   text-align: center;
   cursor: pointer;
@@ -3931,64 +3973,57 @@ html:has(.merge-dialog[open]) {
   display: flex;
 }
 .palette-swatches span {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--surface);
   border-radius: 50%;
 }
 .palette-swatches span + span {
-  margin-inline-start: -7px;
+  margin-inline-start: -5px;
 }
 .palette-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 .settings-list {
   display: grid;
-  gap: 24px;
-  margin-block-start: 25px;
+  gap: 12px;
 }
 .settings-card {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   width: 100%;
-  min-height: 74px;
-  padding: 13px 16px;
+  min-height: 60px;
+  padding: 10px 14px;
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 16px;
   background: var(--surface);
   color: var(--ink);
   text-align: start;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--shade) 8%, transparent);
 }
+/* Opened, the device list is part of the same card. */
 .settings-expand {
-  border-radius: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--shade) 8%, transparent);
 }
 .settings-expand .settings-card {
-  box-shadow: none;
+  border: 0;
 }
 .settings-icon {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--primary-strong);
 }
 .settings-icon svg {
-  width: 22px;
-  height: 22px;
-}
-.icon-shield {
-  background: var(--soft);
-  color: var(--primary-strong);
-}
-.icon-logout {
-  background: var(--soft);
-  color: var(--primary-strong);
+  width: 18px;
+  height: 18px;
 }
 .settings-text {
   display: grid;
@@ -3996,7 +4031,7 @@ html:has(.merge-dialog[open]) {
   min-width: 0;
 }
 .settings-name {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -4006,23 +4041,21 @@ html:has(.merge-dialog[open]) {
   line-height: 1.6;
 }
 .status-chip {
-  padding-inline: 10px;
+  padding-inline: 9px;
   border-radius: 999px;
   background: var(--soft);
   color: var(--primary-strong);
   font-size: 11px;
   font-weight: 500;
-  line-height: 18.5px;
+  line-height: 18px;
 }
 .status-chip.is-off {
-  background: var(--soft);
   color: var(--ink-muted);
 }
 .settings-chevron {
   flex-shrink: 0;
-  width: 21px;
-  height: 21px;
-  margin-inline-end: -1.75px;
+  width: 18px;
+  height: 18px;
   transition: transform 200ms ease;
 }
 .settings-expand.is-open .settings-chevron {
@@ -4038,40 +4071,40 @@ html:has(.merge-dialog[open]) {
 }
 .settings-reveal > div {
   overflow: hidden;
-  padding-inline: 16px;
+  padding-inline: 14px;
 }
 .settings-reveal p {
   color: var(--ink-muted);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.6;
 }
 /* Signed-in devices inside the sign-out card. */
 .device-list {
   display: grid;
-  gap: 10px;
-  margin-block: 4px 14px;
+  gap: 8px;
+  margin-block: 2px 10px;
 }
 .device-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: var(--soft);
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft) 45%, var(--surface));
 }
 .device-icon {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   background: var(--surface);
   color: var(--primary-strong);
 }
 .device-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 .device-text {
   display: grid;
@@ -4083,7 +4116,7 @@ html:has(.merge-dialog[open]) {
   align-items: center;
   gap: 8px;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.6;
 }
@@ -4094,18 +4127,18 @@ html:has(.merge-dialog[open]) {
 }
 .settings-reveal .device-time {
   color: var(--ink-muted);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.6;
 }
 .device-signout {
   flex-shrink: 0;
-  min-height: 34px;
-  padding-inline: 14px;
+  min-height: 30px;
+  padding-inline: 12px;
   border: 0;
   border-radius: 999px;
   background: var(--soft);
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 .device-signout:disabled {
@@ -4115,75 +4148,79 @@ html:has(.merge-dialog[open]) {
   margin-block-start: 10px;
 }
 .settings-reveal .button-primary {
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  min-height: 48px;
-  margin-block: 12px 16px;
-  font-size: 15px;
+  min-height: 40px;
+  margin-block: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  box-shadow: none;
 }
 .settings-reveal .button-primary svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
+/* Deleting the account: the danger colour on the edge, icon and button. */
 .danger-card {
+  --danger-ink: var(--danger, var(--primary-strong));
   display: grid;
-  margin-block-start: 33px;
-  padding: 18px 20.5px 17.5px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--soft);
-  color: var(--primary-strong);
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--danger-ink) 35%, var(--line));
+  border-radius: 16px;
+  background: var(--surface);
 }
 .danger-head {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
 }
 .danger-icon {
   display: grid;
+  flex-shrink: 0;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--surface) 50%, transparent);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger-ink) 14%, var(--surface));
+  color: var(--danger-ink);
 }
 .danger-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 .danger-card h2 {
-  font-size: 15px;
+  color: var(--danger-ink);
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.5;
 }
 .danger-card > p {
-  margin-block-start: 9px;
-  font-size: 13px;
-  line-height: 24px;
+  margin-block-start: 8px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.8;
 }
 .danger-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   justify-self: start;
-  gap: 10px;
-  min-width: 134.5px;
-  height: 41.5px;
-  margin-block-start: 14px;
-  padding-inline: 19.4px;
-  border-radius: 999px;
-  background: var(--primary-strong);
-  color: var(--on-primary);
-  font-size: 14px;
+  gap: 8px;
+  height: 34px;
+  margin-block-start: 10px;
+  padding-inline: 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger-ink) 14%, var(--surface));
+  color: var(--danger-ink);
+  font-size: 13px;
   font-weight: 700;
 }
 .danger-button svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 .app-version {
-  margin-block-start: 24px;
-  color: var(--hint);
+  color: var(--on-photo);
   font-size: 12px;
   line-height: 1.5;
   text-align: center;
@@ -4339,105 +4376,6 @@ html:has(.merge-dialog[open]) {
   .profile-cancel {
     display: inline;
     font-size: calc(14 * var(--u));
-  }
-
-  .settings-title {
-    margin-block-start: 0;
-    font-size: calc(22 * var(--u));
-    text-align: start;
-  }
-  .settings-list {
-    gap: calc(12.6 * var(--u));
-    margin-block-start: calc(24 * var(--u));
-  }
-  .settings-card {
-    gap: calc(15.3 * var(--u));
-    min-height: calc(73.4 * var(--u));
-    padding: calc(12.7 * var(--u)) calc(16 * var(--u));
-    border-radius: calc(24 * var(--u));
-  }
-  .settings-expand {
-    border-radius: calc(24 * var(--u));
-  }
-  .settings-icon {
-    width: calc(45.3 * var(--u));
-    height: calc(46 * var(--u));
-    border-radius: calc(14 * var(--u));
-  }
-  .settings-icon svg {
-    width: calc(22 * var(--u));
-    height: calc(22 * var(--u));
-  }
-  .settings-name {
-    font-size: calc(16 * var(--u));
-  }
-  .settings-help {
-    font-size: calc(12 * var(--u));
-  }
-  .status-chip {
-    padding-inline: calc(10 * var(--u));
-    font-size: calc(11 * var(--u));
-    line-height: calc(18.6 * var(--u));
-  }
-  .settings-chevron {
-    width: calc(20 * var(--u));
-    height: calc(20 * var(--u));
-    margin-inline-end: calc(-1.25 * var(--u));
-  }
-  .settings-reveal > div {
-    padding-inline: calc(16 * var(--u));
-  }
-  .settings-reveal p {
-    font-size: calc(13 * var(--u));
-  }
-  .settings-reveal .button-primary {
-    width: auto;
-    min-height: calc(44 * var(--u));
-    margin-block: calc(12 * var(--u)) calc(16 * var(--u));
-    padding-inline: calc(24 * var(--u));
-    font-size: calc(14 * var(--u));
-  }
-  .danger-card {
-    margin-block-start: calc(21.3 * var(--u));
-    /* Offsets inside the card's 1px border. */
-    padding: calc(17 * var(--u)) calc(20.3 * var(--u)) calc(17.7 * var(--u));
-    border-radius: calc(24 * var(--u));
-  }
-  .danger-head {
-    gap: calc(12.7 * var(--u));
-  }
-  .danger-icon {
-    width: calc(40 * var(--u));
-    height: calc(40 * var(--u));
-    border-radius: calc(12 * var(--u));
-  }
-  .danger-icon svg {
-    width: calc(20 * var(--u));
-    height: calc(20 * var(--u));
-  }
-  .danger-card h2 {
-    font-size: calc(15 * var(--u));
-  }
-  .danger-card > p {
-    margin-block-start: calc(9 * var(--u));
-    font-size: calc(13 * var(--u));
-    line-height: calc(24 * var(--u));
-  }
-  .danger-button {
-    gap: calc(10 * var(--u));
-    min-width: calc(134 * var(--u));
-    height: calc(40.7 * var(--u));
-    margin-block-start: calc(13.3 * var(--u));
-    padding-inline: calc(19.1 * var(--u));
-    font-size: calc(14 * var(--u));
-  }
-  .danger-button svg {
-    width: calc(15 * var(--u));
-    height: calc(15 * var(--u));
-  }
-  .app-version {
-    margin-block-start: calc(21.7 * var(--u));
-    font-size: calc(12 * var(--u));
   }
 }
 /* Contact details: the mobile avatar opens this page. Phone layout (390

@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/session';
 import { backendFetch } from '@/lib/backend';
-import { AccountShell } from '@/components/account/account-shell';
+import { SettingsShell } from '@/components/account/account-shell';
 import { SettingsPanel } from '@/components/account/settings-panel';
 import { defaultPalette, isPalette, paletteCookie } from '@/lib/palette';
 import app from '../../../package.json';
@@ -16,12 +16,12 @@ export default async function Settings() {
   if (!response.ok) throw new Error('Authentication service unavailable');
   const { enabled } = (await response.json()) as { enabled: boolean };
   return (
-    <AccountShell variant="settings">
+    <SettingsShell>
       <SettingsPanel
         twoFactor={enabled}
         version={app.version}
         palette={isPalette(chosen) ? chosen : defaultPalette}
       />
-    </AccountShell>
+    </SettingsShell>
   );
 }

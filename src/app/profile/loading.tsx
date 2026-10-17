@@ -1,5 +1,5 @@
-import { AccountSkeleton } from '@/components/skeletons';
+import { ProfileSkeleton } from '@/components/skeletons';
 
 export default function Loading() {
-  return <AccountSkeleton variant="profile" />;
+  return <ProfileSkeleton />;
 }

@@ -1,6 +1,9 @@
 'use client';
 import { useTranslations } from 'next-intl';
-import { AccountShell } from '@/components/account/account-shell';
+import {
+  AccountShell,
+  SettingsShell,
+} from '@/components/account/account-shell';
 
 // Shown by the route loading files while a page waits for its data. The
 // static parts are real; only the data areas are placeholders.
@@ -71,34 +74,33 @@ export function ContactDetailsSkeleton() {
   );
 }
 
-export function AccountSkeleton({
-  variant,
-}: {
-  variant: 'profile' | 'settings';
-}) {
+export function ProfileSkeleton() {
   const t = useTranslations('Account');
   return (
     <Loading>
-      <AccountShell variant={variant}>
-        {variant === 'profile' ? (
-          <div className="profile-card">
-            <div className="profile-head">
-              <h1>{t('profileTitle')}</h1>
-              <span className="skeleton skeleton-avatar profile-avatar" />
-            </div>
-            <div className="profile-fields">
-              <Bars count={2} className="skeleton-field" />
-            </div>
+      <AccountShell>
+        <div className="profile-card">
+          <div className="profile-head">
+            <h1>{t('profileTitle')}</h1>
+            <span className="skeleton skeleton-avatar profile-avatar" />
           </div>
-        ) : (
-          <>
-            <h1 className="settings-title">{t('settingsTitle')}</h1>
-            <div className="settings-list">
-              <Bars count={2} className="skeleton-card" />
-            </div>
-          </>
-        )}
+          <div className="profile-fields">
+            <Bars count={2} className="skeleton-field" />
+          </div>
+        </div>
       </AccountShell>
+    </Loading>
+  );
+}
+
+export function SettingsSkeleton() {
+  return (
+    <Loading>
+      <SettingsShell>
+        <div className="settings-list">
+          <Bars count={2} className="skeleton-card" />
+        </div>
+      </SettingsShell>
     </Loading>
   );
 }

@@ -49,7 +49,7 @@ export function SettingsPanel({
   const status = t(twoFactor ? 'on' : 'off');
   const twoFactorCard = (
     <>
-      <span className="settings-icon icon-shield">
+      <span className="settings-icon">
         <Icon name="shield" />
       </span>
       <span className="settings-text">
@@ -66,7 +66,6 @@ export function SettingsPanel({
 
   return (
     <>
-      <h1 className="settings-title">{t('settingsTitle')}</h1>
       <PaletteChooser initial={palette} />
       <ul className="settings-list">
         <li>
@@ -95,7 +94,7 @@ export function SettingsPanel({
             aria-controls="logout-all"
             onClick={() => setOpen(!open)}
           >
-            <span className="settings-icon icon-logout">
+            <span className="settings-icon">
               <Icon name="logout" />
             </span>
             <span className="settings-text">

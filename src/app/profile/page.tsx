@@ -5,7 +5,7 @@ import { ProfileForm } from '@/components/account/profile-form';
 export default async function Profile() {
   const user = await requireUser();
   return (
-    <AccountShell variant="profile">
+    <AccountShell>
       <ProfileForm
         user={accountUser(user)}
         initialName={`${user.firstName} ${user.lastName}`.trim()}
