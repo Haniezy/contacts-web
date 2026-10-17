@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { preload } from 'react-dom';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -12,8 +12,10 @@ const slide = 650;
 
 // Sign-in and sign-up in one card: the picture half invites to the other
 // form, and choosing it slides the picture across while the forms trade
-// places. The address follows (/login, /signup), so Back slides back. The
-// form being left stays only while the slide runs. The picture: misty
+// places. The address follows (/login, /signup) without a step in the
+// history: the card's own buttons move between the two, and the browser's
+// Back leaves for the page before (the landing page). The form being left
+// stays only while the slide runs. The picture: misty
 // mountains by Adrien Tutin (Unsplash), lightly tinted with the theme.
 export function AuthCard({
   initial,
@@ -26,7 +28,15 @@ export function AuthCard({
   const t = useTranslations('Auth');
   // The picture (a CSS background) is fetched with the page, not after it.
   preload('/auth/hero.webp', { as: 'image', fetchPriority: 'high' });
-  const [mode, setMode] = useState(initial);
+  // The address decides: brought back by Forward after a switch, the page
+  // restored may be the other form's (on the server it is the same).
+  const [mode, setMode] = useState<Mode>(() =>
+    typeof window === 'undefined'
+      ? initial
+      : location.pathname.startsWith('/signup')
+        ? 'signup'
+        : 'login',
+  );
   const [leaving, setLeaving] = useState<Mode | null>(null);
   const current = useRef(mode);
   useEffect(() => {
@@ -34,21 +44,12 @@ export function AuthCard({
     const timer = setTimeout(() => setLeaving(null), slide);
     return () => clearTimeout(timer);
   }, [leaving]);
-  const show = useCallback((to: Mode) => {
+  const go = (to: Mode) => {
     if (to === current.current) return;
     setLeaving(current.current);
     current.current = to;
     setMode(to);
-  }, []);
-  useEffect(() => {
-    const sync = () =>
-      show(location.pathname.startsWith('/signup') ? 'signup' : 'login');
-    addEventListener('popstate', sync);
-    return () => removeEventListener('popstate', sync);
-  }, [show]);
-  const go = (to: Mode) => {
-    show(to);
-    history.pushState(
+    history.replaceState(
       null,
       '',
       to === 'signup'

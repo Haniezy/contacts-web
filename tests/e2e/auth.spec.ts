@@ -214,18 +214,29 @@ test('sign-in and sign-up are one card: the other form slides in and the address
     page.getByRole('heading', { level: 1, name, exact: true });
   // The form left behind goes once the slide is over.
   const settled = () => expect(page.locator('.auth-panel form')).toHaveCount(1);
-  await page.goto('/login');
+  await page.goto('/');
+  await page.getByRole('link', { name: 'ورود', exact: true }).click();
   await expect(title('ورود')).toBeVisible();
   await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
   await expect(page).toHaveURL(/\/signup$/);
   await expect(title('ثبت‌نام')).toBeVisible();
   await settled();
   await expect(page.getByLabel('نام', { exact: true })).toBeVisible();
-  // Back slides back.
-  await page.goBack();
+  await page.getByRole('button', { name: 'ورود', exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
-  await expect(title('ورود')).toBeVisible();
   await settled();
+  await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
+  await settled();
+  // Switching leaves no steps in the history: the browser's Back goes
+  // straight to the landing page; Forward brings back the form last shown.
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'همه‌ی مخاطبین تو، یه‌جا و مرتب',
+  );
+  await page.goForward();
+  await expect(page).toHaveURL(/\/signup$/);
+  await expect(title('ثبت‌نام')).toBeVisible();
   // The address to return to after signing in stays on the way back.
   await page.goto('/login?next=/settings');
   await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
