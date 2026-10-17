@@ -28,15 +28,15 @@ export function AuthCard({
   const t = useTranslations('Auth');
   // The picture (a CSS background) is fetched with the page, not after it.
   preload('/auth/hero.webp', { as: 'image', fetchPriority: 'high' });
-  // The address decides: brought back by Forward after a switch, the page
-  // restored may be the other form's (on the server it is the same).
-  const [mode, setMode] = useState<Mode>(() =>
-    typeof window === 'undefined'
-      ? initial
-      : location.pathname.startsWith('/signup')
-        ? 'signup'
-        : 'login',
-  );
+  // Brought back by Forward after a switch, the page restored may be the
+  // other form's: then the address decides. Coming from another page the
+  // address isn't this one's yet, and the page's own form shows.
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window === 'undefined') return initial;
+    const path = location.pathname;
+    if (path.startsWith('/signup')) return 'signup';
+    return path.startsWith('/login') ? 'login' : initial;
+  });
   const [leaving, setLeaving] = useState<Mode | null>(null);
   const current = useRef(mode);
   useEffect(() => {

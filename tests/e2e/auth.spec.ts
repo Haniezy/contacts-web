@@ -214,7 +214,11 @@ test('sign-in and sign-up are one card: the other form slides in and the address
     page.getByRole('heading', { level: 1, name, exact: true });
   // The form left behind goes once the slide is over.
   const settled = () => expect(page.locator('.auth-panel form')).toHaveCount(1);
+  // Each link on the landing page opens its own form.
   await page.goto('/');
+  await page.getByRole('link', { name: 'ساخت حساب', exact: true }).click();
+  await expect(title('ثبت‌نام')).toBeVisible();
+  await page.goBack();
   await page.getByRole('link', { name: 'ورود', exact: true }).click();
   await expect(title('ورود')).toBeVisible();
   await page.getByRole('button', { name: 'ساخت حساب', exact: true }).click();
