@@ -48,12 +48,12 @@ export function VerifyForm({ next = null }: { next?: string | null }) {
     <>
       <Link
         href="/login"
-        className="auth-back icon-disc"
+        className="auth-card-home icon-disc"
         aria-label={t('back')}
       >
         <Icon name="back" className="directional-icon" />
       </Link>
-      <span className="mobile-shield icon-disc">
+      <span className="auth-shield" aria-hidden="true">
         <Icon name="shield" />
       </span>
       <h1>{t(recovery ? 'recoveryTitle' : 'verifyTitle')}</h1>

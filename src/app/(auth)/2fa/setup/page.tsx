@@ -19,7 +19,7 @@ export default async function Setup({
   );
   if (response.ok && (await response.json()).enabled) redirect(done);
   return (
-    <AuthShell variant="setup">
+    <AuthShell>
       <SetupForm done={done} />
     </AuthShell>
   );

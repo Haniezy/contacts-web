@@ -10,7 +10,7 @@ export default async function Verify({
 }) {
   if (!(await cookies()).has('contacts_2fa_challenge')) redirect('/login');
   return (
-    <AuthShell variant="verify">
+    <AuthShell>
       <VerifyForm next={nextPath((await searchParams).next)} />
     </AuthShell>
   );

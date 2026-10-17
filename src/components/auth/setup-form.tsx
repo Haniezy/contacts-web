@@ -2,12 +2,36 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { api, errorKey } from '@/lib/api';
 import { useEnrollment, type Enrollment } from './enrollment-context';
 import { Field } from './field';
 import { CodeInput } from './code-input';
 import { Icon } from '@/components/icon';
+
+// Where the setup is: the password, then the QR code, then its code.
+function Steps({ current }: { current: number }) {
+  const t = useTranslations('Auth');
+  const f = useFormatter();
+  return (
+    <ol className="setup-steps" aria-label={t('setupSteps')}>
+      {(['stepPassword', 'stepScan', 'stepCode'] as const).map((key, i) => (
+        <li
+          key={key}
+          className={
+            i + 1 < current ? 'is-done' : i + 1 === current ? 'is-current' : ''
+          }
+          aria-current={i + 1 === current ? 'step' : undefined}
+        >
+          <span>
+            {i + 1 < current ? <Icon name="check" /> : f.number(i + 1)}
+          </span>
+          {t(key)}
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 export function SetupForm({
   done = '/contacts',
@@ -152,31 +176,33 @@ export function SetupForm({
         </div>
       </>
     );
+  const step = !enrollment ? 1 : stage === 'code' ? 3 : 2;
   return (
     <>
-      <Link href={done} className="auth-back icon-disc" aria-label={t('back')}>
+      <Link
+        href={done}
+        className="auth-card-home icon-disc"
+        aria-label={t('back')}
+      >
         <Icon name="back" className="directional-icon" />
       </Link>
+      <Steps current={step} />
       <h1>
-        {stage === 'code' ? (
-          t('verifyTitle')
-        ) : (
-          <>
-            <span className="only-desktop">{t('setupTitle')}</span>
-            <span className="only-mobile">{t('setupTitleMobile')}</span>
-          </>
+        {t(
+          step === 1
+            ? 'setupStartTitle'
+            : step === 2
+              ? 'setupTitle'
+              : 'setupCodeTitle',
         )}
       </h1>
       <p className="auth-description">
-        {stage === 'code' ? (
-          t('setupCodeHelp')
-        ) : enrollment ? (
-          <>
-            <span className="only-desktop">{t('setupHelp')}</span>
-            <span className="only-mobile">{t('setupHelpMobile')}</span>
-          </>
-        ) : (
-          t('setupPasswordHelp')
+        {t(
+          step === 1
+            ? 'setupPasswordHelp'
+            : step === 2
+              ? 'setupHelp'
+              : 'setupCodeHelp',
         )}
       </p>
       {!enrollment ? (
@@ -202,41 +228,32 @@ export function SetupForm({
         </form>
       ) : stage === 'qr' ? (
         <>
-          <div className="qr-layout">
-            <div className="qr-card">
-              <Image
-                src={enrollment.qrCodeDataUrl}
-                width={190}
-                height={190}
-                alt={t('qrAlt')}
-                unoptimized
-              />
-            </div>
-            <div className="qr-manual">
-              <p className="manual-label">{t('manualCode')}</p>
-              <p className="manual-hint">{t('manualHint')}</p>
-              <button
-                type="button"
-                className="secret-code"
-                onClick={() => copy(enrollment.secret, 'key')}
-                aria-label={t('copySecret')}
-              >
-                <code dir="ltr">
-                  {enrollment.secret.match(/.{1,4}/g)?.join(' ')}
-                </code>
-                <Icon name="copy" />
-              </button>
-              <button
-                type="button"
-                className="copy-code text-link only-desktop"
-                onClick={() => copy(enrollment.secret, 'key')}
-              >
-                {t(copied === 'key' ? 'keyCopied' : 'copyCode')}
-              </button>
-              <p aria-live="polite" className="copy-status only-mobile">
-                {copied === 'key' ? t('keyCopied') : ''}
-              </p>
-            </div>
+          <div className="qr-card">
+            <Image
+              src={enrollment.qrCodeDataUrl}
+              width={190}
+              height={190}
+              alt={t('qrAlt')}
+              unoptimized
+            />
+          </div>
+          <div className="qr-manual">
+            <p className="manual-label">{t('manualCode')}</p>
+            <p className="manual-hint">{t('manualHint')}</p>
+            <button
+              type="button"
+              className="secret-code"
+              onClick={() => copy(enrollment.secret, 'key')}
+              aria-label={t('copySecret')}
+            >
+              <code dir="ltr">
+                {enrollment.secret.match(/.{1,4}/g)?.join(' ')}
+              </code>
+              <Icon name={copied === 'key' ? 'check' : 'copy'} />
+            </button>
+            <p aria-live="polite" className="sr-only">
+              {copied === 'key' ? t('keyCopied') : ''}
+            </p>
           </div>
           {error && (
             <p role="alert" className="form-error">
