@@ -796,13 +796,20 @@ button:disabled {
   font-size: 14px;
 }
 .auth-panel .field-line:has(.password-toggle) input {
-  padding-inline-end: 44px;
+  padding-inline-end: 50px;
 }
+/* The eye sits as far in from the edge as the text does on the other side
+   (14px), on every size. */
 .auth-panel .password-toggle {
   inset-block: 3px;
+  width: 36px;
   height: auto;
-  margin-inline-end: 4px;
+  margin-inline-end: 7px;
   color: var(--ink-muted);
+}
+.auth-panel .password-toggle svg {
+  width: 22px;
+  height: 22px;
 }
 .auth-panel .name-fields {
   gap: 12px;
