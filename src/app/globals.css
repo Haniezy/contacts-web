@@ -628,13 +628,18 @@ button:disabled {
   padding: 76px 16px 32px;
   background: var(--page);
 }
+/* Back to the landing page: always the page's start corner (top right in
+   Persian, its arrow pointing right), whichever half the picture is on, and
+   the same on both: a soft disc with a fine edge (in the surface colour it
+   vanished over the form). */
 .auth-card-home {
   position: absolute;
   top: 20px;
   inset-inline-start: 20px;
   width: 44px;
   height: 44px;
-  background: var(--surface);
+  border: 1px solid var(--line);
+  background: var(--soft);
   color: var(--primary-strong);
 }
 .auth-card-home svg {
