@@ -13,10 +13,11 @@ import type { Tag } from '@/lib/contacts';
 import { TagDot } from './tags';
 import {
   LogoutButton,
-  PreferenceRow,
+  ThemeRow,
   UserAvatar,
   type AccountUser,
 } from './account-menu';
+import { LanguageRow } from '@/components/preferences/language-switch';
 import { InstallMenuItem } from './install-sheet';
 
 // Whether the sidebar is narrowed to icons, remembered in this browser.
@@ -155,8 +156,8 @@ function SidebarBody({
           onTag(null),
         )}
         {item('/profile', 'user', t('profile'))}
-        {!collapsed && <PreferenceRow kind="language" />}
-        {drawer && <PreferenceRow kind="theme" />}
+        {!collapsed && <LanguageRow />}
+        {drawer && <ThemeRow />}
         {item('/contacts/duplicates', 'copy', d('title'), duplicates)}
         {item('/contacts/trash', 'trash', tr('menu'), trash)}
         {item('/settings', 'settings', t('settings'))}

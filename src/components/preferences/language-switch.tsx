@@ -6,19 +6,17 @@ import { setLocale } from '@/i18n/actions';
 import type { Locale } from '@/i18n/config';
 import { PreferenceIcon } from './icons';
 
-// The language everywhere (the landing header, the sidebar, the phone
-// drawer): one button, a globe and the name of the language it switches to.
-export function LanguageSwitch() {
+const names: Record<Locale, string> = { fa: 'فارسی', en: 'English' };
+
+// Switching the language, shared by the landing header's button and the
+// sidebar's row: shown at once, back again if the change fails.
+function useLanguage() {
   const locale = useLocale() as Locale;
-  const t = useTranslations('Preferences');
   const [pending, startTransition] = useTransition();
   const [shown, setShown] = useOptimistic(locale);
   const [error, setError] = useState(false);
-  const next: Locale = locale === 'fa' ? 'en' : 'fa';
-  // What the button offers: at once the other language after a click, and
-  // back again if the change fails.
-  const offer: Locale = shown === 'fa' ? 'en' : 'fa';
   function change() {
+    const next: Locale = locale === 'fa' ? 'en' : 'fa';
     setError(false);
     startTransition(async () => {
       setShown(next);
@@ -29,6 +27,22 @@ export function LanguageSwitch() {
       }
     });
   }
+  return { shown, pending, error, change };
+}
+
+function LanguageError() {
+  const t = useTranslations('Preferences');
+  return (
+    <p role="alert" className="text-sm text-ink-muted">
+      {t('error')}
+    </p>
+  );
+}
+
+// The landing header: a globe and the name of the language it switches to.
+export function LanguageSwitch() {
+  const { shown, pending, error, change } = useLanguage();
+  const offer: Locale = shown === 'fa' ? 'en' : 'fa';
   return (
     <div>
       <button
@@ -41,13 +55,34 @@ export function LanguageSwitch() {
         onClick={change}
       >
         <PreferenceIcon name="globe" />
-        <span>{offer === 'en' ? 'English' : 'فارسی'}</span>
+        <span>{names[offer]}</span>
       </button>
-      {error && (
-        <p role="alert" className="text-sm text-ink-muted">
-          {t('error')}
-        </p>
-      )}
+      {error && <LanguageError />}
     </div>
+  );
+}
+
+// The sidebar (and phone drawer): a row like the others naming the language
+// in use; a click switches to the other.
+export function LanguageRow() {
+  const t = useTranslations('Preferences');
+  const { shown, pending, error, change } = useLanguage();
+  return (
+    <>
+      <button
+        type="button"
+        className="desk-nav-item"
+        aria-busy={pending}
+        disabled={pending}
+        onClick={change}
+      >
+        <PreferenceIcon name="globe" />
+        <span className="desk-label">
+          <span className="sr-only">{t('language')}: </span>
+          <span lang={shown}>{names[shown]}</span>
+        </span>
+      </button>
+      {error && <LanguageError />}
+    </>
   );
 }

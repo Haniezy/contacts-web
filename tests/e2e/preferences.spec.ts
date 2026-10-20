@@ -61,7 +61,8 @@ test('theme and language persist and translate the document', async ({
   await expectDark(page, false);
   await setDark(page, true);
   await expect(html).toHaveAttribute('data-theme', 'dark');
-  await scope.getByRole('button', { name: 'English', exact: true }).click();
+  // The language row names the language in use; a click switches.
+  await scope.getByRole('button', { name: 'زبان: فارسی' }).click();
   await expect(html).toHaveAttribute('lang', 'en');
   await expect(html).toHaveAttribute('dir', 'ltr');
   // Desktop titles the list «All contacts (n)».
@@ -75,15 +76,11 @@ test('theme and language persist and translate the document', async ({
   await expect(html).toHaveAttribute('dir', 'ltr');
   scope = await preferences(page);
   await expectDark(page, true);
-  // One button, named after the language it offers: in English, Persian.
-  await expect(
-    scope.getByRole('button', { name: 'فارسی', exact: true }),
-  ).toHaveAttribute('lang', 'fa');
-  await expect(
-    scope.getByRole('button', { name: 'English', exact: true }),
-  ).toHaveCount(0);
+  // In English the row says English, and switches back to Persian.
+  const row = scope.getByRole('button', { name: 'Language: English' });
+  await expect(row).toBeVisible();
   await setDark(page, false);
-  await scope.getByRole('button', { name: 'فارسی', exact: true }).click();
+  await row.click();
   await expect(html).toHaveAttribute('dir', 'rtl');
   await page.reload();
   await expect(html).toHaveAttribute('data-theme', 'light');
@@ -128,7 +125,7 @@ test('keyboard controls and reduced motion work', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(moon).toHaveAttribute('aria-pressed', 'true');
   await expect(moon).toHaveCSS('transition-duration', '0s');
-  await scope.getByRole('button', { name: 'English', exact: true }).focus();
+  await scope.getByRole('button', { name: 'زبان: فارسی' }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
 });

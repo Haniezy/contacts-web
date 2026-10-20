@@ -5869,9 +5869,14 @@ html:has(.merge-dialog[open]) {
 button.desk-nav-item {
   width: 100%;
   background: none;
-  font: inherit;
+  /* The family only: size and weight as on the other rows. */
+  font-family: inherit;
   text-align: start;
   cursor: pointer;
+}
+/* A row that acts (the language, sign out): pressed a little darker. */
+button.desk-nav-item:active {
+  background: color-mix(in srgb, var(--soft) 90%, transparent);
 }
 .side-pref {
   display: flex;

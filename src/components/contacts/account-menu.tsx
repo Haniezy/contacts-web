@@ -6,7 +6,6 @@ import { api, ApiError } from '@/lib/api';
 import { forgetOfflineData } from '@/lib/offline';
 import { Icon } from '@/components/icon';
 import { ThemeButtons } from '@/components/preferences/theme-switch';
-import { LanguageSwitch } from '@/components/preferences/language-switch';
 import { PreferenceIcon } from '@/components/preferences/icons';
 
 export type AccountUser = {
@@ -38,15 +37,15 @@ export function UserAvatar({
   );
 }
 
-// A switch as a sidebar row: the language (and, in the phone drawer, the
-// theme, which desktop has in its top bar).
-export function PreferenceRow({ kind }: { kind: 'theme' | 'language' }) {
+// The theme as a sidebar row, in the phone drawer (desktop has it in its
+// top bar).
+export function ThemeRow() {
   const p = useTranslations('Preferences');
   return (
     <div className="side-pref">
-      <PreferenceIcon name={kind === 'theme' ? 'sun' : 'globe'} />
-      <span className="desk-label">{p(kind)}</span>
-      {kind === 'theme' ? <ThemeButtons /> : <LanguageSwitch />}
+      <PreferenceIcon name="sun" />
+      <span className="desk-label">{p('theme')}</span>
+      <ThemeButtons />
     </div>
   );
 }
