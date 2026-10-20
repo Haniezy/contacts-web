@@ -30,6 +30,12 @@ const paths = {
       <path d="m8 12 3 3 5-5" />
     </>
   ),
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </>
+  ),
   eye: (
     <>
       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z" />

@@ -344,7 +344,6 @@
   "Account": {
     "back": "Back",
     "profileTitle": "Profile",
-    "profileHelp": "Manage your account details and password",
     "name": "Full name",
     "namePlaceholder": "e.g. Sara Ahmadi",
     "email": "Email",

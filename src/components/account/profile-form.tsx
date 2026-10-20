@@ -114,146 +114,147 @@ export function ProfileForm({
   }
 
   return (
-    <div className="profile-card">
-      <div className="profile-head">
-        <div>
-          <h1>{t('profileTitle')}</h1>
-          <p className="profile-help">{t('profileHelp')}</p>
-        </div>
-        <div className="photo-field profile-photo">
-          <div className="photo-current">
-            {photo.kind === 'new' ? (
-              // Local preview of the cropped photo.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                className="user-avatar profile-avatar"
-                src={photo.url}
-                alt=""
-              />
-            ) : (
-              <UserAvatar
-                user={{
-                  photoUrl: photo.kind === 'keep' ? user.photoUrl : null,
-                }}
-                className="profile-avatar"
-              />
-            )}
-            <button
-              type="button"
-              className="photo-change"
-              aria-label={c('changePhoto')}
-              onClick={() => file.current?.click()}
-            >
-              <Icon name="camera" />
-            </button>
-          </div>
-          {hasPhoto && (
-            <button
-              type="button"
-              className="photo-remove text-link"
-              onClick={() => setPhoto({ kind: 'remove' })}
-            >
-              {c('removePhoto')}
-            </button>
-          )}
-          <input
-            ref={file}
-            type="file"
-            accept={photoTypes.join(',')}
-            hidden
-            onChange={(event) => {
-              choose(event.target.files?.[0]);
-              event.target.value = '';
-            }}
-          />
-        </div>
-      </div>
-      {cropping && (
-        <PhotoCropper
-          file={cropping}
-          onCancel={() => setCropping(null)}
-          onDone={(cropped) => {
-            setCropping(null);
-            setPhoto({
-              kind: 'new',
-              file: cropped,
-              url: URL.createObjectURL(cropped),
-            });
-          }}
-        />
-      )}
-      <form method="post" noValidate onSubmit={submit} aria-busy={busy}>
-        <div className="profile-fields">
-          <div className="contact-field">
-            <label htmlFor="profile-name">{t('name')}</label>
-            <div className="field-line">
-              <input
-                ref={nameInput}
-                id="profile-name"
-                name="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                onBlur={() => setTouched(true)}
-                placeholder={t('namePlaceholder')}
-                autoComplete="name"
-                maxLength={45}
-                aria-invalid={Boolean(shownProblem)}
-                aria-describedby={
-                  shownProblem ? 'profile-name-error' : undefined
-                }
-              />
+    <>
+      <section className="profile-card" aria-label={t('profileTitle')}>
+        <div className="profile-me">
+          <div className="photo-field profile-photo">
+            <div className="photo-current">
+              {photo.kind === 'new' ? (
+                // Local preview of the cropped photo.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  className="user-avatar profile-avatar"
+                  src={photo.url}
+                  alt=""
+                />
+              ) : (
+                <UserAvatar
+                  user={{
+                    photoUrl: photo.kind === 'keep' ? user.photoUrl : null,
+                  }}
+                  className="profile-avatar"
+                />
+              )}
+              <button
+                type="button"
+                className="photo-change"
+                aria-label={c('changePhoto')}
+                onClick={() => file.current?.click()}
+              >
+                <Icon name="camera" />
+              </button>
             </div>
-            {shownProblem && (
-              <p className="field-error" id="profile-name-error">
-                {shownProblem}
+            {hasPhoto && (
+              <button
+                type="button"
+                className="photo-remove text-link"
+                onClick={() => setPhoto({ kind: 'remove' })}
+              >
+                {c('removePhoto')}
+              </button>
+            )}
+            <input
+              ref={file}
+              type="file"
+              accept={photoTypes.join(',')}
+              hidden
+              onChange={(event) => {
+                choose(event.target.files?.[0]);
+                event.target.value = '';
+              }}
+            />
+          </div>
+          {cropping && (
+            <PhotoCropper
+              file={cropping}
+              onCancel={() => setCropping(null)}
+              onDone={(cropped) => {
+                setCropping(null);
+                setPhoto({
+                  kind: 'new',
+                  file: cropped,
+                  url: URL.createObjectURL(cropped),
+                });
+              }}
+            />
+          )}
+          <form
+            className="profile-form"
+            method="post"
+            noValidate
+            onSubmit={submit}
+            aria-busy={busy}
+          >
+            <div className="profile-fields">
+              <div className="contact-field">
+                <label htmlFor="profile-name">{t('name')}</label>
+                <div className="field-line">
+                  <input
+                    ref={nameInput}
+                    id="profile-name"
+                    name="name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    onBlur={() => setTouched(true)}
+                    placeholder={t('namePlaceholder')}
+                    autoComplete="name"
+                    maxLength={45}
+                    aria-invalid={Boolean(shownProblem)}
+                    aria-describedby={
+                      shownProblem ? 'profile-name-error' : undefined
+                    }
+                  />
+                </div>
+                {shownProblem && (
+                  <p className="field-error" id="profile-name-error">
+                    {shownProblem}
+                  </p>
+                )}
+              </div>
+              <div className="contact-field profile-email">
+                <label htmlFor="profile-email">{t('email')}</label>
+                <div className="field-line">
+                  <input
+                    id="profile-email"
+                    value={user.email}
+                    readOnly
+                    dir="ltr"
+                    aria-describedby="profile-email-locked"
+                  />
+                  <Icon name="lock" />
+                </div>
+                <span id="profile-email-locked" hidden>
+                  {t('locked')}
+                </span>
+              </div>
+            </div>
+            {error && (
+              <p role="alert" className="form-error">
+                {error === 'rateLimit'
+                  ? e('rateLimit')
+                  : error === 'saveFailed'
+                    ? t('saveFailed')
+                    : c(error)}
               </p>
             )}
-          </div>
-          <div className="contact-field profile-email">
-            <label htmlFor="profile-email">
-              {t('email')}
-              <span className="locked-chip">{t('locked')}</span>
-            </label>
-            <div className="field-line">
-              <input
-                id="profile-email"
-                value={user.email}
-                readOnly
-                dir="ltr"
-                aria-describedby="profile-email-locked"
-              />
-              <Icon name="shield" />
+            <div className="profile-actions">
+              <button
+                className="button-primary"
+                disabled={busy}
+                // Keep focus in the field: its blur error would move this
+                // button away mid-click. Submitting validates every field.
+                onMouseDown={(event) => event.preventDefault()}
+              >
+                {t(busy ? 'saving' : 'save')}
+              </button>
+              <Link href="/contacts" className="profile-cancel">
+                {t('cancel')}
+              </Link>
             </div>
-            <span id="profile-email-locked" hidden>
-              {t('locked')}
-            </span>
-          </div>
+          </form>
         </div>
-        {error && (
-          <p role="alert" className="form-error">
-            {error === 'rateLimit'
-              ? e('rateLimit')
-              : error === 'saveFailed'
-                ? t('saveFailed')
-                : c(error)}
-          </p>
-        )}
-        <div className="profile-actions">
-          <button
-            className="button-primary"
-            disabled={busy}
-            // Keep focus in the field: its blur error would move this
-            // button away mid-click. Submitting validates every field.
-            onMouseDown={(event) => event.preventDefault()}
-          >
-            {t(busy ? 'saving' : 'save')}
-          </button>
-          <Link href="/contacts" className="profile-cancel">
-            {t('cancel')}
-          </Link>
-        </div>
-      </form>
+      </section>
       <PasswordChange />
-    </div>
+    </>
   );
 }

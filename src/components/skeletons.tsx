@@ -1,9 +1,6 @@
 'use client';
 import { useTranslations } from 'next-intl';
-import {
-  AccountShell,
-  SettingsShell,
-} from '@/components/account/account-shell';
+import { AccountShell } from '@/components/account/account-shell';
 
 // Shown by the route loading files while a page waits for its data. The
 // static parts are real; only the data areas are placeholders.
@@ -75,17 +72,15 @@ export function ContactDetailsSkeleton() {
 }
 
 export function ProfileSkeleton() {
-  const t = useTranslations('Account');
   return (
     <Loading>
-      <AccountShell>
+      <AccountShell variant="profile">
         <div className="profile-card">
-          <div className="profile-head">
-            <h1>{t('profileTitle')}</h1>
+          <div className="profile-me">
             <span className="skeleton skeleton-avatar profile-avatar" />
-          </div>
-          <div className="profile-fields">
-            <Bars count={2} className="skeleton-field" />
+            <div className="profile-form">
+              <Bars count={2} className="skeleton-field" />
+            </div>
           </div>
         </div>
       </AccountShell>
@@ -96,11 +91,11 @@ export function ProfileSkeleton() {
 export function SettingsSkeleton() {
   return (
     <Loading>
-      <SettingsShell>
+      <AccountShell variant="settings">
         <div className="settings-list">
           <Bars count={2} className="skeleton-card" />
         </div>
-      </SettingsShell>
+      </AccountShell>
     </Loading>
   );
 }

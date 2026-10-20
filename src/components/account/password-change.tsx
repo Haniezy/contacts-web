@@ -158,10 +158,33 @@ export function PasswordChange() {
 
   return (
     <section className="password-change" aria-labelledby="password-title">
-      <p className="profile-divider">
-        <span id="password-title">{a('password')}</span>
-      </p>
-      {open ? (
+      <div className="password-row">
+        <span className="password-icon" aria-hidden="true">
+          <Icon name="lock" />
+        </span>
+        <span className="password-text">
+          <span id="password-title" className="password-name">
+            {a('password')}
+          </span>
+          <span className="password-dots" aria-hidden="true">
+            ••••••••
+          </span>
+        </span>
+        {!open && (
+          <button
+            ref={toggle}
+            type="button"
+            className="password-open"
+            onClick={() => {
+              setChanged(false);
+              setOpen(true);
+            }}
+          >
+            {t('passwordSection')}
+          </button>
+        )}
+      </div>
+      {open && (
         <form
           ref={form}
           className="password-form"
@@ -199,26 +222,6 @@ export function PasswordChange() {
             </button>
           </div>
         </form>
-      ) : (
-        <div className="password-row">
-          <span className="password-icon" aria-hidden="true">
-            <Icon name="shield" />
-          </span>
-          <span className="password-dots" aria-hidden="true">
-            ••••••••
-          </span>
-          <button
-            ref={toggle}
-            type="button"
-            className="button-secondary password-open"
-            onClick={() => {
-              setChanged(false);
-              setOpen(true);
-            }}
-          >
-            {t('passwordSection')}
-          </button>
-        </div>
       )}
       <p className="password-done" role="status">
         {changed ? t('passwordChanged') : ''}
