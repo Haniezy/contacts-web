@@ -4225,6 +4225,83 @@ html:has(.merge-dialog[open]) {
   line-height: 1.5;
   text-align: center;
 }
+/* Desktop: a wider column, a little larger, never growing further. */
+@media (min-width: 1024px) {
+  .settings-page {
+    padding-block-start: 32px;
+  }
+  .settings-column {
+    gap: 14px;
+    width: min(1000px, 100%);
+  }
+  .settings-back {
+    width: 40px;
+    height: 40px;
+  }
+  .settings-title {
+    font-size: 22px;
+  }
+  .palette-card,
+  .danger-card {
+    padding: 16px 18px;
+  }
+  .palette-card legend,
+  .settings-name,
+  .danger-card h2 {
+    font-size: 15px;
+  }
+  .settings-help,
+  .danger-card > p,
+  .settings-reveal p {
+    font-size: 13px;
+  }
+  .palette-options {
+    gap: 10px;
+  }
+  .palette-option {
+    padding: 10px 6px;
+  }
+  .palette-swatches span {
+    width: 18px;
+    height: 18px;
+  }
+  .palette-name {
+    font-size: 13px;
+  }
+  .settings-card {
+    gap: 14px;
+    min-height: 66px;
+    padding: 12px 18px;
+  }
+  .settings-icon,
+  .danger-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .settings-icon svg,
+  .danger-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  .settings-reveal > div {
+    padding-inline: 18px;
+  }
+  .device-name {
+    font-size: 14px;
+  }
+  .settings-reveal .device-time {
+    font-size: 12px;
+  }
+  .settings-reveal .button-primary {
+    width: auto;
+    padding-inline: 22px;
+  }
+  .danger-button {
+    height: 36px;
+    font-size: 14px;
+  }
+}
 .badge-shield {
   background: var(--soft);
   color: var(--primary-strong);
