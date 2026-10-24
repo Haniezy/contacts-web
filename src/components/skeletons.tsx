@@ -1,6 +1,6 @@
 'use client';
 import { useTranslations } from 'next-intl';
-import { AccountShell } from '@/components/account/account-shell';
+import { PageShell } from '@/components/page-shell';
 
 // Shown by the route loading files while a page waits for its data. The
 // static parts are real; only the data areas are placeholders.
@@ -26,22 +26,12 @@ export function DuplicatesSkeleton() {
   const t = useTranslations('Duplicates');
   return (
     <Loading>
-      <div className="contacts-page duplicates-page">
-        <div className="contacts-decor" aria-hidden="true">
-          <span className="contacts-circle" />
-          <span className="contacts-mint" />
+      <PageShell title={t('title')}>
+        <span className="skeleton skeleton-line" />
+        <div className="duplicate-groups">
+          <Bars count={2} className="skeleton-card" />
         </div>
-        <header className="duplicates-header">
-          <span className="duplicates-back icon-disc" aria-hidden="true" />
-          <h1>{t('title')}</h1>
-        </header>
-        <main className="duplicates-main">
-          <span className="skeleton skeleton-line" />
-          <div className="duplicate-groups">
-            <Bars count={2} className="skeleton-card" />
-          </div>
-        </main>
-      </div>
+      </PageShell>
     </Loading>
   );
 }
@@ -72,9 +62,10 @@ export function ContactDetailsSkeleton() {
 }
 
 export function ProfileSkeleton() {
+  const t = useTranslations('Account');
   return (
     <Loading>
-      <AccountShell variant="profile">
+      <PageShell title={t('profileTitle')}>
         <div className="profile-card">
           <div className="profile-me">
             <span className="skeleton skeleton-avatar profile-avatar" />
@@ -83,19 +74,20 @@ export function ProfileSkeleton() {
             </div>
           </div>
         </div>
-      </AccountShell>
+      </PageShell>
     </Loading>
   );
 }
 
 export function SettingsSkeleton() {
+  const t = useTranslations('Account');
   return (
     <Loading>
-      <AccountShell variant="settings">
+      <PageShell title={t('settingsTitle')}>
         <div className="settings-list">
           <Bars count={2} className="skeleton-card" />
         </div>
-      </AccountShell>
+      </PageShell>
     </Loading>
   );
 }

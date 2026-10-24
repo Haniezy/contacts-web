@@ -138,17 +138,6 @@ function MergeSheet({
 
   return (
     <div className="merge-sheet">
-      <div className="merge-decor" aria-hidden="true">
-        <span className="form-circle" />
-      </div>
-      <button
-        type="button"
-        className="merge-back icon-disc"
-        aria-label={t('back')}
-        onClick={onClose}
-      >
-        <Icon name="back" className="directional-icon" />
-      </button>
       <header className="merge-head">
         <div>
           <h2 id="merge-title">{t('mergeTitle')}</h2>

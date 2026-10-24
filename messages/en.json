@@ -324,6 +324,7 @@
     "summary": "{count, plural, one {# group} other {# groups}} may be the same person",
     "summaryHint": "review and decide",
     "empty": "No duplicate contacts found.",
+    "emptyHelp": "When two contacts share a number or a name, they show up here.",
     "review": "Review and merge",
     "ignore": "Ignore",
     "ignoreFailed": "Couldn't ignore this group. Try again.",

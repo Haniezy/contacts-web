@@ -1,11 +1,11 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { api, ApiError, displayDigits } from '@/lib/api';
 import { formatPhone, type TrashedContact } from '@/lib/contacts';
 import { Icon } from '@/components/icon';
+import { PageShell } from '@/components/page-shell';
 import { Avatar } from './avatar';
 
 const day = 24 * 60 * 60 * 1000;
@@ -73,103 +73,82 @@ export function TrashApp({ initial }: { initial: TrashedContact[] | null }) {
     Math.max(1, Math.ceil((Date.parse(contact.purgeAt) - now) / day));
 
   return (
-    <div className="contacts-page duplicates-page trash-page">
-      <div className="contacts-decor" aria-hidden="true">
-        <span className="contacts-circle" />
-        <span className="contacts-mint" />
-        <span className="sphere sphere-1" />
-        <span className="sphere sphere-2" />
-      </div>
-      <header className="duplicates-header">
-        <Link
-          href="/contacts"
-          className="duplicates-back icon-disc"
-          aria-label={c('back')}
-        >
-          <Icon name="back" className="directional-icon" />
-        </Link>
-        <span className="duplicates-icon trash-icon" aria-hidden="true">
-          <Icon name="trash" />
-        </span>
-        <h1>{t('title')}</h1>
-      </header>
-      <main className="duplicates-main">
-        <div className="trash-summary">
-          <p className="duplicates-summary" role="status">
-            {initial === null
-              ? c('failed')
-              : contacts.length > 0
-                ? t('summary', { count: contacts.length })
-                : t('empty')}
-          </p>
-          {contacts.length > 0 && (
-            <button
-              type="button"
-              className="trash-empty"
-              disabled={busy !== null}
-              onClick={() => setConfirming('all')}
-            >
-              <Icon name="trash" />
-              {t('emptyTrash')}
-            </button>
-          )}
-        </div>
-        <p className="trash-note">{t('note')}</p>
-        {failed && (
-          <p role="alert" className="form-error">
-            {t('failed')}
-          </p>
+    <PageShell title={t('title')}>
+      <div className="trash-summary">
+        <p className="duplicates-summary" role="status">
+          {initial === null
+            ? c('failed')
+            : contacts.length > 0
+              ? t('summary', { count: contacts.length })
+              : t('empty')}
+        </p>
+        {contacts.length > 0 && (
+          <button
+            type="button"
+            className="trash-empty"
+            disabled={busy !== null}
+            onClick={() => setConfirming('all')}
+          >
+            <Icon name="trash" />
+            {t('emptyTrash')}
+          </button>
         )}
-        <ul className="trash-list">
-          {contacts.map((contact) => (
-            <li key={contact.id} className="duplicate-card trash-card">
-              <div className="duplicate-member">
-                <Avatar contact={contact} />
-                <div>
-                  <p className="member-name">
-                    <bdi>{contact.name}</bdi>
-                  </p>
-                  <p className="member-phone" dir="ltr">
-                    {displayDigits(formatPhone(contact.phone), locale)}
-                  </p>
-                  <p className="trash-left">
-                    {t('daysLeft', { count: daysLeft(contact) })}
-                    {' · '}
-                    {t('deletedOn', {
-                      date: f.dateTime(new Date(contact.deletedAt), {
-                        day: 'numeric',
-                        month: 'long',
-                      }),
-                    })}
-                  </p>
-                </div>
+      </div>
+      <p className="trash-note">{t('note')}</p>
+      {failed && (
+        <p role="alert" className="form-error">
+          {t('failed')}
+        </p>
+      )}
+      <ul className="trash-list">
+        {contacts.map((contact) => (
+          <li key={contact.id} className="duplicate-card trash-card">
+            <div className="duplicate-member">
+              <Avatar contact={contact} />
+              <div>
+                <p className="member-name">
+                  <bdi>{contact.name}</bdi>
+                </p>
+                <p className="member-phone" dir="ltr">
+                  {displayDigits(formatPhone(contact.phone), locale)}
+                </p>
+                <p className="trash-left">
+                  {t('daysLeft', { count: daysLeft(contact) })}
+                  {' · '}
+                  {t('deletedOn', {
+                    date: f.dateTime(new Date(contact.deletedAt), {
+                      day: 'numeric',
+                      month: 'long',
+                    }),
+                  })}
+                </p>
               </div>
-              <div className="trash-actions">
-                <button
-                  type="button"
-                  className="button-primary"
-                  disabled={busy !== null}
-                  onClick={() => restore(contact)}
-                  aria-label={t('restoreLabel', { name: contact.name })}
-                >
-                  <Icon name="back" className="restore-icon" />
-                  {t('restore')}
-                </button>
-                <button
-                  type="button"
-                  className="button-danger"
-                  disabled={busy !== null}
-                  onClick={() => setConfirming(contact)}
-                  aria-label={t('deleteLabel', { name: contact.name })}
-                >
-                  <Icon name="trash" />
-                  {t('deleteForGood')}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </main>
+            </div>
+            <div className="trash-actions">
+              <button
+                type="button"
+                className="button-primary"
+                disabled={busy !== null}
+                onClick={() => restore(contact)}
+                aria-label={t('restoreLabel', { name: contact.name })}
+              >
+                <Icon name="back" className="restore-icon" />
+                {t('restore')}
+              </button>
+              <button
+                type="button"
+                className="button-danger"
+                disabled={busy !== null}
+                onClick={() => setConfirming(contact)}
+                aria-label={t('deleteLabel', { name: contact.name })}
+              >
+                <Icon name="trash" />
+                {t('deleteForGood')}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
       {confirming && (
         <ForeverConfirm
           title={
@@ -182,7 +161,7 @@ export function TrashApp({ initial }: { initial: TrashedContact[] | null }) {
           onCancel={() => setConfirming(null)}
         />
       )}
-    </div>
+    </PageShell>
   );
 }
 

@@ -1,6 +1,5 @@
 'use client';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { api, ApiError, displayDigits } from '@/lib/api';
@@ -12,6 +11,7 @@ import {
   type DuplicatePage,
 } from '@/lib/contacts';
 import { Icon } from '@/components/icon';
+import { PageShell } from '@/components/page-shell';
 import { Avatar } from './avatar';
 import { MergeDialog } from './merge-dialog';
 
@@ -185,97 +185,84 @@ export function DuplicatesApp({
   }
 
   return (
-    <div className="contacts-page duplicates-page">
-      <div className="contacts-decor" aria-hidden="true">
-        <span className="contacts-circle" />
-        <span className="contacts-mint" />
-        <span className="sphere sphere-1" />
-        <span className="sphere sphere-2" />
-      </div>
-      <header className="duplicates-header">
-        <Link
-          href="/contacts"
-          className="duplicates-back icon-disc"
-          aria-label={t('back')}
-        >
-          <Icon name="back" className="directional-icon" />
-        </Link>
-        <span className="duplicates-icon" aria-hidden="true">
-          <Icon name="users" />
-        </span>
-        <h1>{t('title')}</h1>
-      </header>
-      <main className="duplicates-main">
+    <PageShell title={t('title')}>
+      {total > 0 || initial === null ? (
         <p className="duplicates-summary" role="status">
           {initial === null ? (
             c('failed')
-          ) : total > 0 ? (
+          ) : (
             <>
               {t('summary', { count: total })}
               <span className="only-desktop"> — {t('summaryHint')}</span>
             </>
-          ) : (
-            t('empty')
           )}
         </p>
-        <ul className="duplicate-groups">
-          {groups.map((group) => (
-            <li key={keyOf(group)} className="duplicate-card">
-              <div className="duplicate-members">
-                {group.contacts.map((contact, index) => (
-                  <Fragment key={contact.id}>
-                    {index > 0 && (
-                      <span className="duplicate-link" aria-hidden="true">
-                        <Icon name="users" />
-                      </span>
-                    )}
-                    <div className="duplicate-member">
-                      <Avatar contact={contact} />
-                      <div>
-                        <p className="member-name">
-                          <bdi>{contact.name}</bdi>
-                        </p>
-                        <p className="member-phone" dir="ltr">
-                          {displayDigits(formatPhone(contact.phone), locale)}
-                        </p>
-                      </div>
+      ) : (
+        <div className="page-empty" role="status">
+          <span className="page-empty-icon" aria-hidden="true">
+            <Icon name="users" />
+          </span>
+          <p className="page-empty-title">{t('empty')}</p>
+          <p className="page-empty-help">{t('emptyHelp')}</p>
+        </div>
+      )}
+      <ul className="duplicate-groups">
+        {groups.map((group) => (
+          <li key={keyOf(group)} className="duplicate-card">
+            <div className="duplicate-members">
+              {group.contacts.map((contact, index) => (
+                <Fragment key={contact.id}>
+                  {index > 0 && (
+                    <span className="duplicate-link" aria-hidden="true">
+                      <Icon name="users" />
+                    </span>
+                  )}
+                  <div className="duplicate-member">
+                    <Avatar contact={contact} />
+                    <div>
+                      <p className="member-name">
+                        <bdi>{contact.name}</bdi>
+                      </p>
+                      <p className="member-phone" dir="ltr">
+                        {displayDigits(formatPhone(contact.phone), locale)}
+                      </p>
                     </div>
-                  </Fragment>
-                ))}
-              </div>
-              {failed === keyOf(group) && (
-                <p role="alert" className="form-error">
-                  {t('ignoreFailed')}
-                </p>
-              )}
-              <div className="duplicate-actions">
-                <button
-                  type="button"
-                  className="button-primary"
-                  onClick={() => openMerge(group)}
-                >
-                  <Icon name="users" />
-                  {t('review')}
-                </button>
-                <button
-                  type="button"
-                  className="duplicate-ignore"
-                  disabled={busy === keyOf(group)}
-                  onClick={() => ignore(group)}
-                >
-                  {t('ignore')}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div ref={sentinel} className="list-sentinel" aria-hidden="true" />
-        {loadingMore && (
-          <p className="contacts-loading" role="status">
-            {c('loading')}
-          </p>
-        )}
-      </main>
+                  </div>
+                </Fragment>
+              ))}
+            </div>
+            {failed === keyOf(group) && (
+              <p role="alert" className="form-error">
+                {t('ignoreFailed')}
+              </p>
+            )}
+            <div className="duplicate-actions">
+              <button
+                type="button"
+                className="button-primary"
+                onClick={() => openMerge(group)}
+              >
+                <Icon name="users" />
+                {t('review')}
+              </button>
+              <button
+                type="button"
+                className="duplicate-ignore"
+                disabled={busy === keyOf(group)}
+                onClick={() => ignore(group)}
+              >
+                {t('ignore')}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div ref={sentinel} className="list-sentinel" aria-hidden="true" />
+      {loadingMore && (
+        <p className="contacts-loading" role="status">
+          {c('loading')}
+        </p>
+      )}
       <MergeDialog
         group={merging}
         onClose={closeMerge}
@@ -286,6 +273,6 @@ export function DuplicatesApp({
           void reload();
         }}
       />
-    </div>
+    </PageShell>
   );
 }
