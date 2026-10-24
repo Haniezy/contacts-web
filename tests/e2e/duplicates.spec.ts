@@ -103,7 +103,7 @@ test('merging keeps one complete record with the chosen fields', async ({
   await page.goto(page.url());
   await expect(page.getByLabel('شماره تلفن')).toHaveValue('۰۹۱۲ ۳۴۵ ۶۷۸۹');
   await expect(page.getByLabel(/تاریخ تولد/)).toHaveValue('۱۵ مهر ۱۳۷۵');
-  await expect(page.getByLabel(/یادآوری/)).toHaveValue('قرار قهوه پنجشنبه');
+  await expect(page.getByLabel(/یادداشت/)).toHaveValue('قرار قهوه پنجشنبه');
 });
 
 test('ignore hides a group; back, Escape and cancel leave the merge view', async ({

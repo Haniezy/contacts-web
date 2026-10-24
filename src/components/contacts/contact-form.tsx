@@ -463,33 +463,29 @@ export function ContactForm({
 
   return (
     <div className={`contact-form form-${mode}`}>
-      <div className="form-decor" aria-hidden="true">
-        <span className="form-circle" />
-        <span className="form-mint" />
-        <span className="sphere sphere-1" />
-        <span className="sphere sphere-2" />
-        <span className="sphere sphere-3" />
+      <div className="form-head">
+        <button
+          type="button"
+          className="form-back icon-disc"
+          aria-label={t('back')}
+          onClick={onClose}
+        >
+          <Icon name="back" className="directional-icon" />
+        </button>
+        {/* On mobile the form is the whole page, so its title is the
+            page's h1. */}
+        <h1 className="form-title">
+          {t(mode === 'new' ? 'newTitle' : 'editTitle')}
+        </h1>
+        <button
+          type="button"
+          className="form-close icon-disc"
+          aria-label={t('close')}
+          onClick={onClose}
+        >
+          <Icon name="close" />
+        </button>
       </div>
-      <button
-        type="button"
-        className="form-back icon-disc"
-        aria-label={t('back')}
-        onClick={onClose}
-      >
-        <Icon name="back" className="directional-icon" />
-      </button>
-      <button
-        type="button"
-        className="form-close icon-disc"
-        aria-label={t('close')}
-        onClick={onClose}
-      >
-        <Icon name="close" />
-      </button>
-      {/* On mobile the form is the whole page, so its title is the page's h1. */}
-      <h1 className="form-title">
-        {t(mode === 'new' ? 'newTitle' : 'editTitle')}
-      </h1>
       <form
         ref={form}
         method="post"

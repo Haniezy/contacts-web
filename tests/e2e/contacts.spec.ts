@@ -110,7 +110,7 @@ test('list is grouped alphabetically, searchable, and rows open their actions', 
   // The reminder shows as a note under the actions.
   const note = row.locator('.row-reminder');
   await expect(note).toBeVisible();
-  await expect(note).toContainText('یادآوری');
+  await expect(note).toContainText('یادداشت');
   await expect(note).toContainText('پنجشنبه زنگ بزن');
   await expect(
     page.getByRole('link', { name: 'جزئیات بهار رضایی' }),
@@ -439,7 +439,7 @@ test('one form creates and edits a contact', async ({ page }) => {
   await expect(page.getByLabel('نام و نام خانوادگی')).toHaveValue('نگار صالحی');
   await expect(page.getByLabel('شماره تلفن')).toHaveValue('۰۹۱۲ ۱۱۱ ۲۲۲۲');
   await expect(birthday).toHaveValue('۱ فروردین ۱۳۷۰');
-  await page.getByLabel(/یادآوری/).fill('کتاب رو پس بده');
+  await page.getByLabel(/یادداشت/).fill('کتاب رو پس بده');
   await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
   await expect(page).toHaveURL(/\/contacts$/);
   // Desktop shows the saved contact beside the list.
@@ -453,7 +453,7 @@ test('one form creates and edits a contact', async ({ page }) => {
   await editChosen(page);
   await expect(page).toHaveURL(/\/edit$/);
   await page.goto(page.url());
-  await expect(page.getByLabel(/یادآوری/)).toHaveValue('کتاب رو پس بده');
+  await expect(page.getByLabel(/یادداشت/)).toHaveValue('کتاب رو پس بده');
   await expectCount(page, '۶');
 });
 

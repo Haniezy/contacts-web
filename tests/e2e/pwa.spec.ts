@@ -619,7 +619,7 @@ test.describe('exact sync', () => {
     await page.goto('/contacts');
     await copied(page);
     await context.setOffline(true);
-    await editContact(page, 'سارا احمدی', /یادآوری/, 'یادداشت اول');
+    await editContact(page, 'سارا احمدی', /یادداشت/, 'یادداشت اول');
     await context.setOffline(false);
     // The first edit takes a while to reach the server.
     await page.route('**/api/contacts/*', async (route) => {
@@ -629,7 +629,7 @@ test.describe('exact sync', () => {
     });
     const notice = page.locator('.sync-toast');
     await notice.getByRole('button', { name: 'تأیید' }).click();
-    await editContact(page, 'سارا احمدی', /یادآوری/, 'یادداشت دوم');
+    await editContact(page, 'سارا احمدی', /یادداشت/, 'یادداشت دوم');
 
     await expect(notice).toContainText(allSynced, { timeout: 30000 });
     const [saved] = await onServer(page);
@@ -938,7 +938,7 @@ test.describe('exact sync', () => {
     await two.goto('/contacts');
     await context.setOffline(true);
     await addContact(one, 'از پنجره اول', '09121110012');
-    await editContact(one, 'سارا احمدی', /یادآوری/, 'از پنجره اول');
+    await editContact(one, 'سارا احمدی', /یادداشت/, 'از پنجره اول');
     await context.setOffline(false);
 
     // The other window learns of the waiting changes by itself.
@@ -971,7 +971,7 @@ test.describe('exact sync', () => {
     await page.goto('/contacts');
     await copied(page);
     await context.setOffline(true);
-    await editContact(page, 'سارا احمدی', /یادآوری/, 'یادداشت');
+    await editContact(page, 'سارا احمدی', /یادداشت/, 'یادداشت');
     await addContact(page, 'بعد از ورود', '09121110013');
     await context.setOffline(false);
     // Sara is deleted elsewhere (her edit is set aside), and then the
