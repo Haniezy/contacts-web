@@ -6116,9 +6116,6 @@ button.side-logout:hover {
     align-items: center;
     text-align: center;
   }
-  .sheet-photo {
-    position: relative;
-  }
   .sheet-photo .avatar-xl {
     width: 136px;
     height: 136px;
@@ -6126,23 +6123,6 @@ button.side-logout:hover {
     box-shadow:
       0 0 0 3px var(--soft),
       0 14px 28px color-mix(in srgb, var(--shade) 18%, transparent);
-  }
-  .sheet-edit {
-    position: absolute;
-    bottom: 4px;
-    inset-inline-start: 2px;
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border: 3px solid var(--surface);
-    border-radius: 50%;
-    background: var(--primary);
-    color: var(--on-primary);
-  }
-  .sheet-edit svg {
-    width: 16px;
-    height: 16px;
   }
   .sheet-hero h2 {
     margin-block-start: 12px;
@@ -6204,10 +6184,6 @@ button.side-logout:hover {
     background: var(--surface);
     box-shadow: 0 18px 40px color-mix(in srgb, var(--shade) 18%, transparent);
     animation: dialog-in 160ms ease-out;
-  }
-  .sheet-actions .more-list {
-    inset-inline-start: auto;
-    inset-inline-end: 0;
   }
   .more-list button {
     display: flex;
@@ -6317,12 +6293,6 @@ button.side-logout:hover {
       width: 108px;
       height: 108px;
       font-size: 40px;
-    }
-    .sheet-edit {
-      bottom: 0;
-      inset-inline-start: 0;
-      width: 32px;
-      height: 32px;
     }
     .sheet-hero h2 {
       margin-block-start: 8px;

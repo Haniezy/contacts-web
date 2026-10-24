@@ -79,8 +79,8 @@ function MoreMenu({
 }
 
 // Desktop: the chosen contact beside the list. The close button sits on
-// its outer edge; the pencil on the photo and in the reminder edit it, and
-// its tags come off (×) or on («+») right here.
+// its outer edge; the menu above the photo and the pencil in the note edit
+// it, and its tags come off (×) or on («+») right here.
 export function ContactSheet({
   contact,
   tags,
@@ -134,14 +134,6 @@ export function ContactSheet({
       <div className="sheet-hero">
         <div className="sheet-photo">
           <Avatar contact={contact} className="avatar-xl" />
-          <button
-            type="button"
-            className="sheet-edit"
-            aria-label={t('editContact')}
-            onClick={onEdit}
-          >
-            <Icon name="edit" />
-          </button>
         </div>
         <h2 id="sheet-name">
           <bdi>{contact.name}</bdi>
@@ -151,23 +143,6 @@ export function ContactSheet({
         <CallLink phone={contact.phone} />
         <SmsLink phone={contact.phone} />
         <ShareButton contact={contact} />
-        <MoreMenu
-          onEdit={onEdit}
-          onDelete={onDelete}
-          trigger={({ open, toggle, ref }) => (
-            <button
-              ref={ref}
-              type="button"
-              className="action action-more"
-              aria-haspopup="menu"
-              aria-expanded={open}
-              onClick={toggle}
-            >
-              <Icon name="dots" />
-              <span className="action-label">{t('more')}</span>
-            </button>
-          )}
-        />
       </div>
       <div className="sheet-info">
         <div>

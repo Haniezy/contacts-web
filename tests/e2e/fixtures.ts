@@ -59,12 +59,13 @@ export async function expectCount(page: Page, count: string) {
 // Edit or delete the contact whose row is open (phones) or whose details
 // show (desktop).
 export async function editChosen(page: Page) {
-  if (isDesk(page))
+  if (isDesk(page)) {
     await page
       .locator('.desk-sheet')
-      .getByRole('button', { name: 'ویرایش مخاطب', exact: true })
+      .getByRole('button', { name: 'گزینه‌های بیشتر' })
       .click();
-  else
+    await page.getByRole('menuitem', { name: 'ویرایش مخاطب' }).click();
+  } else
     await page
       .locator('.contact-row.is-open')
       .getByRole('link', { name: 'ویرایش' })
@@ -74,7 +75,7 @@ export async function deleteChosen(page: Page) {
   if (isDesk(page)) {
     await page
       .locator('.desk-sheet')
-      .getByRole('button', { name: 'بیشتر', exact: true })
+      .getByRole('button', { name: 'گزینه‌های بیشتر' })
       .click();
     await page.getByRole('menuitem', { name: 'حذف مخاطب' }).click();
   } else
