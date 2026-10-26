@@ -2672,22 +2672,25 @@ li.tag-chip:has(button) {
     height: calc(20 * var(--u));
   }
 
+  /* The settings and trash pages (PageShell) set no --u: there the
+     window keeps these sizes in plain pixels. */
   .delete-dialog {
-    width: calc(420 * var(--u));
-    inset-block: 0 calc(93 * var(--u));
-    border-radius: calc(28 * var(--u));
+    width: calc(420 * var(--u, 1px));
+    inset-block: 0 calc(93 * var(--u, 1px));
+    border-radius: calc(28 * var(--u, 1px));
   }
   .delete-sheet {
-    padding: calc(64 * var(--u)) calc(24 * var(--u)) calc(24 * var(--u));
+    padding: calc(64 * var(--u, 1px)) calc(24 * var(--u, 1px))
+      calc(24 * var(--u, 1px));
   }
   .delete-badge {
-    top: calc(-28 * var(--u));
-    width: calc(73.4 * var(--u));
-    height: calc(73.4 * var(--u));
+    top: calc(-28 * var(--u, 1px));
+    width: calc(73.4 * var(--u, 1px));
+    height: calc(73.4 * var(--u, 1px));
   }
   .delete-actions .button-danger-solid,
   .delete-actions .button-mint {
-    height: calc(51.33 * var(--u));
+    height: calc(51.33 * var(--u, 1px));
   }
 }
 /* Contact form (the owner's choice, 2 Aban 1405): on a phone a page of its
