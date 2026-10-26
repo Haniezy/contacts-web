@@ -1,52 +1,52 @@
-# دفترچه تلفن — Contacts
+# Contacts (دفترچه تلفن)
 
-دفترچه تلفن شخصی در **یک پروژه Next.js** (React و TypeScript): صفحه‌ها و API هر دو در همین پروژه‌اند. API روی Node.js در Route Handlerهای Next اجرا می‌شود و از طریق Prisma به PostgreSQL روی Neon وصل است؛ عکس‌ها در Cloudinary ذخیره می‌شوند. راهنماها: [نیازمندی‌ها](docs/requirements.fa.md)، [دیتابیس](docs/database.fa.md)، [احراز هویت](docs/auth.fa.md)، [ورود دومرحله‌ای](docs/two-factor.fa.md) و [API مخاطبین](docs/contacts.fa.md).
+A personal phone book in **one Next.js project** (React and TypeScript): the pages and the API live in the same project. The API runs on Node.js in Next.js Route Handlers and reaches PostgreSQL on Neon through Prisma; photos are stored on Cloudinary.
 
-**نسخه زنده:** [contacts-web-rho.vercel.app](https://contacts-web-rho.vercel.app)
+**Live:** [contacts-web-rho.vercel.app](https://contacts-web-rho.vercel.app)
 
-## امکانات
+## Features
 
-- **ورود امن:** رمز عبور با Argon2، ورود دومرحله‌ای با کد یک‌بارمصرف و کدهای پشتیبان، فهرست دستگاه‌های واردشده و خروج از راه دور، محدودیت تعداد درخواست.
-- **مخاطبین:** افزودن، ویرایش و جست‌وجو (نام و شماره، با ارقام فارسی)، عکس با برش داخل مرورگر، تاریخ تولد شمسی و یادداشت.
-- **برچسب‌های رنگی**، **لینک اشتراک عمومی** و **سطل زباله** که مخاطب پاک‌شده را هفت روز نگه می‌دارد.
-- **مخاطبین تکراری:** پیدا کردن شماره‌های یکسان در شکل‌های مختلف (`+98`، `0098`، `0`) و ادغام فیلد به فیلد.
-- **بدون اینترنت (PWA):** دفترچه بدون اینترنت باز می‌شود و تغییرها پس از وصل شدن دقیقاً یک بار ثبت می‌شوند.
-- **فارسی و انگلیسی** (راست‌به‌چپ و چپ‌به‌راست)، تم روشن و تیره با سه رنگ‌بندی، سازگار با گوشی، تبلت و دسکتاپ.
-- **تست:** سناریوهای Playwright روی سه اندازه صفحه، بررسی دسترس‌پذیری با axe و تست‌های سرور.
+- **Secure sign-in:** Argon2 password hashing, two-factor authentication with one-time codes and recovery codes, a list of signed-in devices with remote sign-out, and rate limiting.
+- **Contacts:** add, edit and search (by name or number, Persian digits included), a photo cropped in the browser, a birthday in the Persian (Jalali) calendar, and a note.
+- **Colour tags**, **public share links** and a **trash** that keeps deleted contacts for seven days.
+- **Duplicates:** finds the same number written in different forms (`+98`, `0098`, `0`) and merges contacts field by field.
+- **Offline (PWA):** the book opens without a connection, and changes are saved exactly once when it comes back.
+- **Persian and English** (right-to-left and left-to-right), light and dark themes with three colour palettes, for phones, tablets and desktops.
+- **Tests:** Playwright scenarios on three screen sizes, accessibility checks with axe, and API tests.
 
-## نسخه production
+## Production
 
-- **سایت:** https://contacts-web-rho.vercel.app (بررسی سلامت: `/health` و `/ready`)
+- **Site:** https://contacts-web-rho.vercel.app (health checks: `/health` and `/ready`)
 
-سایت روی Vercel و دیتابیس روی Neon (branch `production`) است؛ هر push به `main` نسخه production را به‌روز می‌کند. جزئیات: [راهنمای استقرار](docs/deployment.fa.md).
+The site runs on Vercel and the database on Neon (branch `production`); every push to `main` updates production. Details: [deployment guide](docs/deployment.fa.md) (Persian).
 
-## اجرای سریع با Docker
+## Quick start with Docker
 
-پیش‌نیاز: Docker Engine یا Docker Desktop در حال اجرا، به‌همراه Docker Compose v2 یا جدیدتر.
+Requirements: Docker Engine or Docker Desktop running, with Docker Compose v2 or later.
 
-از ریشه پروژه:
+From the project root:
 
 ```bash
 docker compose up --build --wait
 docker compose ps
 ```
 
-| سرویس  | نشانی                 | بررسی سلامت                  |
-| ------ | --------------------- | ---------------------------- |
-| برنامه | http://localhost:3000 | http://localhost:3000/health |
+| Service | Address               | Health check                 |
+| ------- | --------------------- | ---------------------------- |
+| App     | http://localhost:3000 | http://localhost:3000/health |
 
-پاسخ مورد انتظار `/health`:
+Expected `/health` response:
 
 ```json
 { "status": "ok", "service": "contacts-web" }
 ```
 
-`/ready` اتصال واقعی دیتابیس را هم بررسی می‌کند و در صورت نبود تنظیمات یا قطع اتصال، کد ۵۰۳ برمی‌گرداند.
+`/ready` also checks the real database connection and returns 503 when the settings are missing or the connection is down.
 
-- **ArvanCloud:** image پایه (`node:24-bookworm-slim`) از mirror داکر ArvanCloud (`docker.arvancloud.ir`) خوانده می‌شود، نه مستقیم از Docker Hub. برای استفاده از Docker Hub: `docker compose build --build-arg REGISTRY=docker.io`.
-- **کش npm:** هنگام build، کش دانلود npm بین buildها می‌ماند (`RUN --mount=type=cache`)؛ اگر فقط کد عوض شود لایه وابستگی‌ها دوباره ساخته نمی‌شود و اگر `package-lock.json` عوض شود هم بسته‌های قبلاً دانلودشده دوباره دانلود نمی‌شوند.
+- **ArvanCloud:** the base image (`node:24-bookworm-slim`) is pulled from ArvanCloud's Docker mirror (`docker.arvancloud.ir`), not directly from Docker Hub. To use Docker Hub: `docker compose build --build-arg REGISTRY=docker.io`.
+- **npm cache:** the npm download cache is kept between builds (`RUN --mount=type=cache`). If only the code changes, the dependency layer is not rebuilt; if `package-lock.json` changes, packages already downloaded are not downloaded again.
 
-دستورهای روزمره:
+Everyday commands:
 
 ```bash
 docker compose logs -f
@@ -54,104 +54,99 @@ docker compose down
 docker compose up --build --wait
 ```
 
-پس از تغییر کد، دوباره با `--build` اجرا کنید. پورت به `127.0.0.1` متصل است و فقط از همین کامپیوتر در دسترس است.
+After changing the code, run again with `--build`. The port is bound to `127.0.0.1`, so the app is reachable from this computer only.
 
-## متغیرهای محیطی
+## Environment variables
 
 ```bash
 cp .env.example .env
 ```
 
-| متغیر                                     | کاربرد                                                   |
-| ----------------------------------------- | -------------------------------------------------------- |
-| `APP_PORT`                                | پورت برنامه روی میزبان در Compose (پیش‌فرض ۳۰۰۰)         |
-| `DATABASE_URL`                            | اتصال pooled به Neon                                     |
-| `DIRECT_URL`                              | اتصال مستقیم Prisma CLI برای مایگریشن                    |
-| `DATABASE_TEST_URL`                       | اجازه صریح اجرای تست‌ها روی دیتابیس توسعه/تست            |
-| `JWT_SECRET`، `TWO_FACTOR_ENCRYPTION_KEY` | کلیدهای نشست و رمز 2FA ([راهنمای Auth](docs/auth.fa.md)) |
-| `APP_ORIGIN`، `AUTH_COOKIE_SECURE`        | نشانی سایت و کوکی امن                                    |
-| `CLOUDINARY_*`                            | ذخیره عکس‌ها                                             |
+| Variable                                  | Purpose                                                         |
+| ----------------------------------------- | --------------------------------------------------------------- |
+| `APP_PORT`                                | The app's host port in Compose (default 3000)                   |
+| `DATABASE_URL`                            | Pooled connection to Neon                                       |
+| `DIRECT_URL`                              | Direct connection for the Prisma CLI (migrations)               |
+| `DATABASE_TEST_URL`                       | Explicit permission to run tests on a development/test database |
+| `JWT_SECRET`, `TWO_FACTOR_ENCRYPTION_KEY` | Session and 2FA keys ([auth guide](docs/auth.fa.md), Persian)   |
+| `APP_ORIGIN`, `AUTH_COOKIE_SECURE`        | The site's origin and secure cookies                            |
+| `CLOUDINARY_*`                            | Photo storage                                                   |
 
-فایل `.env` را کامیت نکنید. آدرس‌های دیتابیس نباید داخل متغیرهای `NEXT_PUBLIC_*` قرار بگیرند. مایگریشن را صریح اجرا کنید؛ بالا آمدن برنامه دیتابیس را تغییر نمی‌دهد:
+Never commit `.env`. Database addresses must not go into `NEXT_PUBLIC_*` variables. Run migrations explicitly; starting the app never changes the database:
 
 ```bash
 docker compose --profile tools run --rm --build migrate
 ```
 
-## توسعه بدون Docker
+## Development without Docker
 
-پیش‌نیاز: Node.js 24 و npm.
+Requirements: Node.js 24 and npm.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-برنامه روی http://localhost:3000 اجرا می‌شود و `.env` ریشه را خودش می‌خواند.
+The app runs on http://localhost:3000 and reads `.env` from the project root.
 
-## کیفیت کد و تست
+## Code quality and tests
 
 ```bash
 npm run check
 ```
 
-به‌ترتیب فرمت، ESLint، TypeScript، تست‌های واحد و build را بررسی می‌کند. دستورهای جداگانه:
+Runs formatting, ESLint, TypeScript, unit tests and the build, in that order. Separate commands:
 
-| دستور                                                      | بررسی                                                                        |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `npm test`                                                 | تست‌های واحد API (بدون دیتابیس)                                              |
-| `npm run test:auth`، `test:2fa`، `test:account`، `test:db` | تست‌های یکپارچه API روی `DATABASE_TEST_URL`                                  |
-| `npm run test:contacts`                                    | تست‌های API مخاطبین و عکس                                                    |
-| `npm run test:e2e`                                         | تست‌های مرورگر (Playwright) روی دسکتاپ، موبایل و تبلت؛ پس از `npm run build` |
-| `npm run smoke`                                            | بررسی سلامت، صفحه اصلی و دیتابیس برنامه در حال اجرا                          |
+| Command                                                    | Checks                                                                         |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `npm test`                                                 | API unit tests (no database)                                                   |
+| `npm run test:auth`, `test:2fa`, `test:account`, `test:db` | API integration tests on `DATABASE_TEST_URL`                                   |
+| `npm run test:contacts`                                    | Contacts and photo API tests                                                   |
+| `npm run test:e2e`                                         | Browser tests (Playwright) on desktop, phone and tablet; after `npm run build` |
+| `npm run smoke`                                            | Health, home page and database of a running app                                |
 
-## ساختار
+## Structure
 
 ```text
-src/app/                # صفحه‌ها (App Router)، /api/[...path]، /health و /ready
-src/components/         # اجزای رابط کاربری
-src/lib/                # کمک‌های مشترک صفحه‌ها (session، API مرورگر، تاریخ شمسی)
-src/server/             # API: مسیرها، احراز هویت و 2FA، مخاطبین، حساب، دیتابیس
-src/server/http.ts      # روتر کوچک به سبک Express روی Request/Response وب
-src/server/generated/   # خروجی خودکار Prisma؛ خارج از Git
-prisma/                 # schema و تاریخچه مایگریشن‌ها
-messages/               # متن‌های فارسی و انگلیسی
-tests/server/           # تست‌های API (node:test)
-tests/e2e/              # تست‌های مرورگر (Playwright)
-docs/                   # راهنماها
-scripts/smoke.mjs       # بررسی برنامه در حال اجرا
-Dockerfile              # build چندمرحله‌ای، خروجی standalone Next.js
-docker-compose.yml      # برنامه و ابزار مایگریشن
+src/app/                # pages (App Router), /api/[...path], /health and /ready
+src/components/         # UI components
+src/lib/                # helpers shared by the pages (session, browser API, Jalali dates)
+src/server/             # API: routes, authentication and 2FA, contacts, account, database
+src/server/http.ts      # a small Express-style router on web Request/Response
+src/server/generated/   # Prisma's generated client; not in Git
+prisma/                 # schema and migration history
+messages/               # Persian and English texts
+tests/server/           # API tests (node:test)
+tests/e2e/              # browser tests (Playwright)
+docs/                   # guides (Persian)
+scripts/smoke.mjs       # checks a running app
+Dockerfile              # multi-stage build, Next.js standalone output
+docker-compose.yml      # the app and the migration tool
 ```
 
-یک `package.json` و یک `package-lock.json` برای کل پروژه. API در فرایند خود Next.js اجرا می‌شود: مرورگر مستقیم `/api/...` را صدا می‌زند و صفحه‌های سروری همان API را درون همان فرایند و بدون درخواست شبکه فراخوانی می‌کنند (`src/lib/backend.ts`). مسیرها و middlewareهای API با روتر کوچک `src/server/http.ts` نوشته شده‌اند که همان شکل Express را دارد.
+One `package.json` and one `package-lock.json` for the whole project. The API runs inside the Next.js process: the browser calls `/api/...` directly, and server-rendered pages call the same API in-process without a network request (`src/lib/backend.ts`). API routes and middleware use the small router in `src/server/http.ts`, shaped like Express.
 
-Prisma روی نسخه پایدار ۷ قفل شده است. دو وابستگی غیرمستقیم ابزار CLI، `deepmerge-ts` و `mysql2`، با `overrides` به نسخه اصلاح‌شده ارتقا یافته‌اند.
+Prisma is pinned to stable version 7. Two indirect dependencies of its CLI, `deepmerge-ts` and `mysql2`, are raised to patched versions with `overrides`.
 
-## قرارداد کامیت
+## Commit convention
 
-هر کامیت یک تغییر مشخص و قابل توضیح داشته باشد:
+Each commit makes one clear, explainable change:
 
-- `chore:` تنظیم ابزارها، Docker و مستندات.
-- `feat:` اضافه‌کردن قابلیت.
-- `fix:` برطرف‌کردن خطا.
+- `chore:` tooling, Docker and documentation.
+- `feat:` a new feature.
+- `fix:` a bug fix.
 
-مثال: `feat: add backend health endpoint`.
+Example: `feat: add backend health endpoint`.
 
-## منابع فنی
+## Documentation (Persian)
 
-- [نصب و تنظیم Next.js](https://nextjs.org/docs/app/getting-started/installation)
-- [استقرار Next.js و خروجی standalone](https://nextjs.org/docs/app/getting-started/deploying)
-- [چرخه انتشار Node.js](https://github.com/nodejs/Release)
+- [Requirements](docs/requirements.fa.md), [database](docs/database.fa.md), [authentication](docs/auth.fa.md), [two-factor sign-in](docs/two-factor.fa.md) and the [contacts API](docs/contacts.fa.md)
+- [Theme and language](docs/frontend.fa.md), [landing and sign-in](docs/auth-frontend.fa.md) (browser tests need a migrated test database and `npm run build`)
+- [Contacts page](docs/contacts-frontend.fa.md), [contact form](docs/contact-form.fa.md), [duplicates and merging](docs/duplicates.fa.md), [profile and settings](docs/account.fa.md)
+- [Responsive layout, loading and error states, accessibility and three-size tests](docs/polish.fa.md), [offline mode](docs/pwa.fa.md), [design system](docs/design-system.fa.md)
 
-## فرانت: تم و زبان
+## Technical references
 
-راهنمای پیاده‌سازی، ساختار و تست‌های مرورگر در [مستندات فاز ۵](docs/frontend.fa.md) آمده است. صفحه موقت موجود کنترل‌های تم و زبان را برای بررسی نمایش می‌دهد؛ طراحی صفحات در فازهای بعد انجام می‌شود.
-
-## لندینگ و ورود
-
-مسیرهای فاز ۶، قرارداد فرم‌ها و اتصال امن به API در [راهنمای احراز هویت فرانت](docs/auth-frontend.fa.md) آمده است. برای تست‌های مرورگر، دیتابیس تست مهاجرت‌شده و `npm run build` لازم است.
-
-## صفحه مخاطبین
-
-فهرست، جست‌وجو، اکشن‌ها، منو و حذف فاز ۷ در [راهنمای صفحه مخاطبین](docs/contacts-frontend.fa.md) آمده است. فرم مشترک مخاطب جدید و ویرایش (فاز ۸) در [راهنمای فرم مخاطب](docs/contact-form.fa.md) آمده است. فهرست تکراری‌ها و ادغام (فاز ۹) در [راهنمای تکراری‌ها](docs/duplicates.fa.md) آمده است. پروفایل و تنظیمات (فاز ۱۰) در [راهنمای حساب کاربری](docs/account.fa.md) آمده است. ریسپانسیو، حالت‌های لودینگ و خطا، دسترسی‌پذیری و تست‌های سه‌اندازه (فاز ۱۱) در [راهنمای پولیش](docs/polish.fa.md) آمده است.
+- [Installing Next.js](https://nextjs.org/docs/app/getting-started/installation)
+- [Deploying Next.js and standalone output](https://nextjs.org/docs/app/getting-started/deploying)
+- [Node.js release schedule](https://github.com/nodejs/Release)
