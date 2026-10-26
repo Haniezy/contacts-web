@@ -4,10 +4,6 @@
 
 **نسخه زنده:** [contacts-web-rho.vercel.app](https://contacts-web-rho.vercel.app)
 
-<p align="center">
-  <img src="docs/screenshots/contacts.webp" alt="صفحه مخاطبین در دسکتاپ با پنل جزئیات" width="800">
-</p>
-
 ## امکانات
 
 - **ورود امن:** رمز عبور با Argon2، ورود دومرحله‌ای با کد یک‌بارمصرف و کدهای پشتیبان، فهرست دستگاه‌های واردشده و خروج از راه دور، محدودیت تعداد درخواست.
@@ -17,19 +13,6 @@
 - **بدون اینترنت (PWA):** دفترچه بدون اینترنت باز می‌شود و تغییرها پس از وصل شدن دقیقاً یک بار ثبت می‌شوند.
 - **فارسی و انگلیسی** (راست‌به‌چپ و چپ‌به‌راست)، تم روشن و تیره با سه رنگ‌بندی، سازگار با گوشی، تبلت و دسکتاپ.
 - **تست:** سناریوهای Playwright روی سه اندازه صفحه، بررسی دسترس‌پذیری با axe و تست‌های سرور.
-
-## تصویرها
-
-<p align="center">
-  <img src="docs/screenshots/landing.webp" alt="صفحه اول" width="800">
-</p>
-<p align="center">
-  <img src="docs/screenshots/form-dark.webp" alt="فرم مخاطب جدید در تم تیره" width="800">
-</p>
-<p align="center">
-  <img src="docs/screenshots/phone-list.webp" alt="فهرست مخاطبین در گوشی" width="260">
-  <img src="docs/screenshots/phone-details-dark.webp" alt="جزئیات مخاطب در گوشی با تم تیره" width="260">
-</p>
 
 ## نسخه production
 
